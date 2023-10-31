@@ -49,6 +49,8 @@ extern "C" {
 
 /* USER CODE END EM */
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
@@ -57,6 +59,32 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define ON_BACK_LAMP_Pin GPIO_PIN_11
+#define ON_BACK_LAMP_GPIO_Port GPIOC
+#define ON_FRONT_LAMP_Pin GPIO_PIN_12
+#define ON_FRONT_LAMP_GPIO_Port GPIOC
+#define PROG3_Pin GPIO_PIN_9
+#define PROG3_GPIO_Port GPIOC
+#define RESET3_Pin GPIO_PIN_0
+#define RESET3_GPIO_Port GPIOD
+#define INT3_Pin GPIO_PIN_1
+#define INT3_GPIO_Port GPIOD
+#define PROG2_Pin GPIO_PIN_2
+#define PROG2_GPIO_Port GPIOD
+#define RESET2_Pin GPIO_PIN_3
+#define RESET2_GPIO_Port GPIOD
+#define INT2_Pin GPIO_PIN_4
+#define INT2_GPIO_Port GPIOD
+#define PROG1_Pin GPIO_PIN_5
+#define PROG1_GPIO_Port GPIOD
+#define RESET1_Pin GPIO_PIN_6
+#define RESET1_GPIO_Port GPIOD
+#define INT1_Pin GPIO_PIN_3
+#define INT1_GPIO_Port GPIOB
+#define IN_BACL_LAMP_Pin GPIO_PIN_6
+#define IN_BACL_LAMP_GPIO_Port GPIOB
+#define IN_FRONT_LAMP_Pin GPIO_PIN_7
+#define IN_FRONT_LAMP_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
