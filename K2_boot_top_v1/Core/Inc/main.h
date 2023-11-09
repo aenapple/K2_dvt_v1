@@ -81,6 +81,8 @@ void Error_Handler(void);
 #define DAM_RIGHT_GPIO_Port GPIOB
 #define DAM_LEFT_Pin GPIO_PIN_15
 #define DAM_LEFT_GPIO_Port GPIOB
+#define RED_LED_Pin GPIO_PIN_7
+#define RED_LED_GPIO_Port GPIOC
 #define PROG3_Pin GPIO_PIN_9
 #define PROG3_GPIO_Port GPIOC
 #define RESET3_Pin GPIO_PIN_0
