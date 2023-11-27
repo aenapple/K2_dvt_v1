@@ -67,8 +67,6 @@ void Error_Handler(void);
 #define AC_ON_GPIO_Port GPIOC
 #define PULSE_RST_Pin GPIO_PIN_15
 #define PULSE_RST_GPIO_Port GPIOC
-#define TOP_PRESENT_Pin GPIO_PIN_1
-#define TOP_PRESENT_GPIO_Port GPIOF
 #define PAD1_ON_Pin GPIO_PIN_0
 #define PAD1_ON_GPIO_Port GPIOC
 #define PAD2_ON_Pin GPIO_PIN_1
@@ -83,8 +81,8 @@ void Error_Handler(void);
 #define RED_LED_GPIO_Port GPIOB
 #define TOP_REMOVED_Pin GPIO_PIN_12
 #define TOP_REMOVED_GPIO_Port GPIOB
-#define TOP_PRESENTB13_Pin GPIO_PIN_13
-#define TOP_PRESENTB13_GPIO_Port GPIOB
+#define TOP_PRESENT_Pin GPIO_PIN_13
+#define TOP_PRESENT_GPIO_Port GPIOB
 #define FAN_PWM_Pin GPIO_PIN_14
 #define FAN_PWM_GPIO_Port GPIOB
 #define FAN_RPM_Pin GPIO_PIN_15
