@@ -57,9 +57,9 @@ DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
 
-/* osThreadId defaultTaskHandle;
+osThreadId defaultTaskHandle;
 uint32_t defaultTaskBuffer[ 64 ];
-osStaticThreadDef_t defaultTaskControlBlock; */
+osStaticThreadDef_t defaultTaskControlBlock;
 /* USER CODE BEGIN PV */
 extern void CreateApplicationTasks(void);
 /* USER CODE END PV */
@@ -75,7 +75,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_TIM16_Init(void);
 static void MX_TIM17_Init(void);
 static void MX_TIM15_Init(void);
-// void StartDefaultTask(void const * argument);
+void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -144,8 +144,8 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  // osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 64, defaultTaskBuffer, &defaultTaskControlBlock);
-  // defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 64, defaultTaskBuffer, &defaultTaskControlBlock);
+  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -240,13 +240,13 @@ static void MX_ADC1_Init(void)
   hadc1.Init.LowPowerAutoWait = DISABLE;
   hadc1.Init.LowPowerAutoPowerOff = DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.NbrOfConversion = 6;
+  hadc1.Init.NbrOfConversion = 7;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.DMAContinuousRequests = DISABLE;
   hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
-  hadc1.Init.SamplingTimeCommon1 = ADC_SAMPLETIME_1CYCLE_5;
+  hadc1.Init.SamplingTimeCommon1 = ADC_SAMPLETIME_3CYCLES_5;
   hadc1.Init.SamplingTimeCommon2 = ADC_SAMPLETIME_1CYCLE_5;
   hadc1.Init.OversamplingMode = DISABLE;
   hadc1.Init.TriggerFrequencyMode = ADC_TRIGGER_FREQ_HIGH;
@@ -303,8 +303,17 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_VBAT;
+  sConfig.Channel = ADC_CHANNEL_VREFINT;
   sConfig.Rank = ADC_REGULAR_RANK_6;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_VBAT;
+  sConfig.Rank = ADC_REGULAR_RANK_7;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -702,26 +711,38 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, MOTOR_ON_Pin|PULSE_ON_Pin|AC_ON_Pin|PULSE_RST_Pin
-                          |PAD1_ON_Pin|PAD2_ON_Pin|PTC1_ON_Pin|PTC2_ON_Pin
                           |TOP_RST_Pin|SW_STATOR1_Pin|SW_STATOR2_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, PAD1_ON_Pin|PAD2_ON_Pin|PTC1_ON_Pin|PTC2_ON_Pin
+                          |WC_EEPROM_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_SET);
-
-  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, ON_CHM1_MOT_Pin|DIR_CHM1_MOT_Pin|ON_CHM2_MOT_Pin|DIR_CHM2_MOT_Pin
                           |BREAK_ON_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : MOTOR_ON_Pin PULSE_ON_Pin AC_ON_Pin PULSE_RST_Pin
-                           PAD1_ON_Pin PAD2_ON_Pin PTC1_ON_Pin PTC2_ON_Pin
-                           WC_EEPROM_Pin TOP_RST_Pin SW_STATOR1_Pin SW_STATOR2_Pin */
-  GPIO_InitStruct.Pin = MOTOR_ON_Pin|PULSE_ON_Pin|AC_ON_Pin|PULSE_RST_Pin
-                          |PAD1_ON_Pin|PAD2_ON_Pin|PTC1_ON_Pin|PTC2_ON_Pin
-                          |WC_EEPROM_Pin|TOP_RST_Pin|SW_STATOR1_Pin|SW_STATOR2_Pin;
+  /*Configure GPIO pin : MOTOR_ON_Pin */
+  GPIO_InitStruct.Pin = MOTOR_ON_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(MOTOR_ON_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PULSE_ON_Pin AC_ON_Pin PULSE_RST_Pin WC_EEPROM_Pin
+                           TOP_RST_Pin SW_STATOR1_Pin SW_STATOR2_Pin */
+  GPIO_InitStruct.Pin = PULSE_ON_Pin|AC_ON_Pin|PULSE_RST_Pin|WC_EEPROM_Pin
+                          |TOP_RST_Pin|SW_STATOR1_Pin|SW_STATOR2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PAD1_ON_Pin PAD2_ON_Pin PTC1_ON_Pin PTC2_ON_Pin */
+  GPIO_InitStruct.Pin = PAD1_ON_Pin|PAD2_ON_Pin|PTC1_ON_Pin|PTC2_ON_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -759,6 +780,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 3, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */

@@ -14,6 +14,7 @@
 #include "OsTask.hpp"
 #include "Adc.hpp"
 #include "I2c.hpp"
+#include "Gpio.hpp"
 #include "InterfaceVIP.hpp"
 
 
@@ -31,7 +32,7 @@
 
 
 #define TASK_HAL_MAX_NUMBER_COMMANDS  10
-#define TASK_HAL_SIZE_PARAM_COMMANDS  15  // command 1 byte + data 14 bytes
+#define TASK_HAL_SIZE_PARAM_COMMANDS  (1 + IFC_VIP_UART_SIZE_DATA)  // command 1 byte + data 14 bytes
 
 
 
@@ -41,6 +42,11 @@
 #define HAL_T_NUMBER_CONVERSION    (1000 / HAL_ADC_NUMBER_CONVERSION)  // time - 1000 mS
 
 #define TASK_HAL_NUMBER_T_SENSORS  4
+
+#define TASK_HAL_AC_MAX_PWM_HEATER  10
+
+#define TASK_HAL_AC_TIME_MEASUREMENT  500  // 500 mSec
+#define TASK_HAL_AC_PULSE_NUMBERS     8    // 8.3333333 times per 0.5 Sec
 
 
 /**********************************************************************************/
@@ -82,14 +88,7 @@
 
 
 /**********************************************************************************/
-struct TBme688Sensor
-{
-	s16 temperature;
-	u32 pressure;
-	u16 humidity;
-	u32 gasResistance;
-	u16 status;
-};
+
 
 struct TSysCommand
 {
@@ -116,32 +115,17 @@ public:
 	////// functions //////
 	EOsResult Init(void);
 	EOsResult SendSysCommand(TSysCommand sysCommand);
-	TBme688Sensor* GetPointerBme688Sensor(void);
 	u16 GetAdcValue(EAdcChannel adcChannel);
 	s8 GetTemperature(EIfcVipTemperature ifcVipTemperature);
 
+
+	void HandlerGpioInterrupt(u16 gpioPin);
 
 	void SetEventUart2_TxCpltFromISR(void);
 	void SetEventUart2_RxCpltFromISR(void);
 	void SetEventUart2_ErrorFromISR(void);
 
 
-	s16 GetBme688_Temperature(void)
-	{
-		return(this->Bme688Sensor.temperature);
-	}
-	u32 GetBme688_GetPressure(void)
-	{
-		return(this->Bme688Sensor.pressure);
-	}
-	u32 GetBme688_GetGasResistance(void)
-	{
-		return(this->Bme688Sensor.gasResistance);
-	}
-	u16 GetBme688_GetHumidity(void)
-	{
-		return(this->Bme688Sensor.humidity);
-	}
 	s8 GetTemperatureCpu2(void)
 	{
 		return(this->tCpu2);
@@ -197,10 +181,9 @@ private:
 	TInterfaceVIP InterfaceMasterVIP;
 	TAdc Adc;
 	TI2c I2c;
+	TGpio Gpio;
 	u8 adcIndexConversion;
 	u16 calculationResultAdc1[ADC1_MAX_NUMBER_CHANNEL];
-	TBme688Sensor Bme688Sensor;
-
 
 	s8 tCpu2;
 	s8 tCpu3;
@@ -208,6 +191,16 @@ private:
 	s8 tPtcRight;
 	s8 tPadLeft;
 	s8 tPadRight;
+
+	u8 pwmAcPadHeater;
+	u8 pwmAcPtcHeater;
+	u8 pwmPtcFan;
+
+	bool acPhase;
+	u8 counterAcMain;
+	bool flagAcMainPresent;
+	u8 counterAcMotor;
+	bool flagAcMotorPresent;
 
 	u16 adcTPtcLeft;
 	u32 accumulativeTPtcLeft;
@@ -229,6 +222,7 @@ private:
 
 	////// functions //////
 	void GetStateTopCpu(void);
+	void GetSensorBme688(void);
 	void ProcessSysCommand(void);
 	void AdcConversionComplete(void);
 	void CalculatingTSensors(void);

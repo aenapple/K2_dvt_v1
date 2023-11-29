@@ -17,6 +17,7 @@
 #include "OsStreamBuffer.hpp"
 #include "ConfigApplication.h"
 #include "SysState.h"
+// #include "SysError.h"
 
 /**********************************************************************************/
 #define OS_TASK_SYS_SIZE_STACK      (configMINIMAL_STACK_SIZE * 16)  // 16 * 64 * 4 = 4096 bytes

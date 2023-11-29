@@ -37,6 +37,11 @@ void HAL_ADC_ErrorCallback(ADC_HandleTypeDef* hAdc)
 	TaskHAL.SetEventAdcErrorFromISR(hAdc);
 }
 
+void HAL_GPIO_EXTI_Rising_Callback(u16 gpioPin)
+{
+	TaskHAL.HandlerGpioInterrupt(gpioPin);
+}
+
 
 /**********************************************************************************/
 //==================================================================================
@@ -87,10 +92,13 @@ void TTaskHAL::Run(void)
 					TASK_HAL_EVENT_SYS_COMMAND	|
 					TASK_HAL_EVENT_T_READY,
 					&resultBits,
-					1000
+					100
 					) == OsResult_Timeout)
         {
-            continue;
+            this->GetStateTopCpu();
+            this->GetSensorBme688();
+
+        	continue;
         }
       
 
@@ -148,17 +156,50 @@ void TTaskHAL::GetStateTopCpu(void)
 		result = this->SendCommand(IfcVipCommand_GetState, 0);
 		if(result != OsResult_Ok)
 		{
-			TaskSYS.SetError(SysError_InterfaceVipM);
+			TaskSYS.SetSysState(SysError_InterfaceVipM);
 			return;
 		}
 	}
 
 	pData = this->InterfaceMasterVIP.GetPointerDataRx();
 
-
+	TaskSYS.UpdateTopCpuState(pData);
 
 }
 //=== end GetStateTopCpu ===========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::GetSensorBme688(void)
+{
+	EOsResult result;
+	u8* pData;
+
+
+	result = this->SendCommand(IfcVipCommand_GetBme688_Part1, 0);
+	if(result != OsResult_Ok)
+	{
+		this->InterfaceMasterVIP.ReInit();
+		this->Delay(10);
+
+		result = this->SendCommand(IfcVipCommand_GetBme688_Part1, 0);
+		if(result != OsResult_Ok)
+		{
+			TaskSYS.SetSysState(SysError_InterfaceVipM);
+			return;
+		}
+	}
+
+	pData = this->InterfaceMasterVIP.GetPointerDataRx();
+
+	TaskSYS.UpdateSensorBme688(pData + IFC_VIP_BME688_TEMPERATURE);
+
+}
+//=== end GetSensorBme688 ==========================================================
 
 //==================================================================================
 /**
@@ -742,6 +783,24 @@ void TTaskHAL::SetEventAdcErrorFromISR(ADC_HandleTypeDef* hAdc)
 
 //==================================================================================
 /**
+*  The function ... .
+*
+*  @return
+*  		none.
+*/
+void TTaskHAL::HandlerGpioInterrupt(u16 gpioPin)
+{
+	if(gpioPin == AC_MAIN_Pin)
+	{
+//		TaskSYS.IncrementFanRpmCounter();
+	}
+
+
+}
+//=== end HandlerGpioInterrupt =====================================================
+
+//==================================================================================
+/**
 *  Todo: function description..
 *
 *  @return ... .
@@ -891,6 +950,14 @@ EOsResult TTaskHAL::Init(void)
 	this->lastTPtcRight[0] = this->lastTPtcRight[1] = 2000;
 	
 	this->InterfaceMasterVIP.Init(huart2, USART2);
+
+	this->pwmAcPadHeater = TASK_HAL_AC_MAX_PWM_HEATER;
+	this->pwmAcPtcHeater = TASK_HAL_AC_MAX_PWM_HEATER;
+	this->pwmPtcFan = 100;
+
+	this->acPhase = false;
+	this->flagAcMainPresent = false;
+	this->flagAcMotorPresent = false;
 
 
 	return(OsResult_Ok);

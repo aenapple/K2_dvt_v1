@@ -85,6 +85,13 @@ struct TGetState
 	u8 levelChamverRight;  // cm
 };
 
+struct TBme688Sensor
+{
+	s16 temperature;
+	u32 pressure;
+	u32 gasResistance;
+	u16 humidity;
+};
 
 /**********************************************************************************/
 //==================================================================================
@@ -125,11 +132,12 @@ public:
 	TimeSystem GetTimeSystem(void);
 	DateTime GetDateTime();
 	void UpdateDateTime(const TTaskSYS::DateTime& newDateTime);
-	void SetError(ESysState error);
+//	void SetError(ESysState error);
 	u8 GetErrorCode(void);
 	void SetSysState(ESysState sysState);
 	ESysState GetSysState(void);
 	void UpdateTopCpuState(u8* pBufferState);
+	void UpdateSensorBme688(u8* pBufferState);
 
 
 	void CreateTask(void);
@@ -168,6 +176,7 @@ private:
     ESysState sysState;
     EIfcVipState ifcVipState;
     TGetState getState;
+    TBme688Sensor bme688Sensor;
 
     TInterfaceVIP InterfaceSlaveVIP;
 

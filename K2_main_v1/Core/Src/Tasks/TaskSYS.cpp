@@ -291,14 +291,15 @@ void TTaskSYS::ProcessRxData(void)
 			memcpy((void*)data, (void*)&this->getState, sizeof(TGetState));
 			if(this->sysState < SysError_Start)
 			{
-				data[IFC_VIP_STATE_INDEX] = this->sysState;
+				data[IFC_VIP_STATE_INDEX] = this->interfaceVipCode[this->sysState];
 				data[IFC_VIP_ERROR_INDEX] = 0;
 			}
 			else
 			{
 				data[IFC_VIP_STATE_INDEX] = IfcVipState_Error;
+				data[IFC_VIP_ERROR_INDEX] = this->interfaceVipCode[this->sysState];
 			}
-			data[IFC_VIP_SUB_STATE_INDEX] = (u8)IfcVipSubState_Application;
+			data[IFC_VIP_SUB_STATE_INDEX] = IfcVipSubState_Application;
 			break;
 
 		case IfcVipCommand_GetBme688_Part1:
@@ -891,13 +892,30 @@ void TTaskSYS::UpdateTopCpuState(u8* pBufferState)
 
 	if(this->getState.state == IfcVipState_Error)
 	{
-		this->SetError(this->getState.error);
-		return;
+		this->SetSysState(this->getState.error);
 	}
-
 
 }
 //=== end UpdateTopCpuState ========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return
+*  		none.
+*/
+void TTaskSYS::UpdateSensorBme688(u8* pBufferState)
+{
+
+	taskENTER_CRITICAL();
+
+	memcpy((void*)&this->bme688Sensor, (void*)pBufferState, sizeof(TBme688Sensor));
+
+	taskEXIT_CRITICAL();
+
+}
+//=== end UpdateSensorBme688 =======================================================
 
 //==================================================================================
 /**
