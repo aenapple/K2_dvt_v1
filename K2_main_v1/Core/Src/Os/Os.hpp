@@ -48,6 +48,7 @@ typedef enum
 	OsResult_Timeout,
 	OsResult_ErrorCrc,
 	OsResult_ErrorNAck,
+	OsResult_StopProcess,
 
 
 	OsResult_ErrorI2cTransmit,

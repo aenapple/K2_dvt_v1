@@ -221,24 +221,112 @@ void TTaskHAL::ProcessSysCommand(void)
 			return;
 		}
 
-		result = this->SendCommand(sysCommand.command, sysCommand.data);
+		switch(sysCommand.command)
+		{
+			case SysCommand_ControlHeater:
+				this->ControlHeater(sysCommand.parameters);
+				break;
+
+			case SysCommand_ControlMotor:
+				this->ControlMotor(sysCommand.parameters);
+				break;
+
+			case SysCommand_ControlLamp:
+				this->ControlLamp(sysCommand.parameters);
+				break;
+
+			case SysCommand_SetPosition:
+				break;
+
+
+			default:
+				break;
+		}
+
+/*		result = this->SendCommand(sysCommand.command, sysCommand.parameters);
 		if(result != OsResult_Ok)
 		{
 			this->InterfaceMasterVIP.ReInit();
 			this->Delay(10);
 
-			result = this->SendCommand(sysCommand.command, sysCommand.data);
+			result = this->SendCommand(sysCommand.command, sysCommand.parameters);
 			if(result != OsResult_Ok)
 			{
 				TaskSYS.SetSysState(SysError_InterfaceVipM);
 				return;
 			}
-		}
+		} */
 
 	}
 
 }
 //=== end ProcessSysCommand ========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+EOsResult TTaskHAL::ControlMotor(u8* parameters)
+{
+
+
+	return(OsResult_Ok);
+}
+//=== end ControlMotor =============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+EOsResult TTaskHAL::ControlHeater(u8* parameters)
+{
+
+
+	return(OsResult_Ok);
+}
+//=== end ControlHeater ============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+EOsResult TTaskHAL::ControlLamp(u8* parameters)
+{
+
+
+	return(OsResult_Ok);
+}
+//=== end ControlLamp ==============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::AcPowerOn()
+{
+	this->Gpio.AcPowerOn();
+}
+//=== end AcPowerOn ================================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::AcPowerOff()
+{
+	this->Gpio.AcPowerOff();
+}
+//=== end AcPowerOff ===============================================================
 
 //==================================================================================
 /**
@@ -849,12 +937,12 @@ void TTaskHAL::SetEventUart2_ErrorFromISR(void)
 *
 *  @return ... .
 */
-EOsResult TTaskHAL::SendSysCommand(TSysCommand sysCommand)
+EOsResult TTaskHAL::SendSysCommand(TSysCommand* sysCommand)
 {
 	EOsResult result;
 
 
-	result= this->OsQueue.Send(&sysCommand, 20); // timeout 20 mSec
+	result= this->OsQueue.Send(sysCommand, 20); // timeout 20 mSec
 	if(result != OsResult_Ok)
 	{
 		return(result);
@@ -958,6 +1046,11 @@ EOsResult TTaskHAL::Init(void)
 	this->acPhase = false;
 	this->flagAcMainPresent = false;
 	this->flagAcMotorPresent = false;
+
+	this->PtcHeaterLeft.Init(Heater_PtcHeaterLeft);
+	this->PtcHeaterRight.Init(Heater_PtcHeaterRight);
+	this->PadHeaterLeft.Init(Heater_PadHeaterLeft);
+	this->PadHeaterRight.Init(Heater_PadHeaterRight);
 
 
 	return(OsResult_Ok);

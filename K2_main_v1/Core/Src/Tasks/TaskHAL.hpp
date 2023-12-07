@@ -16,6 +16,8 @@
 #include "I2c.hpp"
 #include "Gpio.hpp"
 #include "InterfaceVIP.hpp"
+#include "Heater.hpp"
+#include "MotorMain.hpp"
 
 
 /**********************************************************************************/
@@ -88,12 +90,23 @@
 
 
 /**********************************************************************************/
+typedef enum
+{
+	SysCommand_ControlHeater,
+	SysCommand_ControlMotor,
+	SysCommand_ControlLamp,
+	SysCommand_SetPosition,
+	SysCommand_AcPowerOn,
+	SysCommand_AcPowerOff,
 
+	SysCommand_Last,
+
+} ESysCommand;
 
 struct TSysCommand
 {
-	EIfcVipCommand command;
-    u8 data[IFC_VIP_UART_SIZE_DATA];
+	ESysCommand command;
+    u8 parameters[IFC_VIP_UART_SIZE_DATA];
 };
 
 /**********************************************************************************/
@@ -114,7 +127,7 @@ public:
 
 	////// functions //////
 	EOsResult Init(void);
-	EOsResult SendSysCommand(TSysCommand sysCommand);
+	EOsResult SendSysCommand(TSysCommand* sysCommand);
 	u16 GetAdcValue(EAdcChannel adcChannel);
 	s8 GetTemperature(EIfcVipTemperature ifcVipTemperature);
 
@@ -158,6 +171,12 @@ public:
 
 	void CreateTask(void);
 	void CreateTaskStatic(void);
+
+	// DEBUG
+	void AcPowerOn(void);
+	void AcPowerOff(void);
+	TMotorMain MotorMain;
+	// DEBUG
 
 
   
@@ -216,6 +235,11 @@ private:
 	u16 lastTPadLeft[2];
 	u16 lastTPadRight[2];
 
+	THeater PtcHeaterLeft;
+	THeater PtcHeaterRight;
+	THeater PadHeaterLeft;
+	THeater PadHeaterRight;
+
 
 	////// constants //////
 
@@ -229,6 +253,10 @@ private:
 	s8 CalculatingTSensorDigC(u16 localAdcTHeater, u16 adcLowLevel);
 	s8 CalculatingTSensor(EIfcVipTemperature ifcVipTemperature);
 	EOsResult SendCommand(EIfcVipCommand command, u8* pBuffer);
+
+	EOsResult ControlMotor(u8* parameters);
+	EOsResult ControlHeater(u8* parameters);
+	EOsResult ControlLamp(u8* parameters);
 
 
 	void Run(void);

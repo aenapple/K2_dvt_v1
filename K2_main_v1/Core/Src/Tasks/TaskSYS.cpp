@@ -7,6 +7,7 @@
 /**********************************************************************************/
 #include "TaskUI.hpp"
 #include "TaskHAL.hpp"
+#include "TaskCHM.hpp"
 #include <stdio.h>
 #include <stdarg.h>
 #include "TaskSYS.hpp"
@@ -15,6 +16,8 @@
 TTaskSYS TaskSYS;
 extern TTaskUI TaskUI;
 extern TTaskHAL TaskHAL;
+extern TTaskCHM TaskChmLeft;
+extern TTaskCHM TaskChmRight;
 /**********************************************************************************/
 #ifdef __DEBUG_SYS_OUTPUT_ENABLED
 	#include "../Debug/TaskCLI.hpp"
@@ -1064,9 +1067,38 @@ EOsResult TTaskSYS::Init(void)
 
 	TaskUI.SetState(TASK_UI_EVENT_INIT);
 
+
+	// DEBUG
+	TaskHAL.MotorMain.Init();
+	while(true)
+	{
+		TaskHAL.AcPowerOn();
+		this->Delay(1000);
+
+
+		TaskHAL.MotorMain.StartForward();
+		this->Delay(1000);
+		TaskHAL.MotorMain.Stop();
+		this->Delay(1000);
+
+		TaskHAL.MotorMain.StartBackward();
+		this->Delay(1000);
+		TaskHAL.MotorMain.Stop();
+		this->Delay(1000);
+
+
+		TaskHAL.AcPowerOff();
+		this->Delay(1000);
+	}
+	// DEBUG
+
+
+
+
+
 	this->InterfaceSlaveVIP.Init(huart1, USART1);
 
-	TaskUI.SetEvents(TASK_HAL_CMD_START);
+	TaskHAL.SetEvents(TASK_HAL_CMD_START);
 
 
 

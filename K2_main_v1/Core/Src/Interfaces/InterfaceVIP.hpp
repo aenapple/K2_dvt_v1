@@ -73,6 +73,9 @@ enum EIfcVipState
 	IfcVipState_ThermophilicPhase = 0x07,
 	IfcVipState_CoolingPhase = 0x08,
 	IfcVipState_Busy = 0x09,
+	IfcVipState_Phase0 = 0x0A,
+	IfcVipState_Phase1 = 0x0B,
+	IfcVipState_Phase2 = 0x0C,
 
 
 	IfcVipState_Error = 0xFF,
@@ -166,6 +169,12 @@ enum EIfcVipMotor
 	IfcVipMotor_Dam = 0x04,
 };
 
+enum EIfcVipMotorDirection
+{
+	IfcVipMotorDirection_Forward = 0x01,
+	IfcVipMotorDirection_Backward = 0x02,
+};
+
 enum EIfcVipFan
 {
 	IfcVipFan_Main = 0x01,
@@ -201,6 +210,11 @@ enum EIfcDamPosition
 	IfcDamPosition_OpenRight = 0x02,
 };
 
+enum EIfcControl
+{
+	IfcControl_Off = 0x00,
+	IfcControl_On = 0x01,
+};
 
 
 ////// Data. //////
