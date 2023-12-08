@@ -57,9 +57,9 @@ DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
 
-osThreadId defaultTaskHandle;
+/* osThreadId defaultTaskHandle;
 uint32_t defaultTaskBuffer[ 64 ];
-osStaticThreadDef_t defaultTaskControlBlock;
+osStaticThreadDef_t defaultTaskControlBlock; */
 /* USER CODE BEGIN PV */
 extern void CreateApplicationTasks(void);
 /* USER CODE END PV */
@@ -75,7 +75,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_TIM16_Init(void);
 static void MX_TIM17_Init(void);
 static void MX_TIM15_Init(void);
-void StartDefaultTask(void const * argument);
+// void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -144,8 +144,8 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 64, defaultTaskBuffer, &defaultTaskControlBlock);
-  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+  // osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 64, defaultTaskBuffer, &defaultTaskControlBlock);
+  // defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -747,8 +747,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : S_ROTATION_Pin FAN_RPM_Pin AC_MAIN_Pin AC_MOTOR_Pin */
-  GPIO_InitStruct.Pin = S_ROTATION_Pin|FAN_RPM_Pin|AC_MAIN_Pin|AC_MOTOR_Pin;
+  /*Configure GPIO pins : S_ROTATION_Pin FAN_RPM_Pin */
+  GPIO_InitStruct.Pin = S_ROTATION_Pin|FAN_RPM_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -780,6 +780,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : AC_MAIN_Pin AC_MOTOR_Pin */
+  GPIO_InitStruct.Pin = AC_MAIN_Pin|AC_MOTOR_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI4_15_IRQn, 3, 0);

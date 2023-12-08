@@ -152,6 +152,8 @@ void TTaskSYS::SetEventTickFromISR(void)
 	this->systemCounter++;
 	if(!this->enableTickHook) return;
 
+	TaskHAL.SetEventTickFromISR();
+
 }
 //=== end SetEventTickFromISR ======================================================
 
@@ -1070,21 +1072,33 @@ EOsResult TTaskSYS::Init(void)
 
 	// DEBUG
 	TaskHAL.MotorMain.Init();
+	this->enableTickHook = true;
 	while(true)
 	{
-		TaskHAL.AcPowerOn();
+/*		TaskHAL.AcPowerOn();
 		this->Delay(1000);
 
 
-		TaskHAL.MotorMain.StartForward();
+		// TaskHAL.MotorMain.StartForward();
+		TaskHAL.StartMainMotorCW();
+		this->Delay(1000);
+		// TaskHAL.MotorMain.Stop();
+		TaskHAL.StopMainMotor();
+		this->Delay(500);
+		TaskHAL.BrakeOnMainMotor();
+		this->Delay(500);
+//		TaskHAL.BrakeOffMainMotor();
+		TaskHAL.StartMainMotorCCW();
+		this->Delay(500);
+		TaskHAL.StopMainMotor();
+		this->Delay(500);
+		TaskHAL.BrakeOnMainMotor();
+		this->Delay(500); */
+
+/*		TaskHAL.MotorMain.StartBackward();
 		this->Delay(1000);
 		TaskHAL.MotorMain.Stop();
-		this->Delay(1000);
-
-		TaskHAL.MotorMain.StartBackward();
-		this->Delay(1000);
-		TaskHAL.MotorMain.Stop();
-		this->Delay(1000);
+		this->Delay(1000); */
 
 
 		TaskHAL.AcPowerOff();

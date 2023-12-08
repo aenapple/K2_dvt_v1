@@ -47,8 +47,8 @@
 
 #define TASK_HAL_AC_MAX_PWM_HEATER  10
 
-#define TASK_HAL_AC_TIME_MEASUREMENT  500  // 500 mSec
-#define TASK_HAL_AC_PULSE_NUMBERS     8    // 8.3333333 times per 0.5 Sec
+#define TASK_HAL_AC_TIME_MEASUREMENT  100        // 0.1 Sec
+#define TASK_HAL_AC_PULSE_NUMBERS     (12 - 1)   // 60*2 times per 1 Sec
 
 
 /**********************************************************************************/
@@ -176,6 +176,11 @@ public:
 	void AcPowerOn(void);
 	void AcPowerOff(void);
 	TMotorMain MotorMain;
+	void StartMainMotorCW(void);
+	void StartMainMotorCCW(void);
+	void StopMainMotor(void);
+	void BrakeOnMainMotor(void);
+	void BrakeOffMainMotor(void);
 	// DEBUG
 
 
@@ -211,15 +216,18 @@ private:
 	s8 tPadLeft;
 	s8 tPadRight;
 
-	u8 pwmAcPadHeater;
-	u8 pwmAcPtcHeater;
+//	u8 pwmAcPadHeater;
+//	u8 pwmAcPtcHeater;
+	u8 counterPwmHeater;
 	u8 pwmPtcFan;
 
+	u16 counterTimeAcMeasurement;
 	bool acPhase;
 	u8 counterAcMain;
 	bool flagAcMainPresent;
 	u8 counterAcMotor;
 	bool flagAcMotorPresent;
+	bool flagStartMainMotor;
 
 	u16 adcTPtcLeft;
 	u32 accumulativeTPtcLeft;

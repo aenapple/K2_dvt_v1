@@ -37,10 +37,17 @@ void HAL_ADC_ErrorCallback(ADC_HandleTypeDef* hAdc)
 	TaskHAL.SetEventAdcErrorFromISR(hAdc);
 }
 
-void HAL_GPIO_EXTI_Rising_Callback(u16 gpioPin)
+/* void HAL_GPIO_EXTI_Rising_Callback(u16 gpioPin)
+{
+	TaskHAL.HandlerGpioInterrupt(gpioPin);
+} */
+
+void HAL_GPIO_EXTI_Falling_Callback(u16 gpioPin)
 {
 	TaskHAL.HandlerGpioInterrupt(gpioPin);
 }
+
+
 
 
 /**********************************************************************************/
@@ -54,6 +61,36 @@ void HAL_GPIO_EXTI_Rising_Callback(u16 gpioPin)
 void TTaskHAL::SetEventTickFromISR(void)
 {
 	this->Adc.StartAdc1();
+
+	if(this->counterTimeAcMeasurement < TASK_HAL_AC_TIME_MEASUREMENT)
+	{
+		this->counterTimeAcMeasurement++;
+	}
+	else
+	{
+		this->counterTimeAcMeasurement = 0;
+
+		if(this->counterAcMain < TASK_HAL_AC_PULSE_NUMBERS)
+		{
+			this->flagAcMainPresent = false;
+		}
+		else
+		{
+			this->flagAcMainPresent = true;
+		}
+		this->counterAcMain = 0;
+
+		if(this->counterAcMotor < TASK_HAL_AC_PULSE_NUMBERS)
+		{
+			this->flagAcMotorPresent = false;
+		}
+		else
+		{
+			this->flagAcMotorPresent = true;
+		}
+		this->counterAcMotor = 0;
+
+	}
 
 }
 //=== end SetEventTickFromISR ======================================================
@@ -327,6 +364,77 @@ void TTaskHAL::AcPowerOff()
 	this->Gpio.AcPowerOff();
 }
 //=== end AcPowerOff ===============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::StartMainMotorCW()
+{
+	if(this->flagAcMainPresent)
+	{
+		HAL_GPIO_WritePin(SW_STATOR2_GPIO_Port, SW_STATOR2_Pin, GPIO_PIN_SET);
+		this->Delay(100);
+		this->flagStartMainMotor = true;
+	}
+}
+//=== end StartMainMotorCW =========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::StartMainMotorCCW()
+{
+	if(this->flagAcMainPresent)
+	{
+		HAL_GPIO_WritePin(SW_STATOR2_GPIO_Port, SW_STATOR2_Pin, GPIO_PIN_RESET);
+		this->Delay(100);
+		this->flagStartMainMotor = true;
+	}
+}
+//=== end StartMainMotorCCW ========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::StopMainMotor()
+{
+	this->flagStartMainMotor = false;
+}
+//=== end StopMainMotor ============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::BrakeOnMainMotor()
+{
+//	HAL_GPIO_WritePin(BREAK_ON_GPIO_Port, BREAK_ON_Pin, GPIO_PIN_SET);
+	HAL_GPIO_TogglePin(SW_STATOR2_GPIO_Port, SW_STATOR2_Pin);
+}
+//=== end BrakeOnMainMotor =========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::BrakeOffMainMotor()
+{
+	HAL_GPIO_WritePin(BREAK_ON_GPIO_Port, BREAK_ON_Pin, GPIO_PIN_RESET);
+}
+//=== end BrakeOffMainMotor =========================================================
 
 //==================================================================================
 /**
@@ -880,10 +988,43 @@ void TTaskHAL::HandlerGpioInterrupt(u16 gpioPin)
 {
 	if(gpioPin == AC_MAIN_Pin)
 	{
-//		TaskSYS.IncrementFanRpmCounter();
+		this->counterAcMain++;
 	}
 
+	if(gpioPin == AC_MOTOR_Pin)
+	{
+		this->counterAcMotor++;
+	}
 
+	if(this->flagStartMainMotor)
+	{
+		HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_SET);
+	}
+	else
+	{
+		HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_RESET);
+	}
+
+	if(this->PadHeaterLeft.GetPwm() > this->counterPwmHeater)
+	{
+		this->PadHeaterLeft.PulseOn();
+	}
+	else
+	{
+		this->PadHeaterLeft.PulseOff();
+	}
+
+	if(this->acPhase)
+	{
+		this->counterPwmHeater++;
+
+		if(this->counterPwmHeater >= TASK_HAL_AC_MAX_PWM_HEATER)
+		{
+			this->counterPwmHeater = 0;
+		}
+	}
+
+	this->acPhase = !this->acPhase;
 }
 //=== end HandlerGpioInterrupt =====================================================
 
@@ -1039,13 +1180,14 @@ EOsResult TTaskHAL::Init(void)
 	
 	this->InterfaceMasterVIP.Init(huart2, USART2);
 
-	this->pwmAcPadHeater = TASK_HAL_AC_MAX_PWM_HEATER;
-	this->pwmAcPtcHeater = TASK_HAL_AC_MAX_PWM_HEATER;
+	this->counterPwmHeater = 0;
 	this->pwmPtcFan = 100;
 
 	this->acPhase = false;
 	this->flagAcMainPresent = false;
 	this->flagAcMotorPresent = false;
+	this->flagStartMainMotor = false;
+
 
 	this->PtcHeaterLeft.Init(Heater_PtcHeaterLeft);
 	this->PtcHeaterRight.Init(Heater_PtcHeaterRight);
