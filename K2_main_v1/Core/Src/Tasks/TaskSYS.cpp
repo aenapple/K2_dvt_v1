@@ -1073,15 +1073,16 @@ EOsResult TTaskSYS::Init(void)
 	// DEBUG
 	TaskHAL.MotorMain.Init();
 	this->enableTickHook = true;
+	TaskHAL.SetEvents(TASK_HAL_CMD_START);
 	while(true)
 	{
-/*		TaskHAL.AcPowerOn();
-		this->Delay(1000);
+//		TaskHAL.AcPowerOn();
+//		this->Delay(1000);
 
 
 		// TaskHAL.MotorMain.StartForward();
-		TaskHAL.StartMainMotorCW();
-		this->Delay(1000);
+/*		TaskHAL.StartMainMotorCW();
+		this->Delay(10000);
 		// TaskHAL.MotorMain.Stop();
 		TaskHAL.StopMainMotor();
 		this->Delay(500);
@@ -1089,20 +1090,22 @@ EOsResult TTaskSYS::Init(void)
 		this->Delay(500);
 //		TaskHAL.BrakeOffMainMotor();
 		TaskHAL.StartMainMotorCCW();
-		this->Delay(500);
+		this->Delay(3000);
 		TaskHAL.StopMainMotor();
-		this->Delay(500);
-		TaskHAL.BrakeOnMainMotor();
 		this->Delay(500); */
+//		TaskHAL.BrakeOnMainMotor();
+//		this->Delay(500);
 
 /*		TaskHAL.MotorMain.StartBackward();
 		this->Delay(1000);
 		TaskHAL.MotorMain.Stop();
 		this->Delay(1000); */
+//		HAL_GPIO_WritePin(PAD1_ON_GPIO_Port, PAD1_ON_Pin, GPIO_PIN_RESET);
+//		this->Delay(20000);
 
 
 		TaskHAL.AcPowerOff();
-		this->Delay(1000);
+		this->Delay(20000);
 	}
 	// DEBUG
 

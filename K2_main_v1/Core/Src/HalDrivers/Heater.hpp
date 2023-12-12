@@ -35,7 +35,7 @@ public:
 
 
 	////// functions //////
-	EOsResult Init(EHeater heater);
+	void Init(EHeater heater);
 	void TurnOn(u8 pwm);
 	void TurnOff(void);
 	void PulseOn(void);
@@ -58,7 +58,7 @@ protected:
 private:
     ////// variables //////
 	s8 temperature;
-	EHeater heater;
+//	EHeater heater;
 	GPIO_TypeDef *GPIOx;
 	u16 GPIO_Pin;
 	u8 pwm;

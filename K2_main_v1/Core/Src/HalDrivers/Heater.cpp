@@ -19,10 +19,10 @@
 *
 *  @return ... .
 */
-EOsResult THeater::Init(EHeater heater)
+void THeater::Init(EHeater heater)
 {
 
-	this->heater = heater;
+//	this->heater = heater;
 
 	switch(heater)
 	{
@@ -48,8 +48,6 @@ EOsResult THeater::Init(EHeater heater)
 	}
 
 
-
-	return(OsResult_Ok);
 }
 //=== end Init =====================================================================
 

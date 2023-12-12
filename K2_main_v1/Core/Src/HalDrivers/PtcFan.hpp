@@ -1,28 +1,29 @@
 /**********************************************************************************/
 /**
- *  @file MotorChamber.hpp
- *  @brief Header file for class TMotorChamber
+ *  @file PtcFan.hpp
+ *  @brief Header file for class TPtcFan
  *
  *  @copyright (c) 2023 VCycene, Inc. All rights reserved. \n
  */
 /**********************************************************************************/
-#ifndef __MotorChamber_H
-#define __MotorChamber_H
+#ifndef __PtcFan_H
+#define __PtcFan_H
 
 /**********************************************************************************/
 #include "Os.hpp"
 
 
 /**********************************************************************************/
-enum EMotorChamber
+enum EPtcFan
 {
-	MotorChamber_Left,
-	MotorChamber_Right,
+	PtcFan_Left,
+	PtcFan_Right,
 };
+
 
 /**********************************************************************************/
 //==================================================================================
-class TMotorChamber
+class TPtcFan
 {
 public:
 	////// variables //////
@@ -32,10 +33,10 @@ public:
 
 
 	////// functions //////
-	void Init(EMotorChamber motorChamber);
-	void StartForward(void);
-	void StartBackward(void);
+	void Init(EPtcFan ptcFan);
+	void Start(u8 pwm);
 	void Stop(void);
+
 
 
 protected:
@@ -50,10 +51,11 @@ protected:
 
 private:
     ////// variables //////
-	GPIO_TypeDef *GPIOx_ON;
-	u16 GPIO_Pin_ON;
-	GPIO_TypeDef *GPIOx_DIR;
-	u16 GPIO_Pin_DIR;
+	u8 pwm;
+	bool pwmStarted;
+	TIM_HandleTypeDef* pTimer;
+	u32 channel;
+
 
     ////// constants //////
 
@@ -62,7 +64,7 @@ private:
 
 
 };
-//=== end class TMotorChamber ======================================================
+//=== end class TPtcFan ============================================================
 
 /**********************************************************************************/
 #endif

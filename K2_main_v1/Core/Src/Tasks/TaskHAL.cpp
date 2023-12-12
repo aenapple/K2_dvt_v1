@@ -462,12 +462,14 @@ void TTaskHAL::CalculatingTSensors()
 
 			case 2:
 				this->tPadLeft = this->CalculatingTSensor(IfcVipTemperature_PadHeater1);
+				if(this->tPadLeft >= 40) this->tPadLeft++;
 				if(this->tPadLeft >= 50) this->tPadLeft++;
 				if(this->tPadLeft >= 60) this->tPadLeft++;
 				break;
 
 			case 3:
 				this->tPadRight = this->CalculatingTSensor(IfcVipTemperature_PadHeater2);
+				if(this->tPadRight >= 40) this->tPadRight++;
 				if(this->tPadRight >= 50) this->tPadRight++;
 				if(this->tPadRight >= 60) this->tPadRight++;
 				break;
@@ -519,88 +521,84 @@ s8 TTaskHAL::CalculatingTSensor(EIfcVipTemperature ifcVipTemperature)
 	taskEXIT_CRITICAL();
 
 
-	if(adcTSensor < TASK_HAL_TS_0_DEG_C)
+	if(adcTSensor > TASK_HAL_TH_0_DEG_C)
 	{
 		return(-1);
 	}
 
-	if(adcTSensor > TASK_HAL_TS_75_DEG_C)
+	if(adcTSensor < TASK_HAL_TH_75_DEG_C)
 	{
 		return(80);
 	}
 
-	if(adcTSensor > TASK_HAL_TS_70_DEG_C)
+
+	if(adcTSensor > TASK_HAL_TH_5_DEG_C)
 	{
-		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TS_70_DEG_C));
+		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TH_5_DEG_C));
 	}
 
-	if(adcTSensor > TASK_HAL_TS_65_DEG_C)
+	if(adcTSensor > TASK_HAL_TH_10_DEG_C)
 	{
-		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TS_65_DEG_C));
+		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TH_10_DEG_C));
 	}
 
-	if(adcTSensor > TASK_HAL_TS_60_DEG_C)
+	if(adcTSensor > TASK_HAL_TH_15_DEG_C)
 	{
-		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TS_60_DEG_C));
+		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TH_15_DEG_C));
 	}
 
-	if(adcTSensor > TASK_HAL_TS_55_DEG_C)
+	if(adcTSensor > TASK_HAL_TH_20_DEG_C)
 	{
-		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TS_55_DEG_C));
+		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TH_20_DEG_C));
 	}
 
-	if(adcTSensor > TASK_HAL_TS_50_DEG_C)
+	if(adcTSensor > TASK_HAL_TH_25_DEG_C)
 	{
-		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TS_50_DEG_C));
+		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TH_25_DEG_C));
 	}
 
-	if(adcTSensor > TASK_HAL_TS_45_DEG_C)
+	if(adcTSensor > TASK_HAL_TH_30_DEG_C)
 	{
-		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TS_45_DEG_C));
+		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TH_30_DEG_C));
 	}
 
-	if(adcTSensor > TASK_HAL_TS_40_DEG_C)
+	if(adcTSensor > TASK_HAL_TH_35_DEG_C)
 	{
-		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TS_40_DEG_C));
+		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TH_35_DEG_C));
 	}
 
-	if(adcTSensor > TASK_HAL_TS_35_DEG_C)
+	if(adcTSensor > TASK_HAL_TH_40_DEG_C)
 	{
-		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TS_35_DEG_C));
+		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TH_40_DEG_C));
 	}
 
-	if(adcTSensor > TASK_HAL_TS_30_DEG_C)
+	if(adcTSensor > TASK_HAL_TH_45_DEG_C)
 	{
-		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TS_30_DEG_C));
+		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TH_45_DEG_C));
 	}
 
-	if(adcTSensor > TASK_HAL_TS_25_DEG_C)
+	if(adcTSensor > TASK_HAL_TH_50_DEG_C)
 	{
-		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TS_25_DEG_C));
+		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TH_50_DEG_C));
 	}
 
-	if(adcTSensor > TASK_HAL_TS_20_DEG_C)
+	if(adcTSensor > TASK_HAL_TH_55_DEG_C)
 	{
-		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TS_20_DEG_C));
+		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TH_55_DEG_C));
 	}
 
-	if(adcTSensor > TASK_HAL_TS_15_DEG_C)
+	if(adcTSensor > TASK_HAL_TH_60_DEG_C)
 	{
-		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TS_15_DEG_C));
+		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TH_60_DEG_C));
 	}
 
-	if(adcTSensor > TASK_HAL_TS_10_DEG_C)
+	if(adcTSensor > TASK_HAL_TH_65_DEG_C)
 	{
-		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TS_10_DEG_C));
-	}
-
-	if(adcTSensor > TASK_HAL_TS_5_DEG_C)
-	{
-		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TS_5_DEG_C));
+		return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TH_65_DEG_C));
 	}
 
 
-	return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TS_0_DEG_C));
+	return(this->CalculatingTSensorDigC(adcTSensor, TASK_HAL_TH_70_DEG_C));
 }
 //=== end CalculatingTSensor =======================================================
 
@@ -619,79 +617,79 @@ s8 TTaskHAL::CalculatingTSensorDigC(u16 localAdcTHeater, u16 adcLowLevel)
 
 	switch(adcLowLevel)
 	{
-		case TASK_HAL_TS_0_DEG_C:
-			adcHighLevel = TASK_HAL_TS_5_DEG_C;
+		case TASK_HAL_TH_5_DEG_C:
+			adcHighLevel = TASK_HAL_TH_0_DEG_C;
 			lowLevelT = 0;
 			break;
 
-		case TASK_HAL_TS_5_DEG_C:
-			adcHighLevel = TASK_HAL_TS_10_DEG_C;
+		case TASK_HAL_TH_10_DEG_C:
+			adcHighLevel = TASK_HAL_TH_5_DEG_C;
 			lowLevelT = 5;
 			break;
 
-		case TASK_HAL_TS_10_DEG_C:
-			adcHighLevel = TASK_HAL_TS_15_DEG_C;
+		case TASK_HAL_TH_15_DEG_C:
+			adcHighLevel = TASK_HAL_TH_10_DEG_C;
 			lowLevelT = 10;
 			break;
 
-		case TASK_HAL_TS_15_DEG_C:
-			adcHighLevel = TASK_HAL_TS_20_DEG_C;
+		case TASK_HAL_TH_20_DEG_C:
+			adcHighLevel = TASK_HAL_TH_15_DEG_C;
 			lowLevelT = 15;
 			break;
 
-		case TASK_HAL_TS_20_DEG_C:
-			adcHighLevel = TASK_HAL_TS_25_DEG_C;
+		case TASK_HAL_TH_25_DEG_C:
+			adcHighLevel = TASK_HAL_TH_20_DEG_C;
 			lowLevelT = 20;
 			break;
 
-		case TASK_HAL_TS_25_DEG_C:
-			adcHighLevel = TASK_HAL_TS_30_DEG_C;
+		case TASK_HAL_TH_30_DEG_C:
+			adcHighLevel = TASK_HAL_TH_25_DEG_C;
 			lowLevelT = 25;
 			break;
 
-		case TASK_HAL_TS_30_DEG_C:
-			adcHighLevel = TASK_HAL_TS_35_DEG_C;
+		case TASK_HAL_TH_35_DEG_C:
+			adcHighLevel = TASK_HAL_TH_30_DEG_C;
 			lowLevelT = 30;
 			break;
 
-		case TASK_HAL_TS_35_DEG_C:
-			adcHighLevel = TASK_HAL_TS_40_DEG_C;
+		case TASK_HAL_TH_40_DEG_C:
+			adcHighLevel = TASK_HAL_TH_35_DEG_C;
 			lowLevelT = 35;
 			break;
 
-		case TASK_HAL_TS_40_DEG_C:
-			adcHighLevel = TASK_HAL_TS_45_DEG_C;
+		case TASK_HAL_TH_45_DEG_C:
+			adcHighLevel = TASK_HAL_TH_40_DEG_C;
 			lowLevelT = 40;
 			break;
 
-		case TASK_HAL_TS_45_DEG_C:
-			adcHighLevel = TASK_HAL_TS_50_DEG_C;
+		case TASK_HAL_TH_50_DEG_C:
+			adcHighLevel = TASK_HAL_TH_45_DEG_C;
 			lowLevelT = 45;
 			break;
 
-		case TASK_HAL_TS_50_DEG_C:
-			adcHighLevel = TASK_HAL_TS_55_DEG_C;
+		case TASK_HAL_TH_55_DEG_C:
+			adcHighLevel = TASK_HAL_TH_50_DEG_C;
 			lowLevelT = 50;
 			break;
 
-		case TASK_HAL_TS_55_DEG_C:
-			adcHighLevel = TASK_HAL_TS_60_DEG_C;
+		case TASK_HAL_TH_60_DEG_C:
+			adcHighLevel = TASK_HAL_TH_55_DEG_C;
 			lowLevelT = 55;
 			break;
 
-		case TASK_HAL_TS_60_DEG_C:
-			adcHighLevel = TASK_HAL_TS_65_DEG_C;
+		case TASK_HAL_TH_65_DEG_C:
+			adcHighLevel = TASK_HAL_TH_60_DEG_C;
 			lowLevelT = 60;
 			break;
 
-		case TASK_HAL_TS_65_DEG_C:
-			adcHighLevel = TASK_HAL_TS_70_DEG_C;
+		case TASK_HAL_TH_70_DEG_C:
+			adcHighLevel = TASK_HAL_TH_65_DEG_C;
 			lowLevelT = 65;
 			break;
 
 
-		default:  // TASK_HAL_TS_70_DEG_C
-			adcHighLevel = TASK_HAL_TS_75_DEG_C;
+		default:  // TASK_HAL_TS_75_DEG_C
+			adcHighLevel = TASK_HAL_TH_70_DEG_C;
 			lowLevelT = 70;
 			break;
 	}
@@ -699,22 +697,22 @@ s8 TTaskHAL::CalculatingTSensorDigC(u16 localAdcTHeater, u16 adcLowLevel)
 	rangeAdc = adcHighLevel - adcLowLevel;
 	rangeAdc /= 5;
 
-	if(localAdcTHeater <= (adcLowLevel + rangeAdc))
+	if(localAdcTHeater >= (adcLowLevel + rangeAdc * 4))
 	{
 		return(lowLevelT);
 	}
 
-	if(localAdcTHeater <= (adcLowLevel + rangeAdc * 2))
+	if(localAdcTHeater >= (adcLowLevel + rangeAdc * 3))
 	{
 		return(lowLevelT + 1);
 	}
 
-	if(localAdcTHeater <= (adcLowLevel + rangeAdc * 3))
+	if(localAdcTHeater >= (adcLowLevel + rangeAdc * 2))
 	{
 		return(lowLevelT + 2);
 	}
 
-	if(localAdcTHeater <= (adcLowLevel + rangeAdc * 4))
+	if(localAdcTHeater >= (adcLowLevel + rangeAdc))
 	{
 		return(lowLevelT + 3);
 	}
@@ -989,6 +987,37 @@ void TTaskHAL::HandlerGpioInterrupt(u16 gpioPin)
 	if(gpioPin == AC_MAIN_Pin)
 	{
 		this->counterAcMain++;
+
+/*		if(this->PadHeaterLeft.GetPwm() > this->counterPwmHeater)
+		{
+			this->PadHeaterLeft.PulseOn();
+		}
+		else
+		{
+			this->PadHeaterLeft.PulseOff();
+		} */
+
+		if(this->acPhase)
+		{
+			this->counterPwmHeater++;
+
+			if(this->counterPwmHeater >= TASK_HAL_AC_MAX_PWM_HEATER)
+			{
+				this->counterPwmHeater = 0;
+			}
+		}
+
+		this->acPhase = !this->acPhase;
+
+		if(this->flagStartMainMotor)
+		{
+			HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_SET);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_RESET);
+		}
+
 	}
 
 	if(gpioPin == AC_MOTOR_Pin)
@@ -996,35 +1025,11 @@ void TTaskHAL::HandlerGpioInterrupt(u16 gpioPin)
 		this->counterAcMotor++;
 	}
 
-	if(this->flagStartMainMotor)
-	{
-		HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_SET);
-	}
-	else
-	{
-		HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_RESET);
-	}
 
-	if(this->PadHeaterLeft.GetPwm() > this->counterPwmHeater)
-	{
-		this->PadHeaterLeft.PulseOn();
-	}
-	else
-	{
-		this->PadHeaterLeft.PulseOff();
-	}
 
-	if(this->acPhase)
-	{
-		this->counterPwmHeater++;
 
-		if(this->counterPwmHeater >= TASK_HAL_AC_MAX_PWM_HEATER)
-		{
-			this->counterPwmHeater = 0;
-		}
-	}
 
-	this->acPhase = !this->acPhase;
+
 }
 //=== end HandlerGpioInterrupt =====================================================
 
@@ -1193,6 +1198,9 @@ EOsResult TTaskHAL::Init(void)
 	this->PtcHeaterRight.Init(Heater_PtcHeaterRight);
 	this->PadHeaterLeft.Init(Heater_PadHeaterLeft);
 	this->PadHeaterRight.Init(Heater_PadHeaterRight);
+
+	this->PtcFanLeft.Init(PtcFan_Left);
+	this->PtcFanRight.Init(PtcFan_Right);
 
 
 	return(OsResult_Ok);

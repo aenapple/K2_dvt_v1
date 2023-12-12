@@ -18,6 +18,8 @@
 #include "InterfaceVIP.hpp"
 #include "Heater.hpp"
 #include "MotorMain.hpp"
+#include "PtcFan.hpp"
+#include "MotorChamber.hpp"
 
 
 /**********************************************************************************/
@@ -53,40 +55,22 @@
 
 /**********************************************************************************/
 ///// VREF = 2.5V - Heater temperature sensor //////
-#define TASK_HAL_TH_0_DEG_C   585   // 0.357V
-#define TASK_HAL_TH_5_DEG_C   693   // 0.423V
-#define TASK_HAL_TH_10_DEG_C  826   // 0.504V
-#define TASK_HAL_TH_15_DEG_C  968   // 0.591V
-#define TASK_HAL_TH_20_DEG_C  1119  // 0.683V
-#define TASK_HAL_TH_25_DEG_C  1279  // 0.781V
-#define TASK_HAL_TH_30_DEG_C  1448  // 0.884V
-#define TASK_HAL_TH_35_DEG_C  1620  // 0.989V
-#define TASK_HAL_TH_40_DEG_C  1794  // 1.095V
-#define TASK_HAL_TH_45_DEG_C  1969  // 1.202V
-#define TASK_HAL_TH_50_DEG_C  2140  // 1.306V
-#define TASK_HAL_TH_55_DEG_C  2303  // 1.406V
-#define TASK_HAL_TH_60_DEG_C  2461  // 1.502V
-#define TASK_HAL_TH_65_DEG_C  2610  // 1.593V
-#define TASK_HAL_TH_70_DEG_C  2749  // 1.678V
-#define TASK_HAL_TH_75_DEG_C  2877  // 1.756V
-
-///// VREF = 2.5V - other temperature sensors //////
-#define TASK_HAL_TS_0_DEG_C   515   // 0.315V
-#define TASK_HAL_TS_5_DEG_C   640   // 0.391V
-#define TASK_HAL_TS_10_DEG_C  783   // 0.478V
-#define TASK_HAL_TS_15_DEG_C  943   // 0.576V
-#define TASK_HAL_TS_20_DEG_C  1120  // 0.684V
-#define TASK_HAL_TS_25_DEG_C  1309  // 0.799V
-#define TASK_HAL_TS_30_DEG_C  1509  // 0.921V
-#define TASK_HAL_TS_35_DEG_C  1713  // 1.046V
-#define TASK_HAL_TS_40_DEG_C  1918  // 1.171V
-#define TASK_HAL_TS_45_DEG_C  2121  // 1.295V
-#define TASK_HAL_TS_50_DEG_C  2316  // 1.414V
-#define TASK_HAL_TS_55_DEG_C  2503  // 1.528V
-#define TASK_HAL_TS_60_DEG_C  2676  // 1.634V
-#define TASK_HAL_TS_65_DEG_C  2837  // 1.732V
-#define TASK_HAL_TS_70_DEG_C  2983  // 1.821V
-#define TASK_HAL_TS_75_DEG_C  3114  // 1.901V
+#define TASK_HAL_TH_0_DEG_C   3579  // 2.185V
+#define TASK_HAL_TH_5_DEG_C   3454  // 2.109V
+#define TASK_HAL_TH_10_DEG_C  3312  // 2.022V
+#define TASK_HAL_TH_15_DEG_C  3151  // 1.924V
+#define TASK_HAL_TH_20_DEG_C  2974  // 1.816V
+#define TASK_HAL_TH_25_DEG_C  2786  // 1.701V
+#define TASK_HAL_TH_30_DEG_C  2586  // 1.579V
+#define TASK_HAL_TH_35_DEG_C  2381  // 1.454V
+#define TASK_HAL_TH_40_DEG_C  2175  // 1.328V
+#define TASK_HAL_TH_45_DEG_C  1972  // 1.204V
+#define TASK_HAL_TH_50_DEG_C  1777  // 1.085V
+#define TASK_HAL_TH_55_DEG_C  1592  // 0.972V
+#define TASK_HAL_TH_60_DEG_C  1418  // 0.866V
+#define TASK_HAL_TH_65_DEG_C  1256  // 0.767V
+#define TASK_HAL_TH_70_DEG_C  1112  // 0.679V
+#define TASK_HAL_TH_75_DEG_C  981   // 0.599V
 
 
 /**********************************************************************************/
@@ -181,6 +165,17 @@ public:
 	void StopMainMotor(void);
 	void BrakeOnMainMotor(void);
 	void BrakeOffMainMotor(void);
+
+	TPtcFan PtcFanLeft;
+	TPtcFan PtcFanRight;
+
+	THeater PtcHeaterLeft;
+	THeater PtcHeaterRight;
+	THeater PadHeaterLeft;
+	THeater PadHeaterRight;
+
+	TMotorChamber MotorChamberLeft;
+	TMotorChamber MotorChamberRight;
 	// DEBUG
 
 
@@ -243,10 +238,10 @@ private:
 	u16 lastTPadLeft[2];
 	u16 lastTPadRight[2];
 
-	THeater PtcHeaterLeft;
+/*	THeater PtcHeaterLeft;
 	THeater PtcHeaterRight;
 	THeater PadHeaterLeft;
-	THeater PadHeaterRight;
+	THeater PadHeaterRight; */
 
 
 	////// constants //////
