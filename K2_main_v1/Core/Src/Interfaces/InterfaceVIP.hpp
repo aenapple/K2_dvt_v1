@@ -76,6 +76,8 @@ enum EIfcVipState
 	IfcVipState_Phase0 = 0x0A,
 	IfcVipState_Phase1 = 0x0B,
 	IfcVipState_Phase2 = 0x0C,
+	IfcVipState_TopRemoved = 0x0D,
+	IfcVipState_LidOpen = 0x0E,
 
 
 	IfcVipState_Error = 0xFF,
@@ -102,6 +104,7 @@ enum EIfcVipError
 	IfcVipError_CriticalGasLevel = 0x0F,
 	IfcVipError_PtcHeater1 = 0x10,
 	IfcVipError_PtcHeater2 = 0x11,
+	IfcVipError_MainAc = 0x12,
 };
 
 

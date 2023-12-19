@@ -34,6 +34,8 @@
 // #define TASK_HAL_EVT_NEW_RPM_READY     (1<<2)
 #define TASK_HAL_EVENT_T_READY     (1<<5)
 
+#define TASK_HAL_CMD_SELF_TEST  (1<<6)
+
 
 #define TASK_HAL_MAX_NUMBER_COMMANDS  10
 #define TASK_HAL_SIZE_PARAM_COMMANDS  (1 + IFC_VIP_UART_SIZE_DATA)  // command 1 byte + data 14 bytes
@@ -114,6 +116,7 @@ public:
 	EOsResult SendSysCommand(TSysCommand* sysCommand);
 	u16 GetAdcValue(EAdcChannel adcChannel);
 	s8 GetTemperature(EIfcVipTemperature ifcVipTemperature);
+	void TurnOnHeater(EIfcVipHeater ifcVipHeater, EHeaterPwm heaterPwm);
 
 
 	void HandlerGpioInterrupt(u16 gpioPin);
@@ -166,6 +169,9 @@ public:
 	void BrakeOnMainMotor(void);
 	void BrakeOffMainMotor(void);
 
+	void TurnOnHeater(EHeater heater, EHeaterPwm heaterPwm);
+	void TurnOffHeater(EHeater heater);
+
 	TPtcFan PtcFanLeft;
 	TPtcFan PtcFanRight;
 
@@ -214,15 +220,22 @@ private:
 //	u8 pwmAcPadHeater;
 //	u8 pwmAcPtcHeater;
 	u8 counterPwmHeater;
-	u8 pwmPtcFan;
 
 	u16 counterTimeAcMeasurement;
 	bool acPhase;
 	u8 counterAcMain;
 	bool flagAcMainPresent;
+	bool flagAcMainTurnedOn;
 	u8 counterAcMotor;
 	bool flagAcMotorPresent;
 	bool flagStartMainMotor;
+
+	bool flagSentEventTopRemoved;
+	bool flagSentEventTopPresent;
+	bool flagSentEventLidOpen;
+	bool flagSentEventLidClosed;
+	bool flagTopUnlocked;
+
 
 	u16 adcTPtcLeft;
 	u32 accumulativeTPtcLeft;
@@ -251,11 +264,18 @@ private:
 	void GetStateTopCpu(void);
 	void GetSensorBme688(void);
 	void ProcessSysCommand(void);
+	void ProcessSelfTest(void);
+	bool CheckTopRemoved(void);
+	bool CheckTopRemovedFromISR();
+	bool CheckLidOpen(void);
+	bool CheckLidOpenFromISR(void);
 	void AdcConversionComplete(void);
 	void CalculatingTSensors(void);
 	s8 CalculatingTSensorDigC(u16 localAdcTHeater, u16 adcLowLevel);
 	s8 CalculatingTSensor(EIfcVipTemperature ifcVipTemperature);
 	EOsResult SendCommand(EIfcVipCommand command, u8* pBuffer);
+	void ProcessAcPhase(void);
+	void ProcessHeater(void);
 
 	EOsResult ControlMotor(u8* parameters);
 	EOsResult ControlHeater(u8* parameters);

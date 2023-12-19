@@ -10,9 +10,12 @@
 /**********************************************************************************/
 SYS_STATE_TABLE	 (SysState_NoState, IfcVipState_NoState, 0),
 
-SYS_STATE_TABLE	 (SysState_Idle,	IfcVipState_Idle,	0),
-SYS_STATE_TABLE	 (SysState_Init,	IfcVipState_Init,	0),
-SYS_STATE_TABLE	 (SysState_Busy,	IfcVipState_Busy,	0),
+SYS_STATE_TABLE	 (SysState_SelsfTest,	IfcVipState_SelfTest,	0),
+SYS_STATE_TABLE	 (SysState_Idle,		IfcVipState_Idle,		0),
+SYS_STATE_TABLE	 (SysState_Init,		IfcVipState_Init,		0),
+SYS_STATE_TABLE	 (SysState_Busy,		IfcVipState_Busy,		0),
+SYS_STATE_TABLE	 (SysState_TopRemoved,	IfcVipState_TopRemoved,	0),
+SYS_STATE_TABLE	 (SysState_LidOpen,		IfcVipState_LidOpen,	0),
 
 
 SYS_STATE_TABLE	 (SysError_Start,	IfcVipState_Error, 0),
@@ -24,6 +27,8 @@ SYS_STATE_TABLE	 (SysError_ApplicationError,  	IfcVipError_Application,		TASK_SY
 SYS_STATE_TABLE	 (SysError_I2cErrorChannel1,  	IfcVipError_I2c1,	TASK_SYS_ERROR_I2C1),
 SYS_STATE_TABLE	 (SysError_I2cErrorChannel2,  	IfcVipError_I2c2,	TASK_SYS_ERROR_I2C2),
 SYS_STATE_TABLE	 (SysError_UartErrorChannel,  	IfcVipError_Uart,	TASK_SYS_ERROR_UART),
+
+SYS_STATE_TABLE	 (SysError_MainAc,  	IfcVipError_MainAc,	TASK_SYS_ERROR_MAIN_AC),
 
 
 

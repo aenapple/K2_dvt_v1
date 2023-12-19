@@ -12,7 +12,7 @@
 
 #ifdef __DEBUG
 //	#define __DEBUG_SYS_OUTPUT_ENABLED
-
+//	#define __DEBUG_CONTROL_HEATER
 
 #endif
 

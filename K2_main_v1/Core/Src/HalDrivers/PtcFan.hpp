@@ -20,6 +20,20 @@ enum EPtcFan
 	PtcFan_Right,
 };
 
+enum EPtcFanPwm
+{
+	PtcFanPwm_0 = 0,    // 0% speed
+	PtcFanPwm_50 = 1,   // 50% spedd
+	PtcFanPwm_66 = 2,   // 66% speed
+	PtcFanPwm_100 = 3,  // 100% speed
+};
+
+enum EPtcFanMaxPwm
+{
+	PtcFanMaxPwm_50 = 2,     // for 0% and 50% speed
+	PtcFanMaxPwm_66_100 = 3, // for 66% and 100% speed
+};
+
 
 /**********************************************************************************/
 //==================================================================================
@@ -34,8 +48,15 @@ public:
 
 	////// functions //////
 	void Init(EPtcFan ptcFan);
-	void Start(u8 pwm);
+	void Start(EPtcFanPwm ptcFanPwm, EPtcFanMaxPwm ptcFanMaxPwm);
 	void Stop(void);
+	void PulseOn(void);
+	void PulseOff(void);
+	u8 GetPwm(void);
+	u8 GetMaxPwm(void);
+	u8 GetCounterPwm(void);
+	void IncrementCounterPwm(void);
+	void ClearCounterPwm(void);
 
 
 
@@ -52,15 +73,17 @@ protected:
 private:
     ////// variables //////
 	u8 pwm;
-	bool pwmStarted;
-	TIM_HandleTypeDef* pTimer;
-	u32 channel;
+	u8 maxPwm;
+	u8 counterPwm;
+	GPIO_TypeDef *GPIOx;
+	u16 GPIO_Pin;
 
 
     ////// constants //////
 
 
     ////// functions //////
+
 
 
 };

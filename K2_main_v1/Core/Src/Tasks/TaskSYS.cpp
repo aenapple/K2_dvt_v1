@@ -130,7 +130,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 *
 *  @return ... .
 */
-void CreateApplicationTasks(void)
+void CreateApplicationTasks()
 {
 	TaskUI.CreateTaskStatic();
 	TaskHAL.CreateTaskStatic();
@@ -150,9 +150,23 @@ void CreateApplicationTasks(void)
 void TTaskSYS::SetEventTickFromISR(void)
 {
 	this->systemCounter++;
+
+	if(this->counterTimeTickProcess < TASK_SYS_TIME_TICK_PROCESS)
+	{
+		this->counterTimeTickProcess++;
+	}
+	else
+	{
+		this->SetEventsFromISR(TASK_SYS_EVENT_TICK_PROCESS);
+
+		this->counterTimeTickProcess = 0;
+	}
+
 	if(!this->enableTickHook) return;
 
 	TaskHAL.SetEventTickFromISR();
+
+
 
 }
 //=== end SetEventTickFromISR ======================================================
@@ -182,14 +196,17 @@ void TTaskSYS::Run(void)
 
 //	DiagNotice("TaskSYS started!");
 
-//	this->SetSysState(SysState_Idle);
+	this->SetSysState(SysState_Idle);
 
 	while(true)
 	{
 		if(this->EventGroup.WaitOrBits(
-					TASK_SYS_EVENT_UART_RX_CPLT	    |
-					TASK_SYS_EVENT_UART_ERROR	    |
-					TASK_SYS_EVENT_RESET            |
+					TASK_SYS_EVENT_UART_RX_CPLT |
+					TASK_SYS_EVENT_UART_ERROR	|
+					TASK_SYS_EVENT_RESET        |
+					TASK_SYS_EVENT_TOP_REMOVED  |
+					TASK_SYS_EVENT_LID_OPEN     |
+					TASK_SYS_EVENT_TICK_PROCESS |
 					TASK_SYS_EVENT_ERROR,
 					&resultBits,
 					1000  // 1 Sec
@@ -208,8 +225,7 @@ void TTaskSYS::Run(void)
         	this->ProcessRxData();
         }
 
- 		if(((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
- 			|| ((resultBits & TASK_SYS_EVENT_UART_RX_TIMEOUT) > 0))
+ 		if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
        	{
        		this->InterfaceSlaveVIP.ReInit();
        		this->Delay(2);
@@ -223,6 +239,21 @@ void TTaskSYS::Run(void)
  		   	this->Reset();
  		}
 
+ 		if((resultBits & TASK_SYS_EVENT_TOP_REMOVED) > 0)
+ 		{
+ 		   	this->SelfTest();
+ 		}
+
+ 		if((resultBits & TASK_SYS_EVENT_LID_OPEN) > 0)
+ 		{
+ 		   	this->ProcessLidOpen();
+ 		}
+
+ 		if((resultBits & TASK_SYS_EVENT_TICK_PROCESS) > 0)
+ 		{
+ 		   	this->TickProcess();
+ 		}
+
 
 	}  // end while(true)
 
@@ -232,12 +263,107 @@ void TTaskSYS::Run(void)
 
 //==================================================================================
 /**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskSYS::SelfTest()
+{
+	u32 resultBits;
+
+
+	this->ClearEvents(TASK_SYS_EVENT_TOP_PRESENT | TASK_SYS_EVENT_LID_CLOSED);
+	TaskHAL.SetEvents(TASK_HAL_CMD_SELF_TEST);
+	while(true)
+	{
+
+		if(this->EventGroup.WaitOrBits(
+					TASK_SYS_EVENT_UART_RX_CPLT |
+					TASK_SYS_EVENT_UART_ERROR	|
+					TASK_SYS_EVENT_OK           |
+					TASK_SYS_EVENT_TOP_REMOVED  |
+					TASK_SYS_EVENT_TOP_PRESENT  |
+					TASK_SYS_EVENT_LID_OPEN     |
+					TASK_SYS_EVENT_LID_CLOSED   |
+					TASK_SYS_EVENT_ERROR,
+					&resultBits,
+					100
+					) == OsResult_Timeout)
+	    {
+			continue;
+	    }
+
+		if((resultBits & TASK_SYS_EVENT_OK) > 0)
+		{
+		   	break;  // Self Test - OK
+		}
+
+		if((resultBits & TASK_SYS_EVENT_TOP_REMOVED) > 0)
+		{
+		   	this->SetSysState(SysState_TopRemoved);
+		}
+
+		if((resultBits & TASK_SYS_EVENT_TOP_PRESENT) > 0)
+		{
+			TaskHAL.SetEvents(TASK_HAL_CMD_SELF_TEST);
+			this->SetSysState(SysState_SelsfTest);
+		}
+
+		if((resultBits & TASK_SYS_EVENT_LID_OPEN) > 0)
+		{
+		   	this->SetSysState(SysState_LidOpen);
+		}
+
+		if((resultBits & TASK_SYS_EVENT_LID_CLOSED) > 0)
+		{
+			TaskHAL.SetEvents(TASK_HAL_CMD_SELF_TEST);
+			this->SetSysState(SysState_SelsfTest);
+		}
+
+	    if((resultBits & TASK_SYS_EVENT_ERROR) > 0)
+	    {
+	       	this->SetEvents(TASK_SYS_EVENT_ERROR);
+	    	return;
+	    }
+
+	    if((resultBits & TASK_SYS_EVENT_UART_RX_CPLT) > 0)
+	    {
+	    	this->ProcessRxData();
+	    }
+
+	    if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
+	    {
+	    	this->InterfaceSlaveVIP.ReInit();
+	    	this->StartRxData();
+       	}
+
+
+
+	}
+
+}
+//=== end SelfTest =================================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskSYS::ProcessLidOpen()
+{
+
+}
+//=== end ProcessLidOpen ===========================================================
+
+//==================================================================================
+/**
 *  Todo: function description.
 *
 *  @return
 *  		none.
 */
-void TTaskSYS::InitProcessError(void)
+void TTaskSYS::InitProcessError()
 {
 	this->ProcessError();
 }
@@ -250,7 +376,7 @@ void TTaskSYS::InitProcessError(void)
 *  @return
 *  		none.
 */
-void TTaskSYS::ProcessError(void)
+void TTaskSYS::ProcessError()
 {
 	TaskUI.SetState(TASK_UI_EVENT_ERROR);
 
@@ -273,7 +399,7 @@ void TTaskSYS::ProcessError(void)
 *  @return
 *  		none.
 */
-void TTaskSYS::ProcessRxData(void)
+void TTaskSYS::ProcessRxData()
 {
 	EOsResult result;
 	u8 data[IFC_VIP_UART_SIZE_DATA];
@@ -401,7 +527,14 @@ void TTaskSYS::ProcessRxData(void)
 //			break;
 
 		case IfcVipCommand_Reset:
-			this->SetEvents(TASK_SYS_EVENT_RESET);
+			if(this->sysState == SysState_Idle)
+			{
+				this->SetEvents(TASK_SYS_EVENT_RESET);
+			}
+			else
+			{
+				command = IfcVipCommand_nAck;
+			}
 			break;
 
 		case IfcVipCommand_ControlLamp:
@@ -780,11 +913,25 @@ EOsResult TTaskSYS::GetStateHeater(EIfcVipCommand ifcVipCommand, u8* pData)
 *  @return
 *  		none.
 */
-void TTaskSYS::Reset(void)
+void TTaskSYS::Reset()
 {
 
 }
 //=== end Reset ====================================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return
+*  		none.
+*/
+void TTaskSYS::TickProcess()
+{
+	TaskChmLeft.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
+	TaskChmRight.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
+}
+//=== end TickProcess ==============================================================
 
 //==================================================================================
 /**
@@ -953,16 +1100,21 @@ void TTaskSYS::SetSysState(ESysState sysState)
 
 		case SysState_Init:
 		case SysState_Busy:
+		case SysState_SelsfTest:
 			uiEvent = TASK_UI_EVENT_INIT;
 			break;
 
+		case SysState_TopRemoved:
+		case SysState_LidOpen:
+			uiEvent = TASK_UI_EVENT_TOP_REMOVED;
+			break;
 
-		default:
-		// SysState_NoState:
-			return;
+
+		default: // SysState_NoState:
+			uiEvent = TASK_UI_NO_STATE;
 	}
 
-	TaskUI.SetEvents(uiEvent);
+	TaskUI.SetState(uiEvent);
 
 }
 //=== end SetSysState ==============================================================
@@ -1058,26 +1210,68 @@ TTaskSYS::TimeSystem TTaskSYS::GetTimeSystem(void)
 EOsResult TTaskSYS::Init(void)
 {
 	EOsResult result;
+//	u32 resultBits;
+
 
 	this->systemCounter = 0;
+	this->counterTimeTickProcess = 0;
 
 	TaskUI.Init();
 	TaskUI.SetEvents(TASK_UI_CMD_START);
-//	this->SetSysState(SysState_NoState);
+	this->SetSysState(SysState_NoState);
 
 	this->Delay(10);
 
-	TaskUI.SetState(TASK_UI_EVENT_INIT);
+	TaskHAL.Init();
+	TaskHAL.SetEvents(TASK_HAL_CMD_START);
+	this->enableTickHook = true;
 
+	this->SetSysState(SysState_Init);
+	this->InterfaceSlaveVIP.Init(huart1, USART1);
+	this->InterfaceSlaveVIP.ReInit();
+   	this->StartRxData();
+
+   	this->SelfTest();
 
 	// DEBUG
-	TaskHAL.MotorMain.Init();
-	this->enableTickHook = true;
-	TaskHAL.SetEvents(TASK_HAL_CMD_START);
-	while(true)
-	{
+//	while(true)
+//	{
 //		TaskHAL.AcPowerOn();
 //		this->Delay(1000);
+
+
+/*		TaskHAL.TurnOnHeater(Heater_PtcHeaterRight, HeaterPwm_50);
+		this->Delay(10000);
+		TaskHAL.TurnOffHeater(Heater_PtcHeaterRight);
+		this->Delay(10000);
+		TaskHAL.TurnOnHeater(Heater_PtcHeaterRight, HeaterPwm_100);
+		this->Delay(10000);
+		TaskHAL.TurnOffHeater(Heater_PtcHeaterRight);
+		this->Delay(10000);
+
+		TaskHAL.MotorChamberLeft.StartForward();
+		this->Delay(10000);
+		TaskHAL.MotorChamberLeft.Stop();
+		this->Delay(100);
+		TaskHAL.MotorChamberLeft.StartBackward();
+		this->Delay(10000);
+		TaskHAL.MotorChamberLeft.Stop();
+		this->Delay(100);
+
+		TaskHAL.MotorChamberRight.StartForward();
+		this->Delay(10000);
+		TaskHAL.MotorChamberRight.Stop();
+		this->Delay(100);
+		TaskHAL.MotorChamberRight.StartBackward();
+		this->Delay(10000);
+		TaskHAL.MotorChamberRight.Stop();
+		this->Delay(100); */
+
+
+/*		HAL_GPIO_WritePin(PTC2_FAN2_GPIO_Port, PTC2_FAN2_Pin, GPIO_PIN_SET);
+		this->Delay(5000);
+		HAL_GPIO_WritePin(PTC2_FAN2_GPIO_Port, PTC2_FAN2_Pin, GPIO_PIN_RESET);
+		this->Delay(5000); */
 
 
 		// TaskHAL.MotorMain.StartForward();
@@ -1104,28 +1298,21 @@ EOsResult TTaskSYS::Init(void)
 //		this->Delay(20000);
 
 
-		TaskHAL.AcPowerOff();
-		this->Delay(20000);
-	}
+//		TaskHAL.AcPowerOff();
+//		this->Delay(1000);
+//	}
 	// DEBUG
 
 
 
 
 
-	this->InterfaceSlaveVIP.Init(huart1, USART1);
-
-	TaskHAL.SetEvents(TASK_HAL_CMD_START);
 
 
 
-	this->Delay(1000);
-	TaskUI.SetState(TASK_UI_EVENT_IDLE);
-	// DEBUG
 
 
-	this->enableTickHook = true;
-	this->Delay(100);
+
 
 
 

@@ -75,6 +75,10 @@ void Error_Handler(void);
 #define PTC1_ON_GPIO_Port GPIOC
 #define PTC2_ON_Pin GPIO_PIN_3
 #define PTC2_ON_GPIO_Port GPIOC
+#define PTC1_FAN2_Pin GPIO_PIN_6
+#define PTC1_FAN2_GPIO_Port GPIOA
+#define PTC2_FAN2_Pin GPIO_PIN_7
+#define PTC2_FAN2_GPIO_Port GPIOA
 #define S_ROTATION_Pin GPIO_PIN_0
 #define S_ROTATION_GPIO_Port GPIOB
 #define RED_LED_Pin GPIO_PIN_11

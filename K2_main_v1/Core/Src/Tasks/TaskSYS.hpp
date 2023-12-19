@@ -24,7 +24,16 @@
 #define TASK_SYS_EVENT_UART_ERROR         (1<<3)
 #define TASK_SYS_EVENT_RESET              (1<<5)
 
+#define TASK_SYS_EVENT_TOP_REMOVED   (1<<6)
+#define TASK_SYS_EVENT_TOP_PRESENT   (1<<7)
+#define TASK_SYS_EVENT_LID_OPEN      (1<<8)
+#define TASK_SYS_EVENT_LID_CLOSED    (1<<9)
+#define TASK_SYS_EVENT_TICK_PROCESS  (1<<10)
+
+
+#define TASK_SYS_EVENT_OK     (1<<14)
 #define TASK_SYS_EVENT_ERROR  (1<<15)
+
 
 
 #define TASK_SYS_SIZE_VERSION_STRING  16
@@ -37,6 +46,7 @@
 #define TASK_SYS_ERROR_I2C1         4
 #define TASK_SYS_ERROR_I2C2         4
 #define TASK_SYS_ERROR_UART         5
+#define TASK_SYS_ERROR_MAIN_AC      6
 
 
 #define TASK_SYS_ADDRESS_APPLICATION  0x800C000
@@ -68,6 +78,16 @@
 
 #define TASK_SYS_LAMP_LEFT   (1<<0)
 #define TASK_SYS_LAMP_RIGHT  (1<<2)
+
+
+/**********************************************************************************/
+#define TASK_SYS_TIME_TICK_PROCESS  1000  // 1 Sec
+
+#define TASK_SYS_1_MINUTE   (u32)60
+#define TASK_SYS_10_MINUTES (u32)(10 * TASK_SYS_1_MINUTE)
+#define TASK_SYS_1_HOUR     (u32)(60 * TASK_SYS_1_MINUTE)
+#define TASK_SYS_2_HOURS    (u32)(2 * TASK_SYS_1_HOUR)
+
 
 /**********************************************************************************/
 struct TGetState
@@ -180,6 +200,8 @@ private:
 
     TInterfaceVIP InterfaceSlaveVIP;
 
+    u16 counterTimeTickProcess;
+
 
 	////// constants //////
     static const u8 errorCode[];
@@ -188,6 +210,8 @@ private:
 
 
 	////// functions //////
+    void SelfTest(void);
+    void ProcessLidOpen(void);
     void ProcessError(void);
     void InitProcessError(void);
     void ProcessRxData(void);
@@ -213,6 +237,7 @@ private:
     EOsResult ControlHeater(EIfcVipCommand ifcVipCommand, u8* pData);
     EOsResult GetStateHeater(EIfcVipCommand ifcVipCommand, u8* pData);
     void Reset(void);
+    void TickProcess();
 
 
     void Run(void);

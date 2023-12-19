@@ -19,7 +19,11 @@
 
 
 /**********************************************************************************/
-
+enum EGpioLevel
+{
+	GpioLevel_Low,
+	GpioLevel_High,
+};
 
 
 /**********************************************************************************/
@@ -37,6 +41,10 @@ public:
 	void Init(void);
 	void AcPowerOn(void);
 	void AcPowerOff(void);
+	EGpioLevel ReadTopRemoved(void);
+	EGpioLevel ReadLidOpen(void);
+
+
 	void MainMotorOn(void);
 	void MainMotorOff(void);
 	void MainMotorBrakingOn(void);

@@ -57,7 +57,9 @@ void TTaskUI::Run(void)
         if(this->EventGroup.WaitOrBits(
         			TASK_UI_EVENT_ERROR	|
 					TASK_UI_EVENT_INIT	|
-					TASK_UI_EVENT_IDLE,
+					TASK_UI_NO_STATE    |
+					TASK_UI_EVENT_IDLE  |
+					TASK_UI_EVENT_TOP_REMOVED,
 					&resultBits,
 					1000
 					) == OsResult_Timeout)
@@ -86,6 +88,15 @@ void TTaskUI::Run(void)
         	this->FlashIdle();
         }
 
+        if((resultBits & TASK_UI_EVENT_IDLE) > 0)
+        {
+           	this->LedAllOff();
+        }
+
+        if((resultBits & TASK_UI_EVENT_IDLE) > 0)
+        {
+        	this->FlashTopRemoved();
+        }
         
         
 
@@ -171,6 +182,34 @@ void TTaskUI::FlashIdle(void)
 
 }
 //=== end FlashIdle ================================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskUI::FlashTopRemoved(void)
+{
+	while(true)
+	{
+		this->LedAllOff();
+		if(this->EventGroup.WaitAndBits(TASK_UI_EVENT_NEW_SET_STATE, 200) == OsResult_Ok)
+		{
+			return;
+		}
+
+		this->LedRedOn();
+		if(this->EventGroup.WaitAndBits(TASK_UI_EVENT_NEW_SET_STATE, 200) == OsResult_Ok)
+		{
+			this->LedAllOff();
+			return;
+		}
+
+	}
+
+}
+//=== end FlashTopRemoved ==========================================================
 
 //==================================================================================
 /**

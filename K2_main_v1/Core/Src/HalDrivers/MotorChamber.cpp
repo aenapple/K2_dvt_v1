@@ -73,6 +73,7 @@ void TMotorChamber::StartBackward()
 */
 void TMotorChamber::Stop()
 {
+	HAL_GPIO_WritePin(this->GPIOx_DIR, this->GPIO_Pin_DIR, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(this->GPIOx_ON, this->GPIO_Pin_ON, GPIO_PIN_RESET);
 }
 //=== end Stop =====================================================================

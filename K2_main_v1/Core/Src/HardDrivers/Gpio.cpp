@@ -56,6 +56,44 @@ void TGpio::AcPowerOff()
 *
 *  @return void .
 */
+EGpioLevel TGpio::ReadTopRemoved(void)
+{
+	if(HAL_GPIO_ReadPin(TOP_REMOVED_GPIO_Port, TOP_REMOVED_Pin) == GPIO_PIN_RESET)
+	{
+		return(GpioLevel_Low);
+	}
+	else
+	{
+		return(GpioLevel_High);
+	}
+}
+//=== end ReadTopRemoved ===========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+EGpioLevel TGpio::ReadLidOpen(void)
+{
+	if(HAL_GPIO_ReadPin(LID_OPEN_GPIO_Port, LID_OPEN_Pin) == GPIO_PIN_RESET)
+	{
+		return(GpioLevel_Low);
+	}
+	else
+	{
+		return(GpioLevel_High);
+	}
+}
+//=== end ReadLidOpen ==============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
 void TGpio::MainMotorOn()
 {
 	HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_SET);

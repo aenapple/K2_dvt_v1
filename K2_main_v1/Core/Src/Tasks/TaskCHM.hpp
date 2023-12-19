@@ -24,7 +24,8 @@
 #define TASK_CHM_EVENT_TICK_PROCESS  (1<<5)
 #define TASK_CHM_EVENT_MIXING        (1<<6)
 
-#define TASK_CHM_FLAG_NOT_PRESENT  (1<<7)
+#define TASK_CHM_FLAG_NOT_PRESENT    (1<<7)
+#define TASK_CHM_FLAG_PTC_HEATER_ON  (1<<8)
 
 
 #define TASK_CHM_EVENT_NEW_STATE      (1<<19)
@@ -32,6 +33,11 @@
 #define TASK_CHM_EVENT_ERROR  (1<<20)
 
 
+/**********************************************************************************/
+#define TASK_CHM_PAD_LOW_LEVEL_T   50  // 50C
+#define TASK_CHM_PAD_HIGH_LEVEL_T  55  // 55C
+#define TASK_CHM_PTC_LOW_LEVEL_T   40  // 40C
+#define TASK_CHM_PTC_HIGH_LEVEL_T  45  // 45C
 
 
 /**********************************************************************************/
@@ -69,7 +75,21 @@ public:
 		return(this->taskChmState);
 	}
 	void SetState(u32 event);
-	ETaskChmState GetTaskChmState(void) { return(this->taskChmState); }
+	ETaskChmState GetTaskChmState(void)
+	{
+		return(this->taskChmState);
+	}
+	void StartPtcHeater(u32 workingTime);
+	void SetPtcTemperature(s8 lowLevel, s8 highLevel)
+	{
+		this->ptcHeaterLowLevel = lowLevel;
+		this->ptcHeaterHighLevel = highLevel;
+	}
+	void SetPadTemperature(s8 lowLevel, s8 highLevel)
+	{
+		this->padHeaterLowLevel = lowLevel;
+		this->padHeaterHighLevel = highLevel;
+	}
 
 
 //	void SetEventTickProcessFromISR(void);
@@ -103,6 +123,7 @@ private:
 	s8 ptcHeaterHighLevel;
 	s8 padHeaterLowLevel;
 	s8 padHeaterHighLevel;
+	u32 ptcHeaterTime;
 
 
 	////// constants //////

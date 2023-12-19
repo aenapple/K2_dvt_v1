@@ -178,14 +178,83 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 */
 void TTaskCHM::TickProcess()
 {
+	s8 ptcValueTemperature;
+	s8 padValueTemperature;
+	EHeater ptcHeater;
+	EHeater padHeater;
+
+
+	if(this->ptcHeaterTime > 0)
+	{
+		this->ptcHeaterTime--;
+	}
+	else
+	{
+		this->EventGroup.ClearBits(TASK_CHM_FLAG_PTC_HEATER_ON);
+	}
+
+	if(this->taskChmIndex == TaskChmIndex_Left)
+	{
+		ptcValueTemperature = TaskHAL.GetTemperaturePtcLeft();
+		padValueTemperature = TaskHAL.GetTemperaturePadLeft();
+		ptcHeater = Heater_PtcHeaterLeft;
+		padHeater = Heater_PadHeaterLeft;
+	}
+	else
+	{
+		ptcValueTemperature = TaskHAL.GetTemperaturePtcRight();
+		padValueTemperature = TaskHAL.GetTemperaturePadRight();
+		ptcHeater = Heater_PtcHeaterRight;
+		padHeater = Heater_PadHeaterRight;
+	}
+
+	///// Pad Heater. //////
+	if(padValueTemperature < this->padHeaterLowLevel)
+	{
+		TaskHAL.TurnOnHeater(padHeater, HeaterPwm_100);
+	}
+
+	if(padValueTemperature > this->padHeaterHighLevel)
+	{
+		TaskHAL.TurnOffHeater(padHeater);
+	}
+
+	///// Ptc Heater. //////
+	u32 bits;
+
+	bits = this->EventGroup.GetBits();
+	if((ptcValueTemperature < this->ptcHeaterLowLevel)
+		&& ((bits & TASK_CHM_FLAG_PTC_HEATER_ON) > 0))
+	{
+		TaskHAL.TurnOnHeater(ptcHeater, HeaterPwm_30);
+	}
+
+	if((ptcValueTemperature > this->ptcHeaterHighLevel)
+		|| ((bits & TASK_CHM_FLAG_PTC_HEATER_ON) == 0))
+	{
+		TaskHAL.TurnOffHeater(ptcHeater);
+	}
+
+
 	// todo:
-	// close loop PTC heater
-	// close loop Pad heater
 	// close loop Humidity
 	// close loop level sensor
 	// close loop gas sensor - ???
 }
 //=== end TickProcess ==============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::StartPtcHeater(u32 workingTime)
+{
+	this->ptcHeaterTime = workingTime;
+	this->SetEvents(TASK_CHM_FLAG_PTC_HEATER_ON);
+}
+//=== end StartPtcHeater ===========================================================
 
 //==================================================================================
 /**
@@ -373,6 +442,9 @@ EOsResult TTaskCHM::Init(ETaskChmIndex taskChmIndex)
 
 	this->taskChmIndex = taskChmIndex;
 	this->taskChmState = TaskChmState_Idle;
+
+	this->SetPadTemperature(TASK_CHM_PAD_LOW_LEVEL_T, TASK_CHM_PAD_HIGH_LEVEL_T);
+	this->SetPtcTemperature(TASK_CHM_PTC_LOW_LEVEL_T, TASK_CHM_PTC_HIGH_LEVEL_T);
 
 
 

@@ -21,7 +21,8 @@
 #define TASK_UI_EVENT_NEW_SET_STATE  (1<<2)
 #define TASK_UI_EVENT_INIT           (1<<3)
 #define TASK_UI_EVENT_IDLE           (1<<4)
-
+#define TASK_UI_NO_STATE             (1<<5)
+#define TASK_UI_EVENT_TOP_REMOVED    (1<<6)
 
 
 
@@ -74,6 +75,7 @@ private:
 	////// functions //////
 	void FlashError(void);
 	void FlashIdle(void);
+	void FlashTopRemoved(void);
 	void LedRedOn(void);
 	void LedAllOff(void);
 	u8 GetErrorNumberFlashes(void);

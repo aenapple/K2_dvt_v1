@@ -47,6 +47,7 @@ void THeater::Init(EHeater heater)
 			break;
 	}
 
+	this->pwm = 0;
 
 }
 //=== end Init =====================================================================
@@ -57,19 +58,9 @@ void THeater::Init(EHeater heater)
 *
 *  @return ... .
 */
-void THeater::TurnOn(u8 pwm)
+void THeater::TurnOn(EHeaterPwm heaterPwm)
 {
-	if(pwm >= 90) this->pwm = 9;
-	else if (pwm >= 80) this->pwm = 8;
-	else if (pwm >= 70) this->pwm = 7;
-	else if (pwm >= 60) this->pwm = 6;
-	else if (pwm >= 50) this->pwm = 5;
-	else if (pwm >= 40) this->pwm = 4;
-	else if (pwm >= 30) this->pwm = 3;
-	else if (pwm >= 20) this->pwm = 2;
-	else if (pwm >= 10) this->pwm = 1;
-	else this->pwm = 0;
-
+	this->pwm = heaterPwm;
 }
 //=== end TurnOn ===================================================================
 

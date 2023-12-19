@@ -68,6 +68,10 @@ void TTaskHAL::SetEventTickFromISR(void)
 	}
 	else
 	{
+		////// Input each 100 mSec. //////
+//		this->CheckLidOpenFromISR();
+//		this->CheckTopRemovedFromISR();
+
 		this->counterTimeAcMeasurement = 0;
 
 		if(this->counterAcMain < TASK_HAL_AC_PULSE_NUMBERS)
@@ -127,12 +131,15 @@ void TTaskHAL::Run(void)
 					TASK_HAL_EVENT_UART_RX_CPLT	|
 					TASK_HAL_EVENT_UART_ERROR	|
 					TASK_HAL_EVENT_SYS_COMMAND	|
-					TASK_HAL_EVENT_T_READY,
+					TASK_HAL_EVENT_T_READY      |
+					TASK_HAL_CMD_SELF_TEST,
 					&resultBits,
 					100
 					) == OsResult_Timeout)
         {
             this->GetStateTopCpu();
+            this->CheckTopRemoved();
+            this->CheckLidOpen();
             this->GetSensorBme688();
 
         	continue;
@@ -154,6 +161,11 @@ void TTaskHAL::Run(void)
         if((resultBits & TASK_HAL_EVENT_SYS_COMMAND) > 0)
         {
             this->ProcessSysCommand();
+        }
+
+        if((resultBits & TASK_HAL_CMD_SELF_TEST) > 0)
+        {
+        	this->ProcessSelfTest();
         }
 
         
@@ -305,6 +317,211 @@ void TTaskHAL::ProcessSysCommand(void)
 *
 *  @return void .
 */
+void TTaskHAL::ProcessSelfTest(void)
+{
+	// todo: turn off all - ???
+
+	this->AcPowerOff();
+	this->Delay(200);
+	if(this->flagAcMainPresent)
+	{
+		TaskSYS.SetSysState(SysError_MainAc);  // Error - AC Main is present
+		return;
+	}
+
+	if(this->CheckTopRemoved())
+	{
+		return;
+	}
+
+	if(this->CheckLidOpen())
+	{
+		return;
+	}
+
+
+	// todo:
+	// check present chamber left
+	// check present chamber right
+	// check present tank
+
+
+	this->AcPowerOn();
+	this->Delay(200);
+	if(!this->flagAcMainPresent)
+	{
+		this->AcPowerOff();
+		TaskSYS.SetSysState(SysError_MainAc);  // Error - AC Main is not present
+		return;
+	}
+
+	// todo:
+	// check connection with Top CPU
+	// check unlock Top part
+	// check level sensors
+	// check Bme688 sensor
+	// check lamps
+	// check dam
+	// test Main Fan
+	// test Pad heaters
+	// test PTC heaters and fans
+	// test Main motor
+	// test Chamber motors - ???
+
+
+	TaskSYS.SetEvents(TASK_SYS_EVENT_OK);
+}
+//=== end ProcessSelfTest ==========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+bool TTaskHAL::CheckTopRemoved()
+{
+	if((this->Gpio.ReadTopRemoved() == GpioLevel_High) || (this->flagTopUnlocked))
+	{
+		if(!this->flagSentEventTopRemoved)
+		{
+			this->flagSentEventTopRemoved = true;
+			TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_REMOVED);
+		}
+
+		this->flagSentEventTopPresent = false;
+
+		return(true);
+	}
+	else
+	{
+		if(!this->flagSentEventTopPresent)
+		{
+			this->flagSentEventTopPresent = true;
+			TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_PRESENT);
+		}
+
+		this->flagSentEventTopRemoved = false;
+
+		return(false);
+	}
+
+}
+//=== end CheckTopRemoved ==========================================================
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+bool TTaskHAL::CheckTopRemovedFromISR()
+{
+	if((this->Gpio.ReadTopRemoved() == GpioLevel_High) || (this->flagTopUnlocked))
+	{
+		if(!this->flagSentEventTopRemoved)
+		{
+			this->flagSentEventTopRemoved = true;
+			TaskSYS.SetEventsFromISR(TASK_SYS_EVENT_TOP_REMOVED);
+		}
+
+		this->flagSentEventTopPresent = false;
+
+		return(true);
+	}
+	else
+	{
+		if(!this->flagSentEventTopPresent)
+		{
+			this->flagSentEventTopPresent = true;
+			TaskSYS.SetEventsFromISR(TASK_SYS_EVENT_TOP_PRESENT);
+		}
+
+		this->flagSentEventTopRemoved = false;
+
+		return(false);
+	}
+
+}
+//=== end CheckTopRemovedFromISR ===================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+bool TTaskHAL::CheckLidOpen()
+{
+	if(this->Gpio.ReadLidOpen() == GpioLevel_High)
+	{
+		if(!this->flagSentEventLidOpen)
+		{
+			this->flagSentEventLidOpen = true;
+			TaskSYS.SetEvents(TASK_SYS_EVENT_LID_OPEN);
+		}
+
+		this->flagSentEventLidClosed = false;
+
+		return(true);
+	}
+	else
+	{
+		if(!this->flagSentEventLidClosed)
+		{
+			this->flagSentEventLidClosed = true;
+			TaskSYS.SetEvents(TASK_SYS_EVENT_LID_CLOSED);
+		}
+
+		this->flagSentEventLidOpen = false;
+
+		return(false);
+	}
+
+}
+//=== end CheckLidOpen =============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+bool TTaskHAL::CheckLidOpenFromISR()
+{
+	if(this->Gpio.ReadLidOpen() == GpioLevel_High)
+	{
+		if(!this->flagSentEventLidOpen)
+		{
+			this->flagSentEventLidOpen = true;
+			TaskSYS.SetEventsFromISR(TASK_SYS_EVENT_LID_OPEN);
+		}
+
+		this->flagSentEventLidClosed = false;
+
+		return(true);
+	}
+	else
+	{
+		if(!this->flagSentEventLidClosed)
+		{
+			this->flagSentEventLidClosed = true;
+			TaskSYS.SetEventsFromISR(TASK_SYS_EVENT_LID_CLOSED);
+		}
+
+		this->flagSentEventLidOpen = false;
+
+		return(false);
+	}
+
+}
+//=== end CheckLidOpenFromISR ======================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
 EOsResult TTaskHAL::ControlMotor(u8* parameters)
 {
 
@@ -321,6 +538,72 @@ EOsResult TTaskHAL::ControlMotor(u8* parameters)
 */
 EOsResult TTaskHAL::ControlHeater(u8* parameters)
 {
+	EHeaterPwm heaterPwm;
+
+
+	heaterPwm = (EHeaterPwm)parameters[IFC_VIP_HEATER_CONTROL_INDEX];
+	switch(parameters[IFC_VIP_HEATER_NUMBER_INDEX])
+	{
+		case IfcVipHeater_Ptc1:
+/*			if(heaterPwm < HeaterPwm_10)
+			{
+				this->PtcFanLeft.Stop();
+			}
+			else */
+			{
+				if(heaterPwm < HeaterPwm_60)
+				{
+					this->PtcFanLeft.Start(PtcFanPwm_50, PtcFanMaxPwm_50);
+				}
+				else
+				{
+					if(heaterPwm < HeaterPwm_80)
+					{
+						this->PtcFanLeft.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
+					}
+					else
+					{
+						this->PtcFanLeft.Start(PtcFanPwm_100, PtcFanMaxPwm_66_100);
+					}
+				}
+			}
+			this->PtcHeaterLeft.TurnOn(heaterPwm);
+			break;
+
+		case IfcVipHeater_Ptc2:
+/*			if(heaterPwm < HeaterPwm_10)
+			{
+				this->PtcFanRight.Stop();
+			}
+			else */
+			{
+				if(heaterPwm < HeaterPwm_60)
+				{
+					this->PtcFanRight.Start(PtcFanPwm_50, PtcFanMaxPwm_50);
+				}
+				else
+				{
+					if(heaterPwm < HeaterPwm_80)
+					{
+						this->PtcFanRight.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
+					}
+					else
+					{
+						this->PtcFanRight.Start(PtcFanPwm_100, PtcFanMaxPwm_66_100);
+					}
+				}
+			}
+			this->PtcHeaterRight.TurnOn(heaterPwm);
+			break;
+
+		case IfcVipHeater_Pad1:
+			this->PadHeaterLeft.TurnOn(heaterPwm);
+			break;
+
+		default:  // IfcVipHeater_Pad2
+			this->PadHeaterRight.TurnOn(heaterPwm);
+
+	}
 
 
 	return(OsResult_Ok);
@@ -350,6 +633,7 @@ EOsResult TTaskHAL::ControlLamp(u8* parameters)
 void TTaskHAL::AcPowerOn()
 {
 	this->Gpio.AcPowerOn();
+	this->flagAcMainTurnedOn = true;
 }
 //=== end AcPowerOn ================================================================
 
@@ -362,6 +646,7 @@ void TTaskHAL::AcPowerOn()
 void TTaskHAL::AcPowerOff()
 {
 	this->Gpio.AcPowerOff();
+	this->flagAcMainTurnedOn = false;
 }
 //=== end AcPowerOff ===============================================================
 
@@ -435,6 +720,157 @@ void TTaskHAL::BrakeOffMainMotor()
 	HAL_GPIO_WritePin(BREAK_ON_GPIO_Port, BREAK_ON_Pin, GPIO_PIN_RESET);
 }
 //=== end BrakeOffMainMotor =========================================================
+
+#ifndef __DEBUG_CONTROL_HEATER
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::TurnOnHeater(EHeater heater, EHeaterPwm heaterPwm)
+{
+	TSysCommand SysCommand;
+	EOsResult result;
+
+
+	switch(heater)
+	{
+		case Heater_PtcHeaterLeft:
+			SysCommand.parameters[IFC_VIP_HEATER_NUMBER_INDEX] = IfcVipHeater_Ptc1;
+			break;
+
+		case Heater_PtcHeaterRight:
+			SysCommand.parameters[IFC_VIP_HEATER_NUMBER_INDEX] = IfcVipHeater_Ptc2;
+			break;
+
+		case Heater_PadHeaterLeft:
+			SysCommand.parameters[IFC_VIP_HEATER_NUMBER_INDEX] = IfcVipHeater_Pad1;
+			break;
+
+		case Heater_PadHeaterRight:
+			SysCommand.parameters[IFC_VIP_HEATER_NUMBER_INDEX] = IfcVipHeater_Pad2;
+			break;
+	}
+
+
+	SysCommand.command = SysCommand_ControlHeater;
+	SysCommand.parameters[IFC_VIP_HEATER_CONTROL_INDEX] = heaterPwm;
+
+	result = this->SendSysCommand(&SysCommand);
+	if(result != OsResult_Ok)
+	{
+		// todo: set ERROR
+	}
+
+
+}
+
+//=== end TurnOnHeater =============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::TurnOffHeater(EHeater heater)
+{
+	this->TurnOnHeater(heater, HeaterPwm_0);
+}
+//=== end TurnOffHeater ============================================================
+
+#else
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::TurnOnHeater(EHeater heater, EHeaterPwm heaterPwm)
+{
+	switch(heater)
+	{
+		case Heater_PtcHeaterLeft:
+			if(heaterPwm < HeaterPwm_60)
+			{
+				this->PtcFanLeft.Start(PtcFanPwm_50, PtcFanMaxPwm_50);
+			}
+			else
+			{
+				if(heaterPwm < HeaterPwm_80)
+				{
+					this->PtcFanLeft.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
+				}
+				else
+				{
+					this->PtcFanLeft.Start(PtcFanPwm_100, PtcFanMaxPwm_66_100);
+				}
+			}
+			this->PtcHeaterLeft.TurnOn(heaterPwm);
+			break;
+
+		case Heater_PtcHeaterRight:
+			if(heaterPwm < HeaterPwm_60)
+			{
+				this->PtcFanRight.Start(PtcFanPwm_50, PtcFanMaxPwm_50);
+			}
+			else
+			{
+				if(heaterPwm < HeaterPwm_80)
+				{
+					this->PtcFanRight.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
+				}
+				else
+				{
+					this->PtcFanRight.Start(PtcFanPwm_100, PtcFanMaxPwm_66_100);
+				}
+			}
+			this->PtcHeaterRight.TurnOn(heaterPwm);
+			break;
+
+		case Heater_PadHeaterLeft:
+			this->PadHeaterLeft.TurnOn(heaterPwm);
+			break;
+
+		default:  // Heater_PadHeaterRight
+			this->PadHeaterRight.TurnOn(heaterPwm);
+
+	}
+}
+//=== end TurnOnHeater =============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::TurnOffHeater(EHeater heater)
+{
+	switch(heater)
+	{
+		case Heater_PtcHeaterLeft:
+			this->PtcHeaterLeft.TurnOff();
+			this->PtcFanLeft.Stop();
+			break;
+
+		case Heater_PtcHeaterRight:
+			this->PtcHeaterRight.TurnOff();
+			this->PtcFanRight.Stop();
+			break;
+
+		case Heater_PadHeaterLeft:
+			this->PadHeaterLeft.TurnOff();
+			break;
+
+		default:  // Heater_PadHeaterRight
+			this->PadHeaterRight.TurnOff();
+
+	}
+}
+//=== end TurnOffHeater ============================================================
+#endif
 
 //==================================================================================
 /**
@@ -988,25 +1424,12 @@ void TTaskHAL::HandlerGpioInterrupt(u16 gpioPin)
 	{
 		this->counterAcMain++;
 
-/*		if(this->PadHeaterLeft.GetPwm() > this->counterPwmHeater)
-		{
-			this->PadHeaterLeft.PulseOn();
-		}
-		else
-		{
-			this->PadHeaterLeft.PulseOff();
-		} */
+		this->ProcessHeater();
 
 		if(this->acPhase)
 		{
-			this->counterPwmHeater++;
-
-			if(this->counterPwmHeater >= TASK_HAL_AC_MAX_PWM_HEATER)
-			{
-				this->counterPwmHeater = 0;
-			}
+			this->ProcessAcPhase();
 		}
-
 		this->acPhase = !this->acPhase;
 
 		if(this->flagStartMainMotor)
@@ -1032,6 +1455,104 @@ void TTaskHAL::HandlerGpioInterrupt(u16 gpioPin)
 
 }
 //=== end HandlerGpioInterrupt =====================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskHAL::ProcessAcPhase(void)
+{
+	this->counterPwmHeater++;
+	if(this->counterPwmHeater >= TASK_HAL_AC_MAX_PWM_HEATER)
+	{
+		this->counterPwmHeater = 0;
+	}
+
+	this->PtcFanLeft.IncrementCounterPwm();
+	if(this->PtcFanLeft.GetCounterPwm() >= this->PtcFanLeft.GetMaxPwm())
+	{
+		this->PtcFanLeft.ClearCounterPwm();
+	}
+
+	this->PtcFanRight.IncrementCounterPwm();
+	if(this->PtcFanRight.GetCounterPwm() >= this->PtcFanRight.GetMaxPwm())
+	{
+		this->PtcFanRight.ClearCounterPwm();
+	}
+
+}
+//=== end ProcessAcPhase ===========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskHAL::ProcessHeater()
+{
+	////// Pad Heaters //////
+	if(this->PadHeaterLeft.GetPwm() > this->counterPwmHeater)
+	{
+		this->PadHeaterLeft.PulseOn();
+	}
+	else
+	{
+		this->PadHeaterLeft.PulseOff();
+	}
+
+	if(this->PadHeaterRight.GetPwm() > this->counterPwmHeater)
+	{
+		this->PadHeaterRight.PulseOn();
+	}
+	else
+	{
+		this->PadHeaterRight.PulseOff();
+	}
+
+	////// PTC Heaters //////
+	if(this->PtcHeaterLeft.GetPwm() > this->counterPwmHeater)
+	{
+		this->PtcHeaterLeft.PulseOn();
+	}
+	else
+	{
+		this->PtcHeaterLeft.PulseOff();
+	}
+
+	if(this->PtcHeaterRight.GetPwm() > this->counterPwmHeater)
+	{
+		this->PtcHeaterRight.PulseOn();
+	}
+	else
+	{
+		this->PtcHeaterRight.PulseOff();
+	}
+
+	////// PTC Fans //////
+	if(this->PtcFanLeft.GetPwm() > this->PtcFanLeft.GetCounterPwm())
+	{
+		this->PtcFanLeft.PulseOn();
+	}
+	else
+	{
+		this->PtcFanLeft.PulseOff();
+	}
+
+	if(this->PtcFanRight.GetPwm() > this->PtcFanRight.GetCounterPwm())
+	{
+		this->PtcFanRight.PulseOn();
+	}
+	else
+	{
+		this->PtcFanRight.PulseOff();
+	}
+
+
+}
+//=== end ProcessHeater ============================================================
 
 //==================================================================================
 /**
@@ -1172,6 +1693,14 @@ EOsResult TTaskHAL::Init(void)
 //	EOsResult result;
 
 
+	this->AcPowerOff();
+
+	this->flagSentEventTopRemoved = false;
+	this->flagSentEventTopPresent = false;
+	this->flagSentEventLidOpen = false;
+	this->flagSentEventLidClosed = false;
+	this->flagTopUnlocked = false;
+
 	this->adcIndexConversion = 0;
 	this->accumulativeTPadLeft = 0;
 	this->accumulativeTPadRight = 0;
@@ -1183,10 +1712,10 @@ EOsResult TTaskHAL::Init(void)
 	this->lastTPtcLeft[0] = this->lastTPtcLeft[1] = 2000;
 	this->lastTPtcRight[0] = this->lastTPtcRight[1] = 2000;
 	
-	this->InterfaceMasterVIP.Init(huart2, USART2);
+//	this->InterfaceMasterVIP.Init(huart2, USART2);
 
 	this->counterPwmHeater = 0;
-	this->pwmPtcFan = 100;
+
 
 	this->acPhase = false;
 	this->flagAcMainPresent = false;
@@ -1201,6 +1730,9 @@ EOsResult TTaskHAL::Init(void)
 
 	this->PtcFanLeft.Init(PtcFan_Left);
 	this->PtcFanRight.Init(PtcFan_Right);
+
+	this->MotorChamberLeft.Init(MotorChamber_Left);
+	this->MotorChamberRight.Init(MotorChamber_Right);
 
 
 	return(OsResult_Ok);
