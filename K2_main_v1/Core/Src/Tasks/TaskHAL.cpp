@@ -7,10 +7,13 @@
 /**********************************************************************************/
 #include "TaskHAL.hpp"
 #include "TaskSYS.hpp"
+#include "TaskCHM.hpp"
 
 
 TTaskHAL TaskHAL;
 extern TTaskSYS TaskSYS;
+extern TTaskCHM TaskChmLeft;
+extern TTaskCHM TaskChmRight;
 /**********************************************************************************/
 #ifdef __DEBUG_HAL_OUTPUT_ENABLED
 	#include "TaskCLI.hpp"
@@ -525,6 +528,54 @@ bool TTaskHAL::CheckLidOpenFromISR()
 EOsResult TTaskHAL::ControlMotor(u8* parameters)
 {
 
+	if(parameters[IFC_VIP_MOTOR_NUMBER_INDEX] == IfcVipMotor_Main)
+	{
+		return(OsResult_Ok);
+	}
+
+
+	if(parameters[IFC_VIP_MOTOR_NUMBER_INDEX] == IfcVipMotor_Chamber1)
+	{
+		if(parameters[IFC_VIP_MOTOR_CONTROL_INDEX] < 100)
+		{
+			this->MotorChamberLeft.Stop();
+		}
+		else
+		{
+			if(parameters[IFC_VIP_MOTOR_DIRECTION_INDEX] == DirMotorChamber_Forward)
+			{
+				this->MotorChamberLeft.StartForward();
+			}
+			else
+			{
+				this->MotorChamberLeft.StartBackward();
+			}
+		}
+
+		return(OsResult_Ok);
+	}
+
+
+	if(parameters[IFC_VIP_MOTOR_NUMBER_INDEX] == IfcVipMotor_Chamber2)
+	{
+		if(parameters[IFC_VIP_MOTOR_CONTROL_INDEX] < 100)
+		{
+			this->MotorChamberRight.Stop();
+		}
+		else
+		{
+			if(parameters[IFC_VIP_MOTOR_DIRECTION_INDEX] == DirMotorChamber_Forward)
+			{
+				this->MotorChamberRight.StartForward();
+			}
+			else
+			{
+				this->MotorChamberRight.StartBackward();
+			}
+		}
+
+	}
+
 
 	return(OsResult_Ok);
 }
@@ -878,36 +929,99 @@ void TTaskHAL::TurnOffHeater(EHeater heater)
 *
 *  @return void .
 */
+void TTaskHAL::TurnOnMotorChamber(EMotorChamber motorChamber, EDirMotorChamber dirMotorChamber, u8 pwm)
+{
+	TSysCommand SysCommand;
+	EOsResult result;
+
+
+	SysCommand.command = SysCommand_ControlMotor;
+	if(motorChamber == MotorChamber_Left)
+	{
+		SysCommand.parameters[IFC_VIP_MOTOR_NUMBER_INDEX] = IfcVipMotor_Chamber1;
+	}
+	else
+	{
+		SysCommand.parameters[IFC_VIP_MOTOR_NUMBER_INDEX] = IfcVipMotor_Chamber2;
+	}
+
+	if(dirMotorChamber == DirMotorChamber_Forward)
+	{
+		SysCommand.parameters[IFC_VIP_MOTOR_DIRECTION_INDEX] = IfcVipMotorDirection_Forward;
+	}
+	else
+	{
+		SysCommand.parameters[IFC_VIP_MOTOR_DIRECTION_INDEX] = IfcVipMotorDirection_Backward;
+	}
+
+	SysCommand.parameters[IFC_VIP_MOTOR_CONTROL_INDEX] = pwm;
+
+
+	result = TaskHAL.SendSysCommand(&SysCommand);
+	if(result != OsResult_Ok)
+	{
+		// todo: set ERROR
+	}
+
+
+}
+//=== end TurnOnMotorChamber =======================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::TurnOffMotorChamber(EMotorChamber motorChamber)
+{
+	this->TurnOnMotorChamber(motorChamber, DirMotorChamber_Forward, 0);
+}
+//=== end TurnOffMotorChamber ======================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
 void TTaskHAL::CalculatingTSensors()
 {
+	s8 temperature;
+
+
 	for(u16 i = 0; i < TASK_HAL_NUMBER_T_SENSORS; i++)
 	{
 		switch(i)
 		{
 			case 0:
-				this->tPtcLeft = this->CalculatingTSensor(IfcVipTemperature_PtcHeater1);
-				if(this->tPtcLeft >= 50) this->tPtcLeft++;
-				if(this->tPtcLeft >= 60) this->tPtcLeft++;
+				temperature = this->CalculatingTSensor(IfcVipTemperature_PtcHeater1);
+				if(temperature >= 50) temperature++;
+				if(temperature >= 60) temperature++;
+				TaskChmLeft.SetPtcTemperature(temperature);
 				break;
 
 			case 1:
-				this->tPtcRight = this->CalculatingTSensor(IfcVipTemperature_PtcHeater2);
-				if(this->tPtcRight >= 50) this->tPtcRight++;
-				if(this->tPtcRight >= 60) this->tPtcRight++;
+				temperature = this->CalculatingTSensor(IfcVipTemperature_PtcHeater2);
+				if(temperature >= 50) temperature++;
+				if(temperature >= 60) temperature++;
+				TaskChmRight.SetPtcTemperature(temperature);
 				break;
 
 			case 2:
-				this->tPadLeft = this->CalculatingTSensor(IfcVipTemperature_PadHeater1);
-				if(this->tPadLeft >= 40) this->tPadLeft++;
-				if(this->tPadLeft >= 50) this->tPadLeft++;
-				if(this->tPadLeft >= 60) this->tPadLeft++;
+				temperature = this->CalculatingTSensor(IfcVipTemperature_PadHeater1);
+				if(temperature >= 40) temperature++;
+				if(temperature >= 50) temperature++;
+				if(temperature >= 60) temperature++;
+				TaskChmLeft.SetPadTemperature(temperature);
 				break;
 
 			case 3:
-				this->tPadRight = this->CalculatingTSensor(IfcVipTemperature_PadHeater2);
-				if(this->tPadRight >= 40) this->tPadRight++;
-				if(this->tPadRight >= 50) this->tPadRight++;
-				if(this->tPadRight >= 60) this->tPadRight++;
+				temperature = this->CalculatingTSensor(IfcVipTemperature_PadHeater2);
+				if(temperature >= 40) temperature++;
+				if(temperature >= 50) temperature++;
+				if(temperature >= 60) temperature++;
+				TaskChmRight.SetPadTemperature(temperature);
 				break;
 
 			default:
@@ -1235,6 +1349,84 @@ s8 TTaskHAL::GetTemperature(EIfcVipTemperature ifcVipTemperature)
 	return(temperature);
 }
 //=== end GetTemperature ===========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return
+*  		none.
+*/
+s8 TTaskHAL::GetTemperatureCpu2(void)
+{
+	return(this->tCpu2);
+}
+//=== end GetTemperatureCpu2 =======================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return
+*  		none.
+*/
+s8 TTaskHAL::GetTemperatureCpu3(void)
+{
+	return(this->tCpu3);
+}
+//=== end GetTemperatureCpu3 =======================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return
+*  		none.
+*/
+s8 TTaskHAL::GetTemperaturePtcLeft(void)
+{
+	return(TaskChmLeft.GetPtcTemperature());
+}
+//=== end GetTemperaturePtcLeft ====================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return
+*  		none.
+*/
+s8 TTaskHAL::GetTemperaturePtcRight(void)
+{
+	return(TaskChmRight.GetPtcTemperature());
+}
+//=== end GetTemperaturePtcRight ===================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return
+*  		none.
+*/
+s8 TTaskHAL::GetTemperaturePadLeft(void)
+{
+	return(TaskChmLeft.GetPadTemperature());
+}
+//=== end GetTemperaturePadLeft =====================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return
+*  		none.
+*/
+s8 TTaskHAL::GetTemperaturePadRight(void)
+{
+	return(TaskChmRight.GetPadTemperature());
+}
+//=== end GetTemperaturePadRight ===================================================
 
 //==================================================================================
 /**
@@ -1690,7 +1882,7 @@ EOsResult TTaskHAL::SendCommand(EIfcVipCommand command, u8* pBuffer)
 */
 EOsResult TTaskHAL::Init(void)
 {
-//	EOsResult result;
+	EOsResult result;
 
 
 	this->AcPowerOff();
@@ -1733,6 +1925,12 @@ EOsResult TTaskHAL::Init(void)
 
 	this->MotorChamberLeft.Init(MotorChamber_Left);
 	this->MotorChamberRight.Init(MotorChamber_Right);
+
+	result = this->Eeprom.Init();
+	if(result != OsResult_Ok)
+	{
+		return(result);
+	}
 
 
 	return(OsResult_Ok);

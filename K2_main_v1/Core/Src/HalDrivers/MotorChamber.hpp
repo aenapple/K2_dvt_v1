@@ -20,6 +20,12 @@ enum EMotorChamber
 	MotorChamber_Right,
 };
 
+enum EDirMotorChamber
+{
+	DirMotorChamber_Forward,
+	DirMotorChamber_Backward,
+};
+
 /**********************************************************************************/
 //==================================================================================
 class TMotorChamber

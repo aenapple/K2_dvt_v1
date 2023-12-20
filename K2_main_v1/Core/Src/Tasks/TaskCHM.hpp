@@ -12,6 +12,9 @@
 
 /**********************************************************************************/
 #include "../Sys/OsTask.hpp"
+#include "Heater.hpp"
+#include "PtcFan.hpp"
+#include "MotorChamber.hpp"
 
 
 /**********************************************************************************/
@@ -24,28 +27,28 @@
 #define TASK_CHM_EVENT_TICK_PROCESS  (1<<5)
 #define TASK_CHM_EVENT_MIXING        (1<<6)
 
-#define TASK_CHM_FLAG_NOT_PRESENT    (1<<7)
-#define TASK_CHM_FLAG_PTC_HEATER_ON  (1<<8)
+// #define TASK_CHM_FLAG_NOT_PRESENT    (1<<7)
+// #define TASK_CHM_FLAG_PTC_HEATER_ON  (1<<8)
 
 
-#define TASK_CHM_EVENT_NEW_STATE      (1<<19)
+// #define TASK_CHM_EVENT_NEW_STATE      (1<<19)
 
-#define TASK_CHM_EVENT_ERROR  (1<<20)
+// #define TASK_CHM_EVENT_ERROR  (1<<20)
 
 
 /**********************************************************************************/
-#define TASK_CHM_PAD_LOW_LEVEL_T   50  // 50C
-#define TASK_CHM_PAD_HIGH_LEVEL_T  55  // 55C
-#define TASK_CHM_PTC_LOW_LEVEL_T   40  // 40C
-#define TASK_CHM_PTC_HIGH_LEVEL_T  45  // 45C
+// #define TASK_CHM_PAD_LOW_LEVEL_T   50  // 50C
+// #define TASK_CHM_PAD_HIGH_LEVEL_T  55  // 55C
+// #define TASK_CHM_PTC_LOW_LEVEL_T   40  // 40C
+// #define TASK_CHM_PTC_HIGH_LEVEL_T  45  // 45C
 
 
 /**********************************************************************************/
 typedef enum
 {
-	TaskChmIndex_Left,
-	TaskChmIndex_Right,
-} ETaskChmIndex;
+	TaskChamber_Left,
+	TaskChamber_Right,
+} ETaskChamber;
 
 
 typedef enum
@@ -68,28 +71,20 @@ public:
 
 
 	////// functions //////
-	EOsResult Init(ETaskChmIndex taskChmIndex);
+	EOsResult Init(ETaskChamber taskChamber);
 	EOsResult Init(void) { return(OsResult_Ok); }
-	ETaskChmState GetTaskState(void)
-	{
-		return(this->taskChmState);
-	}
-	void SetState(u32 event);
-	ETaskChmState GetTaskChmState(void)
-	{
-		return(this->taskChmState);
-	}
-	void StartPtcHeater(u32 workingTime);
-	void SetPtcTemperature(s8 lowLevel, s8 highLevel)
-	{
-		this->ptcHeaterLowLevel = lowLevel;
-		this->ptcHeaterHighLevel = highLevel;
-	}
-	void SetPadTemperature(s8 lowLevel, s8 highLevel)
-	{
-		this->padHeaterLowLevel = lowLevel;
-		this->padHeaterHighLevel = highLevel;
-	}
+	ETaskChmState GetState(void);
+//	void SetState(u32 event);
+
+
+	void SetPtcTemperature(s8 temperature);
+	s8 GetPtcTemperature(void);
+	void SetPtcTemperatureLevels(s8 lowLevel, s8 highLevel);
+	void SetPtcTime(u16 repeatTime, u16 workTime);
+	void SetPadTemperature(s8 temperature);
+	s8 GetPadTemperature(void);
+	void SetPadTemperatureLevels(s8 lowLevel, s8 highLevel);
+	void SetPadTime(u16 repeatTime, u16 workTime);
 
 
 //	void SetEventTickProcessFromISR(void);
@@ -116,14 +111,32 @@ private:
 	////// variables //////
 	StackType_t xStackBuffer[OS_TASK_CHM_SIZE_STACK];
 	
-	ETaskChmIndex taskChmIndex;
+//	ETaskChamber taskChamber;
 	ETaskChmState taskChmState;
 
-	s8 ptcHeaterLowLevel;
-	s8 ptcHeaterHighLevel;
-	s8 padHeaterLowLevel;
-	s8 padHeaterHighLevel;
-	u32 ptcHeaterTime;
+	TPtcFan PtcFan;
+	THeater PtcHeater;
+	// EHeater ptcHeater;
+	THeater PadHeater;
+	// EHeater padHeater;
+	TMotorChamber MotorChamber;
+
+	s8 ptcLowLevel_T;
+	s8 ptcHighLevel_T;
+	s8 ptcTemperature;
+	u16 ptcRepeatTime;
+	u16 ptcCounterRepeatTime;
+	u16 ptcWorkTime;
+	u16 ptcCounterWorkTime;
+	bool flagPtcOn;
+	s8 padLowLevel_T;
+	s8 padHighLevel_T;
+	s8 padTemperature;
+	u16 padRepeatTime;
+	u16 padCounterRepeatTime;
+	u16 padWorkTime;
+	u16 padCounterWorkTime;
+	bool flagPadOn;
 
 
 	////// constants //////

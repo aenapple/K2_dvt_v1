@@ -20,6 +20,7 @@
 #include "MotorMain.hpp"
 #include "PtcFan.hpp"
 #include "MotorChamber.hpp"
+#include "Eeprom.hpp"
 
 
 /**********************************************************************************/
@@ -116,8 +117,10 @@ public:
 	EOsResult SendSysCommand(TSysCommand* sysCommand);
 	u16 GetAdcValue(EAdcChannel adcChannel);
 	s8 GetTemperature(EIfcVipTemperature ifcVipTemperature);
-	void TurnOnHeater(EIfcVipHeater ifcVipHeater, EHeaterPwm heaterPwm);
-
+	void TurnOnHeater(EHeater heater, EHeaterPwm heaterPwm);
+	void TurnOffHeater(EHeater heater);
+	void TurnOnMotorChamber(EMotorChamber motorChamber, EDirMotorChamber dirMotorChamber, u8 pwm);
+	void TurnOffMotorChamber(EMotorChamber motorChamber);
 
 	void HandlerGpioInterrupt(u16 gpioPin);
 
@@ -126,30 +129,12 @@ public:
 	void SetEventUart2_ErrorFromISR(void);
 
 
-	s8 GetTemperatureCpu2(void)
-	{
-		return(this->tCpu2);
-	}
-	s8 GetTemperatureCpu3(void)
-	{
-		return(this->tCpu3);
-	}
-	s8 GetTemperaturePtcLeft(void)
-	{
-		return(this->tPtcLeft);
-	}
-	s8 GetTemperaturePtcRight(void)
-	{
-		return(this->tPtcRight);
-	}
-	s8 GetTemperaturePadLeft(void)
-	{
-		return(this->tPadLeft);
-	}
-	s8 GetTemperaturePadRight(void)
-	{
-		return(this->tPadRight);
-	}
+	s8 GetTemperatureCpu2(void);
+	s8 GetTemperatureCpu3(void);
+	s8 GetTemperaturePtcLeft(void);
+	s8 GetTemperaturePtcRight(void);
+	s8 GetTemperaturePadLeft(void);
+	s8 GetTemperaturePadRight(void);
 
 
 	void SetEventTickFromISR(void);
@@ -169,8 +154,7 @@ public:
 	void BrakeOnMainMotor(void);
 	void BrakeOffMainMotor(void);
 
-	void TurnOnHeater(EHeater heater, EHeaterPwm heaterPwm);
-	void TurnOffHeater(EHeater heater);
+
 
 	TPtcFan PtcFanLeft;
 	TPtcFan PtcFanRight;
@@ -182,6 +166,8 @@ public:
 
 	TMotorChamber MotorChamberLeft;
 	TMotorChamber MotorChamberRight;
+
+	TEeprom Eeprom;
 	// DEBUG
 
 
@@ -212,10 +198,10 @@ private:
 
 	s8 tCpu2;
 	s8 tCpu3;
-	s8 tPtcLeft;
-	s8 tPtcRight;
-	s8 tPadLeft;
-	s8 tPadRight;
+//	s8 tPtcLeft;
+//	s8 tPtcRight;
+//	s8 tPadLeft;
+//	s8 tPadRight;
 
 //	u8 pwmAcPadHeater;
 //	u8 pwmAcPtcHeater;

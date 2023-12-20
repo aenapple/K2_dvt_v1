@@ -57,8 +57,7 @@ void TTaskCHM::Run(void)
 	{
         if(this->EventGroup.WaitOrBits(
         			TASK_CHM_EVENT_START_COMPOSTING |
-					TASK_CHM_EVENT_START_COLLECTING |
-					TASK_CHM_EVENT_ERROR,
+					TASK_CHM_EVENT_START_COLLECTING,
 					&resultBits,
 					1000
 					) == OsResult_Timeout)
@@ -68,12 +67,8 @@ void TTaskCHM::Run(void)
             continue;
         }
       
-        this->ClearEvents(TASK_CHM_EVENT_NEW_STATE);
+//        this->ClearEvents(TASK_CHM_EVENT_NEW_STATE);
       
-        if((resultBits & TASK_CHM_EVENT_ERROR) > 0)
-        {
-//   			this->FlashError();
-   		}
 
         if((resultBits & TASK_CHM_EVENT_START_COMPOSTING) > 0)
         {
@@ -123,8 +118,7 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 		if(this->EventGroup.WaitOrBits(
 					TASK_CHM_EVENT_TICK_PROCESS |
 					TASK_CHM_EVENT_MIXING       |
-					TASK_CHM_EVENT_STOP_PROCESS |
-					TASK_CHM_EVENT_ERROR,
+					TASK_CHM_EVENT_STOP_PROCESS,
 					&resultBits,
 					1000
 					) == OsResult_Timeout)
@@ -134,12 +128,6 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
             continue;
         }
 
-
-        if((resultBits & TASK_CHM_EVENT_ERROR) > 0)
-        {
-   			// todo: set error
-        	return;
-   		}
 
         if((resultBits & TASK_CHM_EVENT_TICK_PROCESS) > 0)
         {
@@ -178,61 +166,52 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 */
 void TTaskCHM::TickProcess()
 {
-	s8 ptcValueTemperature;
-	s8 padValueTemperature;
-	EHeater ptcHeater;
-	EHeater padHeater;
 
-
-	if(this->ptcHeaterTime > 0)
+	if(this->ptcCounterRepeatTime < this->ptcRepeatTime)
 	{
-		this->ptcHeaterTime--;
+		this->ptcCounterRepeatTime++;
 	}
 	else
 	{
-		this->EventGroup.ClearBits(TASK_CHM_FLAG_PTC_HEATER_ON);
+		this->ptcCounterRepeatTime = 0;
+		this->ptcCounterWorkTime = this->ptcWorkTime;
+		this->flagPtcOn = true;
 	}
 
-	if(this->taskChmIndex == TaskChmIndex_Left)
+	if(this->flagPtcOn)
 	{
-		ptcValueTemperature = TaskHAL.GetTemperaturePtcLeft();
-		padValueTemperature = TaskHAL.GetTemperaturePadLeft();
-		ptcHeater = Heater_PtcHeaterLeft;
-		padHeater = Heater_PadHeaterLeft;
-	}
-	else
-	{
-		ptcValueTemperature = TaskHAL.GetTemperaturePtcRight();
-		padValueTemperature = TaskHAL.GetTemperaturePadRight();
-		ptcHeater = Heater_PtcHeaterRight;
-		padHeater = Heater_PadHeaterRight;
+		if(this->ptcCounterWorkTime > 0)
+		{
+			this->ptcCounterWorkTime--;
+		}
+		else
+		{
+			this->flagPtcOn = false;
+		}
 	}
 
 	///// Pad Heater. //////
-	if(padValueTemperature < this->padHeaterLowLevel)
+	if(this->padTemperature < this->padLowLevel_T)
 	{
-		TaskHAL.TurnOnHeater(padHeater, HeaterPwm_100);
+		this->PadHeater.TurnOn(HeaterPwm_100);
 	}
 
-	if(padValueTemperature > this->padHeaterHighLevel)
+	if(this->padTemperature > this->padHighLevel_T)
 	{
-		TaskHAL.TurnOffHeater(padHeater);
+		this->PadHeater.TurnOff();
 	}
 
 	///// Ptc Heater. //////
-	u32 bits;
-
-	bits = this->EventGroup.GetBits();
-	if((ptcValueTemperature < this->ptcHeaterLowLevel)
-		&& ((bits & TASK_CHM_FLAG_PTC_HEATER_ON) > 0))
+	if((this->ptcTemperature < this->ptcLowLevel_T) && this->flagPtcOn)
 	{
-		TaskHAL.TurnOnHeater(ptcHeater, HeaterPwm_30);
+		this->PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
+		this->PtcHeater.TurnOn(HeaterPwm_30);
 	}
 
-	if((ptcValueTemperature > this->ptcHeaterHighLevel)
-		|| ((bits & TASK_CHM_FLAG_PTC_HEATER_ON) == 0))
+	if((this->ptcTemperature > this->ptcHighLevel_T) || (!this->flagPtcOn))
 	{
-		TaskHAL.TurnOffHeater(ptcHeater);
+		this->PtcFan.Start(PtcFanPwm_50, PtcFanMaxPwm_50);
+		this->PtcHeater.TurnOff();
 	}
 
 
@@ -249,12 +228,61 @@ void TTaskCHM::TickProcess()
 *
 *  @return ... .
 */
-void TTaskCHM::StartPtcHeater(u32 workingTime)
+/* void TTaskCHM::TickProcess()
 {
-	this->ptcHeaterTime = workingTime;
-	this->SetEvents(TASK_CHM_FLAG_PTC_HEATER_ON);
-}
-//=== end StartPtcHeater ===========================================================
+
+	if(this->ptcCounterRepeatTime < this->ptcRepeatTime)
+	{
+		this->ptcCounterRepeatTime++;
+	}
+	else
+	{
+		this->ptcCounterRepeatTime = 0;
+		this->ptcCounterWorkTime = this->ptcWorkTime;
+		this->flagPtcOn = true;
+	}
+
+	if(this->flagPtcOn)
+	{
+		if(this->ptcCounterWorkTime > 0)
+		{
+			this->ptcCounterWorkTime--;
+		}
+		else
+		{
+			this->flagPtcOn = false;
+		}
+	}
+
+	///// Pad Heater. //////
+	if(this->padTemperature < this->padLowLevel_T)
+	{
+		TaskHAL.TurnOnHeater(this->padHeater, HeaterPwm_100);
+	}
+
+	if(this->padTemperature > this->padHighLevel_T)
+	{
+		TaskHAL.TurnOffHeater(this->padHeater);
+	}
+
+	///// Ptc Heater. //////
+	if((this->ptcTemperature < this->ptcLowLevel_T) && this->flagPtcOn)
+	{
+		TaskHAL.TurnOnHeater(this->ptcHeater, HeaterPwm_30);
+	}
+
+	if((this->ptcTemperature > this->ptcHighLevel_T) || (!this->flagPtcOn))
+	{
+		TaskHAL.TurnOffHeater(this->ptcHeater);
+	}
+
+
+	// todo:
+	// close loop Humidity
+	// close loop level sensor
+	// close loop gas sensor - ???
+}*/
+//=== end TickProcess ==============================================================
 
 //==================================================================================
 /**
@@ -302,22 +330,8 @@ void TTaskCHM::Mixing()
 */
 EOsResult TTaskCHM::StartMotorForward(u8 pwm)
 {
-/*	TSysCommand SysCommand;
+	this->MotorChamber.StartForward();
 
-
-	SysCommand.command = SysCommand_ControlMotor;
-	if(this->taskChmIndex == TaskChmIndex_Left)
-	{
-		SysCommand.parameters[0] = IfcVipMotor_Chamber1;
-	}
-	else
-	{
-		SysCommand.parameters[0] = IfcVipMotor_Chamber2;
-	}
-	SysCommand.parameters[1] = pwm;
-	SysCommand.parameters[2] = IfcVipMotorDirection_Forward;
-
-	return(TaskHAL.SendSysCommand(&SysCommand)); */
 
 	return(OsResult_Ok);
 }
@@ -329,27 +343,57 @@ EOsResult TTaskCHM::StartMotorForward(u8 pwm)
 *
 *  @return ... .
 */
-EOsResult TTaskCHM::StartMotorBackward(u8 pwm)
+/* EOsResult TTaskCHM::StartMotorForward(u8 pwm)
 {
-	TSysCommand SysCommand;
-
-
-	SysCommand.command = SysCommand_ControlMotor;
 	if(this->taskChmIndex == TaskChmIndex_Left)
 	{
-		SysCommand.parameters[0] = IfcVipMotor_Chamber1;
+		TaskHAL.TurnOnMotorChamber(MotorChamber_Left, DirMotorChamber_Forward, pwm);
 	}
 	else
 	{
-		SysCommand.parameters[0] = IfcVipMotor_Chamber2;
+		TaskHAL.TurnOnMotorChamber(MotorChamber_Right, DirMotorChamber_Forward, pwm);
 	}
-	SysCommand.parameters[1] = pwm;
-	SysCommand.parameters[2] = IfcVipMotorDirection_Backward;
 
-	return(TaskHAL.SendSysCommand(&SysCommand));
 
-//	return(OsResult_Ok);
+	return(OsResult_Ok);
+} */
+//=== end StartMotorForward ========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+EOsResult TTaskCHM::StartMotorBackward(u8 pwm)
+{
+	this->MotorChamber.StartBackward();
+
+
+	return(OsResult_Ok);
 }
+//=== end StartMotorBackward =======================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+/* EOsResult TTaskCHM::StartMotorBackward(u8 pwm)
+{
+	if(this->taskChmIndex == TaskChmIndex_Left)
+	{
+		TaskHAL.TurnOnMotorChamber(MotorChamber_Left, DirMotorChamber_Backward, pwm);
+	}
+	else
+	{
+		TaskHAL.TurnOnMotorChamber(MotorChamber_Right, DirMotorChamber_Backward, pwm);
+	}
+
+
+	return(OsResult_Ok);
+} */
 //=== end StartMotorBackward =======================================================
 
 //==================================================================================
@@ -360,8 +404,23 @@ EOsResult TTaskCHM::StartMotorBackward(u8 pwm)
 */
 EOsResult TTaskCHM::StopMotor()
 {
-	return(this->StartMotorBackward(0));
+	this->MotorChamber.Stop();
+
+
+	return(OsResult_Ok);
 }
+//=== end StopMotor ================================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+/* EOsResult TTaskCHM::StopMotor()
+{
+	return(this->StartMotorBackward(0));
+} */
 //=== end StopMotor ================================================================
 
 //==================================================================================
@@ -372,10 +431,10 @@ EOsResult TTaskCHM::StopMotor()
 */
 void TTaskCHM::StopProcess()
 {
-	// todo:
-	// stop chamber motor
-	// stop PTC heater
-	// stop Pad heater
+	this->MotorChamber.Stop();
+	this->PtcHeater.TurnOff();
+	this->PadHeater.TurnOff();
+	this->PtcFan.Stop();
 }
 //=== end StopProcess ==============================================================
 
@@ -389,31 +448,54 @@ void TTaskCHM::StopProcess()
 EOsResult TTaskCHM::Delay_IT(u32 time)
 {
 	u32 resultBits;
+/*	u64 startSystemTime;
 
 
-	for(u32 i = 0; i < time; i += 10)
-	{
-		this->Delay(10);
-
-		resultBits = this->EventGroup.GetBits();
-
-		if((resultBits & TASK_CHM_EVENT_ERROR) > 0)
+	while(true)
 		{
-			return(OsResult_Error);
-		}
+	        if(this->EventGroup.WaitOrBits(
+	        			TASK_CHM_EVENT_START_COMPOSTING |
+						TASK_CHM_EVENT_START_COLLECTING |
+						TASK_CHM_EVENT_ERROR,
+						&resultBits,
+						1000
+						) == OsResult_Timeout)
+	        {
+	//        	DiagNotice("Working");
 
-		if((resultBits & TASK_CHM_EVENT_STOP_PROCESS) > 0)
-		{
-			return(OsResult_StopProcess);
-		}
+	            continue;
+	        }
 
-		if((resultBits & TASK_CHM_EVENT_NEW_STATE) > 0)
-		{
-			return(OsResult_Ok);
-		}
+	        this->ClearEvents(TASK_CHM_EVENT_NEW_STATE);
 
-	}
+	        if((resultBits & TASK_CHM_EVENT_ERROR) > 0)
+	        {
+	//   			this->FlashError();
+	   		}
 
+	        if((resultBits & TASK_CHM_EVENT_START_COMPOSTING) > 0)
+	        {
+	        	this->Process(TaskChmState_Composting);
+	        }
+
+	        if((resultBits & TASK_CHM_EVENT_START_COLLECTING) > 0)
+	        {
+	        	this->Process(TaskChmState_Composting);
+	        }
+
+
+
+
+
+	        // this->Delay(50);  // mSec
+
+
+	      //this->DebugPrint("Cycles - %06d\r\n", counter);
+
+
+
+		}  // end while(true)
+*/
 
 	return(OsResult_Ok);
 }
@@ -425,10 +507,122 @@ EOsResult TTaskCHM::Delay_IT(u32 time)
 *
 *  @return ... .
 */
-void TTaskCHM::SetState(u32 event)
+void TTaskCHM::SetPtcTemperature(s8 temperature)
+{
+	this->ptcTemperature = temperature;
+}
+//=== end SetPtcTemperature ========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+s8 TTaskCHM::GetPtcTemperature(void)
+{
+	return(this->ptcTemperature);
+}
+//=== end GetPtcTemperature ========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::SetPtcTemperatureLevels(s8 lowLevel, s8 highLevel)
+{
+	this->ptcLowLevel_T = lowLevel;
+	this->ptcHighLevel_T = highLevel;
+}
+//=== end SetPtcTemperatureLevels ==================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::SetPtcTime(u16 repeatTime, u16 workTime)
+{
+	this->ptcRepeatTime = repeatTime;
+	this->ptcWorkTime = workTime;
+}
+//=== end SetPtcTime ===============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::SetPadTemperature(s8 temperature)
+{
+	this->padTemperature = temperature;
+}
+//=== end SetPadTemperature ========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+s8 TTaskCHM::GetPadTemperature(void)
+{
+	return(this->padTemperature);
+}
+//=== end GetPadTemperature ========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::SetPadTemperatureLevels(s8 lowLevel, s8 highLevel)
+{
+	this->padLowLevel_T = lowLevel;
+	this->padHighLevel_T = highLevel;
+}
+//=== end SetPadTemperatureLevels ==================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::SetPadTime(u16 repeatTime, u16 workTime)
+{
+	this->padRepeatTime = repeatTime;
+	this->padWorkTime = workTime;
+}
+//=== end SetPadTime ===============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+ETaskChmState TTaskCHM::GetState(void)
+{
+	return(this->taskChmState);
+}
+//=== end GetState =================================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+/* void TTaskCHM::SetState(u32 event)
 {
 	this->SetEvents(event | TASK_CHM_EVENT_NEW_STATE);
-}
+} */
 //=== end SetState =================================================================
 
 //==================================================================================
@@ -437,14 +631,33 @@ void TTaskCHM::SetState(u32 event)
 *
 *  @return ... .
 */
-EOsResult TTaskCHM::Init(ETaskChmIndex taskChmIndex)
+EOsResult TTaskCHM::Init(ETaskChamber taskChamber)
 {
 
-	this->taskChmIndex = taskChmIndex;
+//	this->taskChamber = taskChamber;
 	this->taskChmState = TaskChmState_Idle;
 
-	this->SetPadTemperature(TASK_CHM_PAD_LOW_LEVEL_T, TASK_CHM_PAD_HIGH_LEVEL_T);
-	this->SetPtcTemperature(TASK_CHM_PTC_LOW_LEVEL_T, TASK_CHM_PTC_HIGH_LEVEL_T);
+	if(taskChamber == TaskChamber_Left)
+	{
+//		this->ptcHeater = Heater_PtcHeaterLeft;
+//		this->padHeater = Heater_PadHeaterLeft;
+		this->MotorChamber.Init(MotorChamber_Left);
+		this->PtcHeater.Init(Heater_PtcHeaterLeft);
+		this->PadHeater.Init(Heater_PadHeaterLeft);
+		this->PtcFan.Init(PtcFan_Left);
+	}
+	else
+	{
+//		this->ptcHeater = Heater_PtcHeaterRight;
+//		this->padHeater = Heater_PadHeaterRight;
+		this->MotorChamber.Init(MotorChamber_Right);
+		this->PtcHeater.Init(Heater_PtcHeaterRight);
+		this->PadHeater.Init(Heater_PadHeaterRight);
+		this->PtcFan.Init(PtcFan_Right);
+	}
+
+//	this->SetPadTemperature(TASK_CHM_PAD_LOW_LEVEL_T, TASK_CHM_PAD_HIGH_LEVEL_T);
+//	this->SetPtcTemperature(TASK_CHM_PTC_LOW_LEVEL_T, TASK_CHM_PTC_HIGH_LEVEL_T);
 
 
 

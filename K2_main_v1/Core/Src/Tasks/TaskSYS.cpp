@@ -180,19 +180,20 @@ void TTaskSYS::SetEventTickFromISR(void)
 void TTaskSYS::Run(void)
 {
 	u32 resultBits;
-//	EOsResult result;
+	EOsResult result;
 	// u16 tmpCounter;
 
 
-	if(this->Init() != OsResult_Ok)
+	result = this->Init();
+	if(result != OsResult_Ok)
 	{
-		this->InitProcessError();
+		this->InitProcessError(result);
 	}
 
 
-	this->InterfaceSlaveVIP.ReInit();
+/*	this->InterfaceSlaveVIP.ReInit();
 	this->Delay(2);
-	this->StartRxData();
+	this->StartRxData(); */
 
 //	DiagNotice("TaskSYS started!");
 
@@ -363,9 +364,12 @@ void TTaskSYS::ProcessLidOpen()
 *  @return
 *  		none.
 */
-void TTaskSYS::InitProcessError()
+void TTaskSYS::InitProcessError(EOsResult result)
 {
+	// DEBUG
+	this->SetSysState(SysError_ApplicationError);
 	this->ProcessError();
+	// DEBUG
 }
 //=== end InitProcessError =========================================================
 
@@ -1222,14 +1226,25 @@ EOsResult TTaskSYS::Init(void)
 
 	this->Delay(10);
 
-	TaskHAL.Init();
-	TaskHAL.SetEvents(TASK_HAL_CMD_START);
-	this->enableTickHook = true;
 
 	this->SetSysState(SysState_Init);
 	this->InterfaceSlaveVIP.Init(huart1, USART1);
 	this->InterfaceSlaveVIP.ReInit();
    	this->StartRxData();
+
+   	result = TaskHAL.Init();
+   	if(result != OsResult_Ok)
+   	{
+   		return(result);
+   	}
+
+   	TaskChmLeft.Init(TaskChamber_Left);
+   	TaskChmRight.Init(TaskChamber_Right);
+
+   	TaskHAL.SetEvents(TASK_HAL_CMD_START);
+   	TaskChmLeft.SetEvents(TASK_CHM_CMD_START);
+   	TaskChmRight.SetEvents(TASK_CHM_CMD_START);
+   	this->enableTickHook = true;
 
    	this->SelfTest();
 
@@ -1238,7 +1253,6 @@ EOsResult TTaskSYS::Init(void)
 //	{
 //		TaskHAL.AcPowerOn();
 //		this->Delay(1000);
-
 
 /*		TaskHAL.TurnOnHeater(Heater_PtcHeaterRight, HeaterPwm_50);
 		this->Delay(10000);

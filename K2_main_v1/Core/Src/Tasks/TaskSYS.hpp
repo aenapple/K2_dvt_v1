@@ -213,7 +213,7 @@ private:
     void SelfTest(void);
     void ProcessLidOpen(void);
     void ProcessError(void);
-    void InitProcessError(void);
+    void InitProcessError(EOsResult result);
     void ProcessRxData(void);
     void StartRxData(void);
     void CopyVersionString(void);
