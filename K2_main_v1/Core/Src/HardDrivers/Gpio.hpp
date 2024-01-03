@@ -43,6 +43,9 @@ public:
 	void AcPowerOff(void);
 	EGpioLevel ReadTopRemoved(void);
 	EGpioLevel ReadLidOpen(void);
+	EGpioLevel ReadPresentTank(void);
+	EGpioLevel ReadPresentChamberLeft(void);
+	EGpioLevel ReadPresentChamberRight(void);
 
 
 	void MainMotorOn(void);

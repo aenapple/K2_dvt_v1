@@ -88,12 +88,12 @@ void TTaskUI::Run(void)
         	this->FlashIdle();
         }
 
-        if((resultBits & TASK_UI_EVENT_IDLE) > 0)
+        if((resultBits & TASK_UI_NO_STATE) > 0)
         {
            	this->LedAllOff();
         }
 
-        if((resultBits & TASK_UI_EVENT_IDLE) > 0)
+        if((resultBits & TASK_UI_EVENT_TOP_REMOVED) > 0)
         {
         	this->FlashTopRemoved();
         }

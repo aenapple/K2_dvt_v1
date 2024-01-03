@@ -16,7 +16,7 @@
 *
 *  @return void .
 */
-void TOs::Delay(u64 time)
+void TOs::Delay(u32 time)
 {
 	if (time > portTICK_PERIOD_MS) vTaskDelay(time / portTICK_PERIOD_MS);
 	else vTaskDelay(1);

@@ -106,7 +106,7 @@ public:
 	/// constants ///
 
 	/// functions ///
-	static void Delay(u64);
+	static void Delay(u32);
 	static u32 GetTimeStamp(void);
 	static bool IsTimeExpired(u32);
 

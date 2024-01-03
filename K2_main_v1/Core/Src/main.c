@@ -60,7 +60,7 @@ DMA_HandleTypeDef hdma_usart2_tx;
 uint32_t defaultTaskBuffer[ 64 ];
 osStaticThreadDef_t defaultTaskControlBlock; */
 /* USER CODE BEGIN PV */
-extern void CreateApplicationTasks(void);
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -76,7 +76,7 @@ static void MX_TIM15_Init(void);
 // void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
-
+// extern void CreateApplicationTasks(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -653,12 +653,12 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, MOTOR_ON_Pin|PULSE_ON_Pin|AC_ON_Pin|PULSE_RST_Pin
-                          |TOP_RST_Pin|SW_STATOR1_Pin|SW_STATOR2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, MOTOR_ON_Pin|AC_ON_Pin|PULSE_RST_Pin|TOP_RST_Pin
+                          |SW_STATOR1_Pin|SW_STATOR2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, PAD1_ON_Pin|PAD2_ON_Pin|PTC1_ON_Pin|PTC2_ON_Pin
-                          |WC_EEPROM_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOC, PULSE_ON_Pin|PAD1_ON_Pin|PAD2_ON_Pin|PTC1_ON_Pin
+                          |PTC2_ON_Pin|WC_EEPROM_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, PTC1_FAN2_Pin|PTC2_FAN2_Pin, GPIO_PIN_SET);
@@ -680,18 +680,20 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(MOTOR_ON_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PULSE_ON_Pin AC_ON_Pin PULSE_RST_Pin WC_EEPROM_Pin
-                           TOP_RST_Pin SW_STATOR1_Pin SW_STATOR2_Pin */
-  GPIO_InitStruct.Pin = PULSE_ON_Pin|AC_ON_Pin|PULSE_RST_Pin|WC_EEPROM_Pin
-                          |TOP_RST_Pin|SW_STATOR1_Pin|SW_STATOR2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  /*Configure GPIO pins : PULSE_ON_Pin PAD1_ON_Pin PAD2_ON_Pin PTC1_ON_Pin
+                           PTC2_ON_Pin */
+  GPIO_InitStruct.Pin = PULSE_ON_Pin|PAD1_ON_Pin|PAD2_ON_Pin|PTC1_ON_Pin
+                          |PTC2_ON_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PAD1_ON_Pin PAD2_ON_Pin PTC1_ON_Pin PTC2_ON_Pin */
-  GPIO_InitStruct.Pin = PAD1_ON_Pin|PAD2_ON_Pin|PTC1_ON_Pin|PTC2_ON_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+  /*Configure GPIO pins : AC_ON_Pin PULSE_RST_Pin WC_EEPROM_Pin TOP_RST_Pin
+                           SW_STATOR1_Pin SW_STATOR2_Pin */
+  GPIO_InitStruct.Pin = AC_ON_Pin|PULSE_RST_Pin|WC_EEPROM_Pin|TOP_RST_Pin
+                          |SW_STATOR1_Pin|SW_STATOR2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);

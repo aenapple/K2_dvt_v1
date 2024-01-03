@@ -19,9 +19,25 @@ u8 TInterfaceVIP::ifsEvseStateCode[Number_ESysState] =
 
 #undef SYS_STATE_TABLE */
 
+// DEBUG
+// extern UART_HandleTypeDef huart1;
+// DEBUG
 
 
 /**********************************************************************************/
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TInterfaceVIP::Init(UART_HandleTypeDef* hUart, USART_TypeDef* uartInstance)
+{
+	this->hUart = hUart;
+	this->uartInstance = uartInstance;
+}
+//=== end Init ==========================================================
+
 //==================================================================================
 /**
 *  Todo: function description..
@@ -90,7 +106,7 @@ EOsResult TInterfaceVIP::StartRxData(void)
 */
 EOsResult TInterfaceVIP::StartUartTxData(u8* pBuffer, u16 numBytes)
 {
-	HAL_UART_Transmit_DMA(&this->hUart, pBuffer, numBytes);
+	HAL_UART_Transmit_DMA(this->hUart, pBuffer, numBytes);
 
 	return(OsResult_Ok);
 }
@@ -104,7 +120,7 @@ EOsResult TInterfaceVIP::StartUartTxData(u8* pBuffer, u16 numBytes)
 */
 EOsResult TInterfaceVIP::StartUartRxData(u8* pBuffer, u16 numBytes)
 {
-	HAL_UART_Receive_DMA(&this->hUart, pBuffer, numBytes);
+	HAL_UART_Receive_DMA(this->hUart, pBuffer, numBytes);
 
 	return(OsResult_Ok);
 }
@@ -130,20 +146,23 @@ EOsResult TInterfaceVIP::StartUartRxData(u8* pBuffer, u16 numBytes)
 */
 void TInterfaceVIP::ReInit(void)
 {
-	HAL_UART_DeInit(&this->hUart);
-	this->hUart.Instance = this->uartInstance; // USART1;
-	this->hUart.Init.BaudRate = 115200;
-	this->hUart.Init.WordLength = UART_WORDLENGTH_8B;
-	this->hUart.Init.StopBits = UART_STOPBITS_1;
-	this->hUart.Init.Parity = UART_PARITY_NONE;
-	this->hUart.Init.Mode = UART_MODE_TX_RX;
-	this->hUart.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-	this->hUart.Init.OverSampling = UART_OVERSAMPLING_16;
-	this->hUart.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-	this->hUart.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-	this->hUart.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  	HAL_UART_Init(&this->hUart);
-  	HAL_UARTEx_DisableFifoMode(&this->hUart);
+	HAL_UART_DeInit(this->hUart);
+	this->hUart->Instance = USART1; // this->uartInstance; // USART1;
+	this->hUart->Init.BaudRate = 115200;
+	this->hUart->Init.WordLength = UART_WORDLENGTH_8B;
+	this->hUart->Init.StopBits = UART_STOPBITS_1;
+	this->hUart->Init.Parity = UART_PARITY_NONE;
+	this->hUart->Init.Mode = UART_MODE_TX_RX;
+	this->hUart->Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	this->hUart->Init.OverSampling = UART_OVERSAMPLING_16;
+	this->hUart->Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	this->hUart->Init.ClockPrescaler = UART_PRESCALER_DIV1;
+	this->hUart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  	HAL_UART_Init(this->hUart);
+// 	HAL_UARTEx_SetTxFifoThreshold(this->hUart, UART_TXFIFO_THRESHOLD_1_8);
+// 	HAL_UARTEx_SetRxFifoThreshold(this->hUart, UART_RXFIFO_THRESHOLD_1_8);
+// 	HAL_UARTEx_DisableFifoMode(this->hUart);
+
 }
 //=== end ReInit ===================================================================
 

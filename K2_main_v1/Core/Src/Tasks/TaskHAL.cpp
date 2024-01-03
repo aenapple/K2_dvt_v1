@@ -140,10 +140,10 @@ void TTaskHAL::Run(void)
 					100
 					) == OsResult_Timeout)
         {
-            this->GetStateTopCpu();
+//            this->GetStateTopCpu();
             this->CheckTopRemoved();
             this->CheckLidOpen();
-            this->GetSensorBme688();
+//            this->GetSensorBme688();
 
         	continue;
         }
@@ -328,7 +328,7 @@ void TTaskHAL::ProcessSelfTest(void)
 	this->Delay(200);
 	if(this->flagAcMainPresent)
 	{
-		TaskSYS.SetSysState(SysError_MainAc);  // Error - AC Main is present
+		TaskSYS.SetSysState(SysError_MainAcNotPresent);  // Error - AC Main is present
 		return;
 	}
 
@@ -354,7 +354,7 @@ void TTaskHAL::ProcessSelfTest(void)
 	if(!this->flagAcMainPresent)
 	{
 		this->AcPowerOff();
-		TaskSYS.SetSysState(SysError_MainAc);  // Error - AC Main is not present
+		TaskSYS.SetSysState(SysError_MainAcNotPresent);  // Error - AC Main is not present
 		return;
 	}
 
@@ -411,6 +411,7 @@ bool TTaskHAL::CheckTopRemoved()
 
 }
 //=== end CheckTopRemoved ==========================================================
+
 //==================================================================================
 /**
 *  Todo: function description.
@@ -455,6 +456,36 @@ bool TTaskHAL::CheckTopRemovedFromISR()
 */
 bool TTaskHAL::CheckLidOpen()
 {
+	// DEBUG
+	if(this->Gpio.ReadPresentTank() == GpioLevel_High)
+	{
+		this->flagPresentTank = false;
+	}
+	else
+	{
+		this->flagPresentTank = true;
+	}
+
+	if(this->Gpio.ReadPresentChamberLeft() == GpioLevel_High)
+	{
+		this->flagPresentChamberLeft = false;
+	}
+	else
+	{
+		this->flagPresentChamberLeft = true;
+	}
+
+	if(this->Gpio.ReadPresentChamberRight() == GpioLevel_High)
+	{
+		this->flagPresentChamberRight = false;
+	}
+	else
+	{
+		this->flagPresentChamberRight = true;
+	}
+	// DEBUG
+
+
 	if(this->Gpio.ReadLidOpen() == GpioLevel_High)
 	{
 		if(!this->flagSentEventLidOpen)
@@ -1888,9 +1919,9 @@ EOsResult TTaskHAL::Init(void)
 	this->AcPowerOff();
 
 	this->flagSentEventTopRemoved = false;
-	this->flagSentEventTopPresent = false;
+	this->flagSentEventTopPresent = true;
 	this->flagSentEventLidOpen = false;
-	this->flagSentEventLidClosed = false;
+	this->flagSentEventLidClosed = true;
 	this->flagTopUnlocked = false;
 
 	this->adcIndexConversion = 0;
@@ -1904,7 +1935,7 @@ EOsResult TTaskHAL::Init(void)
 	this->lastTPtcLeft[0] = this->lastTPtcLeft[1] = 2000;
 	this->lastTPtcRight[0] = this->lastTPtcRight[1] = 2000;
 	
-//	this->InterfaceMasterVIP.Init(huart2, USART2);
+	this->InterfaceMasterVIP.Init(&huart2, USART2);
 
 	this->counterPwmHeater = 0;
 

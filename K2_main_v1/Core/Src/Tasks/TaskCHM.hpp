@@ -65,6 +65,12 @@ class TTaskCHM : public TOsTask
 {
 public:
 	////// variables //////
+	// DEBUG
+	TPtcFan PtcFan;
+	THeater PtcHeater;
+	THeater PadHeater;
+	TMotorChamber MotorChamber;
+	// DEBUG
 
 
 	////// constants //////
@@ -114,12 +120,10 @@ private:
 //	ETaskChamber taskChamber;
 	ETaskChmState taskChmState;
 
-	TPtcFan PtcFan;
-	THeater PtcHeater;
-	// EHeater ptcHeater;
-	THeater PadHeater;
-	// EHeater padHeater;
-	TMotorChamber MotorChamber;
+//	TPtcFan PtcFan;
+//	THeater PtcHeater;
+//	THeater PadHeater;
+//	TMotorChamber MotorChamber;
 
 	s8 ptcLowLevel_T;
 	s8 ptcHighLevel_T;
@@ -150,7 +154,7 @@ private:
 	EOsResult StartMotorForward(u8 pwm);
 	EOsResult StartMotorBackward(u8 pwm);
 	EOsResult StopMotor(void);
-	EOsResult Delay_IT(u32 time);
+	EOsResult DelaySecond(u16 seconds);
 
 
 	void Run(void);

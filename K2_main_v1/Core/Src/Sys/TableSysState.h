@@ -28,7 +28,7 @@ SYS_STATE_TABLE	 (SysError_I2cErrorChannel1,  	IfcVipError_I2c1,	TASK_SYS_ERROR_
 SYS_STATE_TABLE	 (SysError_I2cErrorChannel2,  	IfcVipError_I2c2,	TASK_SYS_ERROR_I2C2),
 SYS_STATE_TABLE	 (SysError_UartErrorChannel,  	IfcVipError_Uart,	TASK_SYS_ERROR_UART),
 
-SYS_STATE_TABLE	 (SysError_MainAc,  	IfcVipError_MainAc,	TASK_SYS_ERROR_MAIN_AC),
+SYS_STATE_TABLE	 (SysError_MainAcNotPresent,	IfcVipError_AcMainNotPresent,	TASK_SYS_ERROR_MAIN_AC),
 
 
 

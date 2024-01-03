@@ -142,6 +142,7 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
         if((resultBits & TASK_CHM_EVENT_STOP_PROCESS) > 0)
         {
         	this->StopProcess();
+        	return;
         }
 
 
@@ -295,29 +296,40 @@ void TTaskCHM::Mixing()
 	EOsResult result;
 
 
-	result = this->StartMotorForward(100);  // 100% PWM
-	if(result != OsResult_Ok)
+	this->MotorChamber.StartForward();
+
+	result = this->DelaySecond(120);  // 2 minutes
+	this->MotorChamber.Stop();
+	if(result == OsResult_StopProcess)
 	{
-		TaskSYS.SetSysState(SysError_ApplicationError);
 		return;
 	}
 
-	// todo:
-	// Start motor forward
-	// wait 2 minutes
-	// stop motor
-	// wait 100 mSec
-	// Start motor backward
-	// wait 30 seconds
-	// stop motor
-	// wait 100 mSec
-	// Start motor forward
-	// wait 2 minutes
-	// stop motor
-	// wait 100 mSec
-	// Start motor backward
-	// wait 30 seconds
-	// stop motor
+	this->Delay(100);
+	this->MotorChamber.StartBackward();
+
+	result = this->DelaySecond(30);  // 30 Seconds
+	this->MotorChamber.Stop();
+	if(result == OsResult_StopProcess)
+	{
+		return;
+	}
+
+	this->Delay(100);
+	this->MotorChamber.StartForward();
+
+	result = this->DelaySecond(120);  // 2 minutes
+	this->MotorChamber.Stop();
+	if(result == OsResult_StopProcess)
+	{
+		return;
+	}
+
+	this->Delay(100);
+	this->MotorChamber.StartBackward();
+
+	this->DelaySecond(30);  // 30 Seconds
+	this->MotorChamber.Stop();
 
 }
 //=== end Mixing ===================================================================
@@ -445,61 +457,46 @@ void TTaskCHM::StopProcess()
 *  @return
 *  		none.
 */
-EOsResult TTaskCHM::Delay_IT(u32 time)
+EOsResult TTaskCHM::DelaySecond(u16 seconds)
 {
 	u32 resultBits;
-/*	u64 startSystemTime;
+	u64 tempSystemTime;
+	u32 timeout;
 
 
+	timeout = seconds * 1000;
+	tempSystemTime = TaskSYS.GetSystemCounter();
 	while(true)
+	{
+		if((TaskSYS.GetSystemCounter() - tempSystemTime) > timeout)
 		{
-	        if(this->EventGroup.WaitOrBits(
-	        			TASK_CHM_EVENT_START_COMPOSTING |
-						TASK_CHM_EVENT_START_COLLECTING |
-						TASK_CHM_EVENT_ERROR,
-						&resultBits,
-						1000
-						) == OsResult_Timeout)
-	        {
-	//        	DiagNotice("Working");
+			break;  // timeout passed
+		}
 
-	            continue;
-	        }
+		if(this->EventGroup.WaitOrBits(
+	       		TASK_CHM_EVENT_STOP_PROCESS |
+				TASK_CHM_EVENT_TICK_PROCESS,
+				&resultBits,
+				1000) == OsResult_Timeout)
+	    {
+	       	continue;
+	    }
 
-	        this->ClearEvents(TASK_CHM_EVENT_NEW_STATE);
+	    if((resultBits & TASK_CHM_EVENT_TICK_PROCESS) > 0)
+	    {
+	      	this->TickProcess();
+	    }
+	    else
+	    {
+	       	return(OsResult_StopProcess);  // received TASK_CHM_EVENT_STOP_PROCESS
+	    }
 
-	        if((resultBits & TASK_CHM_EVENT_ERROR) > 0)
-	        {
-	//   			this->FlashError();
-	   		}
+	}  // end while(true)
 
-	        if((resultBits & TASK_CHM_EVENT_START_COMPOSTING) > 0)
-	        {
-	        	this->Process(TaskChmState_Composting);
-	        }
-
-	        if((resultBits & TASK_CHM_EVENT_START_COLLECTING) > 0)
-	        {
-	        	this->Process(TaskChmState_Composting);
-	        }
-
-
-
-
-
-	        // this->Delay(50);  // mSec
-
-
-	      //this->DebugPrint("Cycles - %06d\r\n", counter);
-
-
-
-		}  // end while(true)
-*/
 
 	return(OsResult_Ok);
 }
-//=== end Delay_IT =================================================================
+//=== end DelaySecond ==============================================================
 
 //==================================================================================
 /**

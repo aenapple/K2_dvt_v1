@@ -94,6 +94,63 @@ EGpioLevel TGpio::ReadLidOpen(void)
 *
 *  @return void .
 */
+EGpioLevel TGpio::ReadPresentTank(void)
+{
+	if(HAL_GPIO_ReadPin(PRESENT_TANK_GPIO_Port, PRESENT_TANK_Pin) == GPIO_PIN_RESET)
+	{
+		return(GpioLevel_Low);
+	}
+	else
+	{
+		return(GpioLevel_High);
+	}
+}
+//=== end ReadPresentTank ==========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+EGpioLevel TGpio::ReadPresentChamberLeft(void)
+{
+	if(HAL_GPIO_ReadPin(PRESENT_CHM1_GPIO_Port, PRESENT_CHM1_Pin) == GPIO_PIN_RESET)
+	{
+		return(GpioLevel_Low);
+	}
+	else
+	{
+		return(GpioLevel_High);
+	}
+}
+//=== end ReadPresentChamberLeft ===================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+EGpioLevel TGpio::ReadPresentChamberRight(void)
+{
+	if(HAL_GPIO_ReadPin(PRESENT_CHM2_GPIO_Port, PRESENT_CHM2_Pin) == GPIO_PIN_RESET)
+	{
+		return(GpioLevel_Low);
+	}
+	else
+	{
+		return(GpioLevel_High);
+	}
+}
+//=== end ReadPresentChamberRight ==================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
 void TGpio::MainMotorOn()
 {
 	HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_SET);

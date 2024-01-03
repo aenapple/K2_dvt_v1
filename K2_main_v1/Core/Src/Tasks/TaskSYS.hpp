@@ -149,6 +149,7 @@ public:
 	{
 		this->enableTickHook = false;
 	}
+	u64 GetSystemCounter(void);
 	TimeSystem GetTimeSystem(void);
 	DateTime GetDateTime();
 	void UpdateDateTime(const TTaskSYS::DateTime& newDateTime);

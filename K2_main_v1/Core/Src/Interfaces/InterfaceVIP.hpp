@@ -78,6 +78,8 @@ enum EIfcVipState
 	IfcVipState_Phase2 = 0x0C,
 	IfcVipState_TopRemoved = 0x0D,
 	IfcVipState_LidOpen = 0x0E,
+	IfcVipState_Grinding = 0x0F,
+	IfcVipState_TankFull = 0x10,
 
 
 	IfcVipState_Error = 0xFF,
@@ -88,7 +90,7 @@ enum EIfcVipError
 {
 	IfcVipError_MainMotor = 0x00,
 	IfcVipError_MotorChamber1 = 0x01,
-	IfcVipError_MotorChamber3 = 0x02,
+	IfcVipError_MotorChamber2 = 0x02,
 	IfcVipError_Lamp1 = 0x03,
 	IfcVipError_Lamp2 = 0x04,
 	IfcVipError_MainFan = 0x05,
@@ -104,7 +106,10 @@ enum EIfcVipError
 	IfcVipError_CriticalGasLevel = 0x0F,
 	IfcVipError_PtcHeater1 = 0x10,
 	IfcVipError_PtcHeater2 = 0x11,
-	IfcVipError_MainAc = 0x12,
+	IfcVipError_AcMainNotPresent = 0x12,
+	IfcVipError_RemovedChaber1 = 0x13,
+	IfcVipError_RemovedChaber2 = 0x14,
+	IfcVipError_RemovedTank = 0x15,
 };
 
 
@@ -293,11 +298,7 @@ public:
 
 
 	////// functions //////
-	void Init(UART_HandleTypeDef hUart, USART_TypeDef* uartInstance)
-	{
-		this->hUart = hUart;
-//		this->uartInstance = uartInstance;
-	}
+	void Init(UART_HandleTypeDef* hUart, USART_TypeDef* uartInstance);
 	EOsResult StartTxData(EIfcVipCommand command, u8* data = NULL);
 	EOsResult StartRxData(void);
 	EOsResult ParsingRxPacket(void);
@@ -327,7 +328,7 @@ private:
     
 	EIfcVipCommand command;  // for slave mode and 'state' for master mode
 
-	UART_HandleTypeDef hUart;
+	UART_HandleTypeDef* hUart;
 	USART_TypeDef* uartInstance;
     
     // DEBUG

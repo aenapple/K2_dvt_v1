@@ -222,6 +222,10 @@ private:
 	bool flagSentEventLidClosed;
 	bool flagTopUnlocked;
 
+	bool flagPresentTank;
+	bool flagPresentChamberLeft;
+	bool flagPresentChamberRight;
+
 
 	u16 adcTPtcLeft;
 	u32 accumulativeTPtcLeft;
