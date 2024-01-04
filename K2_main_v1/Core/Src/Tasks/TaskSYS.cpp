@@ -1225,6 +1225,233 @@ u64 TTaskSYS::GetSystemCounter()
 *
 *  @return ... .
 */
+void TTaskSYS::TestChamberMotors()
+{
+	TaskHAL.AcPowerOn();
+	this->Delay(1000);
+	while(true)
+	{
+		TaskChmLeft.MotorChamber.StartForward();
+		this->Delay(10000);
+		TaskChmLeft.MotorChamber.Stop();
+
+		this->Delay(1000);
+
+		TaskChmLeft.MotorChamber.StartBackward();
+	   	this->Delay(10000);
+	   	TaskChmLeft.MotorChamber.Stop();
+
+	   	this->Delay(10000);
+
+	   	TaskChmRight.MotorChamber.StartForward();
+	   	this->Delay(10000);
+	   	TaskChmRight.MotorChamber.Stop();
+
+	   	this->Delay(1000);
+
+	   	TaskChmRight.MotorChamber.StartBackward();
+	   	this->Delay(10000);
+	   	TaskChmRight.MotorChamber.Stop();
+
+	   	this->Delay(10000);
+
+	}
+
+
+}
+//=== end TestChamberMotors ========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskSYS::TestMainMotor()
+{
+	while(true)
+	{
+		TaskHAL.AcPowerOn();
+		this->Delay(1000);
+
+		TaskUI.SetState(TASK_UI_EVENT_TOP_REMOVED);
+
+		// added resistor
+		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
+
+		TaskHAL.StartMainMotorCCW();
+
+		this->Delay(1000);
+		// short cut resistor
+		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_SET);
+
+		this->Delay(9000);
+
+		TaskHAL.StopMainMotor();
+
+		continue;
+
+		this->Delay(200);
+		TaskHAL.BrakeOnMainMotor();
+		this->Delay(2000);
+
+		TaskUI.SetState(TASK_UI_EVENT_IDLE);
+
+		// added resistor
+		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
+
+		TaskHAL.StartMainMotorCCW();
+
+		this->Delay(1000);
+		// short cut resistor
+		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_SET);
+
+		this->Delay(2000);
+
+		TaskHAL.StopMainMotor();
+
+
+		this->Delay(200);
+		TaskHAL.BrakeOnMainMotor();
+		this->Delay(2000);
+
+		TaskUI.SetState(TASK_UI_EVENT_INIT);
+
+		// added resistor
+		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
+
+
+		TaskHAL.AcPowerOff();
+		this->Delay(30000);  // 30 Sec
+	}
+
+}
+//=== end TestMainMotor ============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskSYS::TestPtcFans()
+{
+	TaskHAL.AcPowerOn();
+	this->Delay(1000);
+
+	while(true)
+	{
+
+		TaskChmLeft.PtcFan.Start(PtcFanPwm_50, PtcFanMaxPwm_50);
+		this->Delay(20000);
+		TaskChmLeft.PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
+		this->Delay(20000);
+		TaskChmLeft.PtcFan.Start(PtcFanPwm_100, PtcFanMaxPwm_66_100);
+		this->Delay(20000);
+
+		TaskChmLeft.PtcFan.Stop();
+
+		this->Delay(1000);
+
+		TaskChmRight.PtcFan.Start(PtcFanPwm_50, PtcFanMaxPwm_50);
+		this->Delay(20000);
+		TaskChmRight.PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
+		this->Delay(20000);
+		TaskChmRight.PtcFan.Start(PtcFanPwm_100, PtcFanMaxPwm_66_100);
+		this->Delay(20000);
+
+		TaskChmRight.PtcFan.Stop();
+
+	}
+}
+//=== end TestPtcFans ==============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskSYS::TestPtcHeaters()
+{
+	TaskHAL.AcPowerOn();
+	this->Delay(1000);
+
+	while(true)
+	{
+
+		TaskChmLeft.PtcFan.Start(PtcFanPwm_50, PtcFanMaxPwm_50);
+		TaskChmLeft.PtcHeater.TurnOn(HeaterPwm_30);
+		this->Delay(20000);
+		TaskChmLeft.PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
+		TaskChmLeft.PtcHeater.TurnOn(HeaterPwm_60);
+		this->Delay(20000);
+		TaskChmLeft.PtcFan.Start(PtcFanPwm_100, PtcFanMaxPwm_66_100);
+		TaskChmLeft.PtcHeater.TurnOn(HeaterPwm_90);
+		this->Delay(20000);
+
+		TaskChmLeft.PtcHeater.TurnOff();
+		TaskChmLeft.PtcFan.Stop();
+
+		this->Delay(1000);
+
+		TaskChmRight.PtcFan.Start(PtcFanPwm_50, PtcFanMaxPwm_50);
+		TaskChmRight.PtcHeater.TurnOn(HeaterPwm_30);
+		this->Delay(20000);
+		TaskChmRight.PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
+		TaskChmRight.PtcHeater.TurnOn(HeaterPwm_60);
+		this->Delay(20000);
+		TaskChmRight.PtcFan.Start(PtcFanPwm_100, PtcFanMaxPwm_66_100);
+		TaskChmRight.PtcHeater.TurnOn(HeaterPwm_90);
+		this->Delay(20000);
+
+		TaskChmRight.PtcHeater.TurnOff();
+		TaskChmRight.PtcFan.Stop();
+
+	}
+}
+//=== end TestPtcHeaters ===========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskSYS::TestPadHeaters()
+{
+	TaskHAL.AcPowerOn();
+	this->Delay(1000);
+
+	while(true)
+	{
+
+//		TaskChmLeft.PadHeater.TurnOn(HeaterPwm_50);
+//		this->Delay(20000);
+//		TaskChmLeft.PadHeater.TurnOn(HeaterPwm_100);
+//		this->Delay(20000);
+
+//		TaskChmLeft.PtcHeater.TurnOff();
+
+		this->Delay(1000);
+
+		TaskChmRight.PadHeater.TurnOn(HeaterPwm_50);
+		this->Delay(20000);
+//		TaskChmRight.PadHeater.TurnOn(HeaterPwm_100);
+//		this->Delay(20000);
+
+//		TaskChmRight.PtcHeater.TurnOff();
+
+	}
+}
+//=== end TestPtcHeaters ===========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
 EOsResult TTaskSYS::Init(void)
 {
 	EOsResult result;
@@ -1261,96 +1488,16 @@ EOsResult TTaskSYS::Init(void)
    	this->enableTickHook = true;
 
    	// DEBUG
-   	TaskHAL.AcPowerOn();
-   	this->Delay(1000);
-   	while(true)
-   	{
-   		TaskChmLeft.MotorChamber.StartForward();
-   		this->Delay(10000);
-   		TaskChmLeft.MotorChamber.Stop();
-
-   		this->Delay(1000);
-
-   		TaskChmLeft.MotorChamber.StartBackward();
-   		this->Delay(10000);
-   		TaskChmLeft.MotorChamber.Stop();
-
-   		this->Delay(10000);
-
-   		TaskChmRight.MotorChamber.StartForward();
-   		this->Delay(10000);
-   		TaskChmRight.MotorChamber.Stop();
-
-   		this->Delay(1000);
-
-   		TaskChmRight.MotorChamber.StartBackward();
-   		this->Delay(10000);
-   		TaskChmRight.MotorChamber.Stop();
-
-   		this->Delay(10000);
-
-   	}
+// 	this->TestChamberMotors();
+   	this->TestMainMotor();
+// 	this->TestPtcFans();
+// 	this->TestPtcHeaters();
+//   	this->TestPadHeaters();
    	// DEBUG
 
    	this->SelfTest();
 
-	// DEBUG
-/*	while(true)
-	{
-		TaskHAL.AcPowerOn();
-		this->Delay(1000);
 
-
-		TaskUI.SetState(TASK_UI_EVENT_TOP_REMOVED);
-
-		// added resistor
-		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
-
-		TaskHAL.StartMainMotorCW();
-
-		this->Delay(1000);
-		// short cut resistor
-		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_SET);
-
-		this->Delay(9000);
-
-		TaskHAL.StopMainMotor();
-
-		this->Delay(200);
-		TaskHAL.BrakeOnMainMotor();
-		this->Delay(2000);
-
-		TaskUI.SetState(TASK_UI_EVENT_IDLE);
-
-		// added resistor
-		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
-
-		TaskHAL.StartMainMotorCCW();
-
-		this->Delay(1000);
-		// short cut resistor
-		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_SET);
-
-		this->Delay(2000);
-
-		TaskHAL.StopMainMotor();
-
-
-		this->Delay(200);
-		TaskHAL.BrakeOnMainMotor();
-		this->Delay(2000);
-
-		TaskUI.SetState(TASK_UI_EVENT_INIT);
-
-		// added resistor
-		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
-
-
-
-		TaskHAL.AcPowerOff();
-		this->Delay(30000);  // 30 Sec
-	} */
-	// DEBUG
 
 
 

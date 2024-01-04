@@ -240,6 +240,14 @@ private:
     void Reset(void);
     void TickProcess();
 
+    // DEBUG
+    void TestChamberMotors(void);
+    void TestMainMotor(void);
+    void TestPtcFans(void);
+    void TestPtcHeaters(void);
+    void TestPadHeaters(void);
+    // DEBUG
+
 
     void Run(void);
 

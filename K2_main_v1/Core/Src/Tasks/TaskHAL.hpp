@@ -18,8 +18,8 @@
 #include "InterfaceVIP.hpp"
 #include "Heater.hpp"
 #include "MotorMain.hpp"
-#include "PtcFan.hpp"
-#include "MotorChamber.hpp"
+// #include "PtcFan.hpp"
+// #include "MotorChamber.hpp"
 #include "Eeprom.hpp"
 
 
@@ -119,8 +119,8 @@ public:
 	s8 GetTemperature(EIfcVipTemperature ifcVipTemperature);
 	void TurnOnHeater(EHeater heater, EHeaterPwm heaterPwm);
 	void TurnOffHeater(EHeater heater);
-	void TurnOnMotorChamber(EMotorChamber motorChamber, EDirMotorChamber dirMotorChamber, u8 pwm);
-	void TurnOffMotorChamber(EMotorChamber motorChamber);
+//	void TurnOnMotorChamber(EMotorChamber motorChamber, EDirMotorChamber dirMotorChamber, u8 pwm);
+//	void TurnOffMotorChamber(EMotorChamber motorChamber);
 
 	void HandlerGpioInterrupt(u16 gpioPin);
 
@@ -156,16 +156,16 @@ public:
 
 
 
-	TPtcFan PtcFanLeft;
-	TPtcFan PtcFanRight;
+//	TPtcFan PtcFanLeft;
+//	TPtcFan PtcFanRight;
 
-	THeater PtcHeaterLeft;
-	THeater PtcHeaterRight;
-	THeater PadHeaterLeft;
-	THeater PadHeaterRight;
+//	THeater PtcHeaterLeft;
+//	THeater PtcHeaterRight;
+//	THeater PadHeaterLeft;
+//	THeater PadHeaterRight;
 
-	TMotorChamber MotorChamberLeft;
-	TMotorChamber MotorChamberRight;
+//	TMotorChamber MotorChamberLeft;
+//	TMotorChamber MotorChamberRight;
 
 	TEeprom Eeprom;
 	// DEBUG

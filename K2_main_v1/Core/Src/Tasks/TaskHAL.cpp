@@ -559,7 +559,7 @@ bool TTaskHAL::CheckLidOpenFromISR()
 EOsResult TTaskHAL::ControlMotor(u8* parameters)
 {
 
-	if(parameters[IFC_VIP_MOTOR_NUMBER_INDEX] == IfcVipMotor_Main)
+/*	if(parameters[IFC_VIP_MOTOR_NUMBER_INDEX] == IfcVipMotor_Main)
 	{
 		return(OsResult_Ok);
 	}
@@ -605,7 +605,7 @@ EOsResult TTaskHAL::ControlMotor(u8* parameters)
 			}
 		}
 
-	}
+	} */
 
 
 	return(OsResult_Ok);
@@ -631,7 +631,7 @@ EOsResult TTaskHAL::ControlHeater(u8* parameters)
 			{
 				this->PtcFanLeft.Stop();
 			}
-			else */
+			else
 			{
 				if(heaterPwm < HeaterPwm_60)
 				{
@@ -649,7 +649,7 @@ EOsResult TTaskHAL::ControlHeater(u8* parameters)
 					}
 				}
 			}
-			this->PtcHeaterLeft.TurnOn(heaterPwm);
+			this->PtcHeaterLeft.TurnOn(heaterPwm); */
 			break;
 
 		case IfcVipHeater_Ptc2:
@@ -657,7 +657,7 @@ EOsResult TTaskHAL::ControlHeater(u8* parameters)
 			{
 				this->PtcFanRight.Stop();
 			}
-			else */
+			else
 			{
 				if(heaterPwm < HeaterPwm_60)
 				{
@@ -675,15 +675,16 @@ EOsResult TTaskHAL::ControlHeater(u8* parameters)
 					}
 				}
 			}
-			this->PtcHeaterRight.TurnOn(heaterPwm);
+			this->PtcHeaterRight.TurnOn(heaterPwm); */
 			break;
 
 		case IfcVipHeater_Pad1:
-			this->PadHeaterLeft.TurnOn(heaterPwm);
+//			this->PadHeaterLeft.TurnOn(heaterPwm);
 			break;
 
 		default:  // IfcVipHeater_Pad2
-			this->PadHeaterRight.TurnOn(heaterPwm);
+//			this->PadHeaterRight.TurnOn(heaterPwm);
+			break;
 
 	}
 
@@ -742,7 +743,7 @@ void TTaskHAL::StartMainMotorCW()
 {
 	if(this->flagAcMainPresent)
 	{
-		HAL_GPIO_WritePin(SW_STATOR2_GPIO_Port, SW_STATOR2_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(SW_STATOR2_GPIO_Port, SW_STATOR2_Pin, GPIO_PIN_RESET);
 		this->Delay(100);
 		this->flagStartMainMotor = true;
 	}
@@ -759,7 +760,7 @@ void TTaskHAL::StartMainMotorCCW()
 {
 	if(this->flagAcMainPresent)
 	{
-		HAL_GPIO_WritePin(SW_STATOR2_GPIO_Port, SW_STATOR2_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SW_STATOR2_GPIO_Port, SW_STATOR2_Pin, GPIO_PIN_SET);
 		this->Delay(100);
 		this->flagStartMainMotor = true;
 	}
@@ -960,7 +961,7 @@ void TTaskHAL::TurnOffHeater(EHeater heater)
 *
 *  @return void .
 */
-void TTaskHAL::TurnOnMotorChamber(EMotorChamber motorChamber, EDirMotorChamber dirMotorChamber, u8 pwm)
+/* void TTaskHAL::TurnOnMotorChamber(EMotorChamber motorChamber, EDirMotorChamber dirMotorChamber, u8 pwm)
 {
 	TSysCommand SysCommand;
 	EOsResult result;
@@ -995,7 +996,7 @@ void TTaskHAL::TurnOnMotorChamber(EMotorChamber motorChamber, EDirMotorChamber d
 	}
 
 
-}
+} */
 //=== end TurnOnMotorChamber =======================================================
 
 //==================================================================================
@@ -1004,10 +1005,10 @@ void TTaskHAL::TurnOnMotorChamber(EMotorChamber motorChamber, EDirMotorChamber d
 *
 *  @return void .
 */
-void TTaskHAL::TurnOffMotorChamber(EMotorChamber motorChamber)
+/* void TTaskHAL::TurnOffMotorChamber(EMotorChamber motorChamber)
 {
 	this->TurnOnMotorChamber(motorChamber, DirMotorChamber_Forward, 0);
-}
+} */
 //=== end TurnOffMotorChamber ======================================================
 
 //==================================================================================
@@ -1693,16 +1694,16 @@ void TTaskHAL::ProcessAcPhase(void)
 		this->counterPwmHeater = 0;
 	}
 
-	this->PtcFanLeft.IncrementCounterPwm();
-	if(this->PtcFanLeft.GetCounterPwm() >= this->PtcFanLeft.GetMaxPwm())
+	TaskChmLeft.PtcFan.IncrementCounterPwm();
+	if(TaskChmLeft.PtcFan.GetCounterPwm() >= TaskChmLeft.PtcFan.GetMaxPwm())
 	{
-		this->PtcFanLeft.ClearCounterPwm();
+		TaskChmLeft.PtcFan.ClearCounterPwm();
 	}
 
-	this->PtcFanRight.IncrementCounterPwm();
-	if(this->PtcFanRight.GetCounterPwm() >= this->PtcFanRight.GetMaxPwm())
+	TaskChmRight.PtcFan.IncrementCounterPwm();
+	if(TaskChmRight.PtcFan.GetCounterPwm() >= TaskChmRight.PtcFan.GetMaxPwm())
 	{
-		this->PtcFanRight.ClearCounterPwm();
+		TaskChmRight.PtcFan.ClearCounterPwm();
 	}
 
 }
@@ -1717,60 +1718,60 @@ void TTaskHAL::ProcessAcPhase(void)
 void TTaskHAL::ProcessHeater()
 {
 	////// Pad Heaters //////
-	if(this->PadHeaterLeft.GetPwm() > this->counterPwmHeater)
+	if(TaskChmLeft.PadHeater.GetPwm() > this->counterPwmHeater)
 	{
-		this->PadHeaterLeft.PulseOn();
+		TaskChmLeft.PadHeater.PulseOn();
 	}
 	else
 	{
-		this->PadHeaterLeft.PulseOff();
+		TaskChmLeft.PadHeater.PulseOff();
 	}
 
-	if(this->PadHeaterRight.GetPwm() > this->counterPwmHeater)
+	if(TaskChmRight.PadHeater.GetPwm() > this->counterPwmHeater)
 	{
-		this->PadHeaterRight.PulseOn();
+		TaskChmRight.PadHeater.PulseOn();
 	}
 	else
 	{
-		this->PadHeaterRight.PulseOff();
+		TaskChmRight.PadHeater.PulseOff();
 	}
 
 	////// PTC Heaters //////
-	if(this->PtcHeaterLeft.GetPwm() > this->counterPwmHeater)
+	if(TaskChmLeft.PtcHeater.GetPwm() > this->counterPwmHeater)
 	{
-		this->PtcHeaterLeft.PulseOn();
+		TaskChmLeft.PtcHeater.PulseOn();
 	}
 	else
 	{
-		this->PtcHeaterLeft.PulseOff();
+		TaskChmLeft.PtcHeater.PulseOff();
 	}
 
-	if(this->PtcHeaterRight.GetPwm() > this->counterPwmHeater)
+	if(TaskChmRight.PtcHeater.GetPwm() > this->counterPwmHeater)
 	{
-		this->PtcHeaterRight.PulseOn();
+		TaskChmRight.PtcHeater.PulseOn();
 	}
 	else
 	{
-		this->PtcHeaterRight.PulseOff();
+		TaskChmRight.PtcHeater.PulseOff();
 	}
 
 	////// PTC Fans //////
-	if(this->PtcFanLeft.GetPwm() > this->PtcFanLeft.GetCounterPwm())
+	if(TaskChmLeft.PtcFan.GetPwm() > TaskChmLeft.PtcFan.GetCounterPwm())
 	{
-		this->PtcFanLeft.PulseOn();
+		TaskChmLeft.PtcFan.PulseOn();
 	}
 	else
 	{
-		this->PtcFanLeft.PulseOff();
+		TaskChmLeft.PtcFan.PulseOff();
 	}
 
-	if(this->PtcFanRight.GetPwm() > this->PtcFanRight.GetCounterPwm())
+	if(TaskChmRight.PtcFan.GetPwm() > TaskChmRight.PtcFan.GetCounterPwm())
 	{
-		this->PtcFanRight.PulseOn();
+		TaskChmRight.PtcFan.PulseOn();
 	}
 	else
 	{
-		this->PtcFanRight.PulseOff();
+		TaskChmRight.PtcFan.PulseOff();
 	}
 
 
@@ -1946,16 +1947,16 @@ EOsResult TTaskHAL::Init(void)
 	this->flagStartMainMotor = false;
 
 
-	this->PtcHeaterLeft.Init(Heater_PtcHeaterLeft);
-	this->PtcHeaterRight.Init(Heater_PtcHeaterRight);
-	this->PadHeaterLeft.Init(Heater_PadHeaterLeft);
-	this->PadHeaterRight.Init(Heater_PadHeaterRight);
+//	this->PtcHeaterLeft.Init(Heater_PtcHeaterLeft);
+//	this->PtcHeaterRight.Init(Heater_PtcHeaterRight);
+//	this->PadHeaterLeft.Init(Heater_PadHeaterLeft);
+//	this->PadHeaterRight.Init(Heater_PadHeaterRight);
 
-	this->PtcFanLeft.Init(PtcFan_Left);
-	this->PtcFanRight.Init(PtcFan_Right);
+//	this->PtcFanLeft.Init(PtcFan_Left);
+//	this->PtcFanRight.Init(PtcFan_Right);
 
-	this->MotorChamberLeft.Init(MotorChamber_Left);
-	this->MotorChamberRight.Init(MotorChamber_Right);
+//	this->MotorChamberLeft.Init(MotorChamber_Left);
+//	this->MotorChamberRight.Init(MotorChamber_Right);
 
 	result = this->Eeprom.Init();
 	if(result != OsResult_Ok)
