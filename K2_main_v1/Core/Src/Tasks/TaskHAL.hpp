@@ -57,7 +57,7 @@
 
 
 /**********************************************************************************/
-///// VREF = 2.5V - Heater temperature sensor //////
+///// VREF = 2.5V - Pad Heater temperature sensor (10K) //////
 #define TASK_HAL_TH_0_DEG_C   3579  // 2.185V
 #define TASK_HAL_TH_5_DEG_C   3454  // 2.109V
 #define TASK_HAL_TH_10_DEG_C  3312  // 2.022V
@@ -74,6 +74,24 @@
 #define TASK_HAL_TH_65_DEG_C  1256  // 0.767V
 #define TASK_HAL_TH_70_DEG_C  1112  // 0.679V
 #define TASK_HAL_TH_75_DEG_C  981   // 0.599V
+
+///// VREF = 2.5V - PTC Heater temperature sensor (22K) //////
+#define TASK_HAL_TP_0_DEG_C   3796  // 2.318V
+#define TASK_HAL_TP_5_DEG_C   3733  // 2.279V
+#define TASK_HAL_TP_10_DEG_C  3659  // 2.234V
+#define TASK_HAL_TP_15_DEG_C  3574  // 2.182V
+#define TASK_HAL_TP_20_DEG_C  3479  // 2.124V
+#define TASK_HAL_TP_25_DEG_C  3372  // 2.059V
+#define TASK_HAL_TP_30_DEG_C  3257  // 1.989V
+#define TASK_HAL_TP_35_DEG_C  3130  // 1.911V
+#define TASK_HAL_TP_40_DEG_C  2995  // 1.829V
+#define TASK_HAL_TP_45_DEG_C  2853  // 1.742V
+#define TASK_HAL_TP_50_DEG_C  2704  // 1.651V
+#define TASK_HAL_TP_55_DEG_C  2552  // 1.558V
+#define TASK_HAL_TP_60_DEG_C  2398  // 1.464V
+#define TASK_HAL_TP_65_DEG_C  2242  // 1.369V
+#define TASK_HAL_TP_70_DEG_C  2090  // 1.276V
+#define TASK_HAL_TP_75_DEG_C  1939  // 1.184V
 
 
 /**********************************************************************************/
@@ -263,6 +281,8 @@ private:
 	void CalculatingTSensors(void);
 	s8 CalculatingTSensorDigC(u16 localAdcTHeater, u16 adcLowLevel);
 	s8 CalculatingTSensor(EIfcVipTemperature ifcVipTemperature);
+	s8 CalculatingTPtcSensorDigC(u16 localAdcTHeater, u16 adcLowLevel);
+	s8 CalculatingTPtcSensor(EIfcVipTemperature ifcVipTemperature);
 	EOsResult SendCommand(EIfcVipCommand command, u8* pBuffer);
 	void ProcessAcPhase(void);
 	void ProcessHeater(void);

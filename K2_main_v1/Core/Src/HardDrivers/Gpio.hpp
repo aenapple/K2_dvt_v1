@@ -41,11 +41,13 @@ public:
 	void Init(void);
 	void AcPowerOn(void);
 	void AcPowerOff(void);
-	EGpioLevel ReadTopRemoved(void);
+	EGpioLevel ReadTopRemoved(void);  // switch
+	EGpioLevel ReadTopPresent(void);  // connector
 	EGpioLevel ReadLidOpen(void);
 	EGpioLevel ReadPresentTank(void);
 	EGpioLevel ReadPresentChamberLeft(void);
 	EGpioLevel ReadPresentChamberRight(void);
+	void SetLevelTopResetPin(EGpioLevel gpioLevel);
 
 
 	void MainMotorOn(void);

@@ -19,9 +19,8 @@ u8 TInterfaceVIP::ifsEvseStateCode[Number_ESysState] =
 
 #undef SYS_STATE_TABLE */
 
-/**********************************************************************************/
 extern UART_HandleTypeDef huart1;
-extern UART_HandleTypeDef huart2;
+
 
 
 /**********************************************************************************/
@@ -31,9 +30,10 @@ extern UART_HandleTypeDef huart2;
 *
 *  @return ... .
 */
-void TInterfaceVIP::Init(EIfcUart ifcUart)
+void TInterfaceVIP::Init(UART_HandleTypeDef* hUart, USART_TypeDef* uartInstance)
 {
-	this->ifcUart = ifcUart;
+//	this->hUart = hUart;
+//	this->uartInstance = uartInstance;
 }
 //=== end Init ==========================================================
 
@@ -105,15 +105,7 @@ EOsResult TInterfaceVIP::StartRxData(void)
 */
 EOsResult TInterfaceVIP::StartUartTxData(u8* pBuffer, u16 numBytes)
 {
-	if(this->ifcUart == IfcUart_1)
-	{
-		HAL_UART_Transmit_DMA(&huart1, pBuffer, numBytes);
-	}
-	else
-	{
-		HAL_UART_Transmit_DMA(&huart2, pBuffer, numBytes);
-	}
-
+	HAL_UART_Transmit_DMA(&huart1, pBuffer, numBytes);
 
 	return(OsResult_Ok);
 }
@@ -127,16 +119,7 @@ EOsResult TInterfaceVIP::StartUartTxData(u8* pBuffer, u16 numBytes)
 */
 EOsResult TInterfaceVIP::StartUartRxData(u8* pBuffer, u16 numBytes)
 {
-	if(this->ifcUart == IfcUart_1)
-	{
-		HAL_UART_Receive_DMA(&huart1, pBuffer, numBytes);
-	}
-	else
-	{
-		HAL_UART_Receive_DMA(&huart2, pBuffer, numBytes);
-	}
-
-
+	HAL_UART_Receive_DMA(&huart1, pBuffer, numBytes);
 
 	return(OsResult_Ok);
 }
@@ -162,39 +145,20 @@ EOsResult TInterfaceVIP::StartUartRxData(u8* pBuffer, u16 numBytes)
 */
 void TInterfaceVIP::ReInit(void)
 {
-	if(this->ifcUart == IfcUart_1)
-	{
-		HAL_UART_DeInit(&huart1);
-		huart1.Instance = USART1;
-		huart1.Init.BaudRate = 115200;
-		huart1.Init.WordLength = UART_WORDLENGTH_8B;
-		huart1.Init.StopBits = UART_STOPBITS_1;
-		huart1.Init.Parity = UART_PARITY_NONE;
-		huart1.Init.Mode = UART_MODE_TX_RX;
-		huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-		huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-		huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-		huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-		huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-	  	HAL_UART_Init(&huart1);
-	}
-	else
-	{
-		HAL_UART_DeInit(&huart2);
-		huart2.Instance = USART2;
-		huart2.Init.BaudRate = 9600;
-		huart2.Init.WordLength = UART_WORDLENGTH_8B;
-		huart2.Init.StopBits = UART_STOPBITS_1;
-		huart2.Init.Parity = UART_PARITY_NONE;
-		huart2.Init.Mode = UART_MODE_TX_RX;
-		huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-		huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-		huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-		huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_TXINVERT_INIT;
-		huart2.AdvancedInit.TxPinLevelInvert = UART_ADVFEATURE_TXINV_ENABLE;
-		HAL_UART_Init(&huart2);
-	}
-
+	HAL_UART_DeInit(&huart1);
+	huart1.Instance = USART1;
+	huart1.Init.BaudRate = 9600;
+	huart1.Init.WordLength = UART_WORDLENGTH_8B;
+	huart1.Init.StopBits = UART_STOPBITS_1;
+	huart1.Init.Parity = UART_PARITY_NONE;
+	huart1.Init.Mode = UART_MODE_TX_RX;
+	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+	huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+	huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_TXINVERT_INIT;
+	huart1.AdvancedInit.TxPinLevelInvert = UART_ADVFEATURE_TXINV_ENABLE;
+  	HAL_UART_Init(&huart1);
 // 	HAL_UARTEx_SetTxFifoThreshold(this->hUart, UART_TXFIFO_THRESHOLD_1_8);
 // 	HAL_UARTEx_SetRxFifoThreshold(this->hUart, UART_RXFIFO_THRESHOLD_1_8);
 // 	HAL_UARTEx_DisableFifoMode(this->hUart);

@@ -124,7 +124,9 @@ void TTaskHAL::Run(void)
 		}
 	}
 
-	this->Delay(10);
+//	this->Gpio.SetLevelTopResetPin(GpioLevel_Low);  // Clear Reset Top CPU
+	this->Delay(200);
+	this->InterfaceMasterVIP.ReInit();
 
 
 	while(true)
@@ -140,7 +142,7 @@ void TTaskHAL::Run(void)
 					100
 					) == OsResult_Timeout)
         {
-//            this->GetStateTopCpu();
+            this->GetStateTopCpu();
             this->CheckTopRemoved();
             this->CheckLidOpen();
 //            this->GetSensorBme688();
@@ -200,6 +202,9 @@ void TTaskHAL::GetStateTopCpu(void)
 
 
 	result = this->SendCommand(IfcVipCommand_GetState, 0);
+	// DEBUG
+//	return;
+	// DEBUG
 	if(result != OsResult_Ok)
 	{
 		this->InterfaceMasterVIP.ReInit();
@@ -332,7 +337,7 @@ void TTaskHAL::ProcessSelfTest(void)
 		return;
 	}
 
-	if(this->CheckTopRemoved())
+/*	if(this->CheckTopRemoved())
 	{
 		return;
 	}
@@ -340,7 +345,7 @@ void TTaskHAL::ProcessSelfTest(void)
 	if(this->CheckLidOpen())
 	{
 		return;
-	}
+	} */
 
 
 	// todo:
@@ -357,6 +362,9 @@ void TTaskHAL::ProcessSelfTest(void)
 		TaskSYS.SetSysState(SysError_MainAcNotPresent);  // Error - AC Main is not present
 		return;
 	}
+
+	this->Delay(100);
+	this->Gpio.SetLevelTopResetPin(GpioLevel_Low);  // Clear Reset Top CPU
 
 	// todo:
 	// check connection with Top CPU
@@ -1027,16 +1035,16 @@ void TTaskHAL::CalculatingTSensors()
 		switch(i)
 		{
 			case 0:
-				temperature = this->CalculatingTSensor(IfcVipTemperature_PtcHeater1);
-				if(temperature >= 50) temperature++;
-				if(temperature >= 60) temperature++;
+				temperature = this->CalculatingTPtcSensor(IfcVipTemperature_PtcHeater1);
+//				if(temperature >= 50) temperature++;
+//				if(temperature >= 60) temperature++;
 				TaskChmLeft.SetPtcTemperature(temperature);
 				break;
 
 			case 1:
-				temperature = this->CalculatingTSensor(IfcVipTemperature_PtcHeater2);
-				if(temperature >= 50) temperature++;
-				if(temperature >= 60) temperature++;
+				temperature = this->CalculatingTPtcSensor(IfcVipTemperature_PtcHeater2);
+//				if(temperature >= 50) temperature++;
+//				if(temperature >= 60) temperature++;
 				TaskChmRight.SetPtcTemperature(temperature);
 				break;
 
@@ -1081,13 +1089,13 @@ s8 TTaskHAL::CalculatingTSensor(EIfcVipTemperature ifcVipTemperature)
 	taskENTER_CRITICAL();
 	switch(ifcVipTemperature)
 	{
-		case IfcVipTemperature_PtcHeater1:
+/*		case IfcVipTemperature_PtcHeater1:
 			adcTSensor = this->adcTPtcLeft;
 			break;
 
 		case IfcVipTemperature_PtcHeater2:
 			adcTSensor = this->adcTPtcRight;
-			break;
+			break; */
 
 		case IfcVipTemperature_PadHeater1:
 			adcTSensor = this->adcTPadLeft;
@@ -1303,6 +1311,230 @@ s8 TTaskHAL::CalculatingTSensorDigC(u16 localAdcTHeater, u16 adcLowLevel)
 	return(lowLevelT + 4);
 }
 //=== end CalculatingTSensorDigC ===================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+s8 TTaskHAL::CalculatingTPtcSensor(EIfcVipTemperature ifcVipTemperature)
+{
+	u16 adcTSensor;
+
+
+	taskENTER_CRITICAL();
+	if(ifcVipTemperature == IfcVipTemperature_PtcHeater1)
+	{
+		adcTSensor = this->adcTPtcLeft;
+	}
+	else
+	{
+		adcTSensor = this->adcTPtcRight;
+	}
+	taskEXIT_CRITICAL();
+
+
+	if(adcTSensor > TASK_HAL_TP_0_DEG_C)
+	{
+		return(-1);
+	}
+
+	if(adcTSensor < TASK_HAL_TP_75_DEG_C)
+	{
+		return(80);
+	}
+
+
+	if(adcTSensor > TASK_HAL_TP_5_DEG_C)
+	{
+		return(this->CalculatingTPtcSensorDigC(adcTSensor, TASK_HAL_TP_5_DEG_C));
+	}
+
+	if(adcTSensor > TASK_HAL_TP_10_DEG_C)
+	{
+		return(this->CalculatingTPtcSensorDigC(adcTSensor, TASK_HAL_TP_10_DEG_C));
+	}
+
+	if(adcTSensor > TASK_HAL_TP_15_DEG_C)
+	{
+		return(this->CalculatingTPtcSensorDigC(adcTSensor, TASK_HAL_TP_15_DEG_C));
+	}
+
+	if(adcTSensor > TASK_HAL_TP_20_DEG_C)
+	{
+		return(this->CalculatingTPtcSensorDigC(adcTSensor, TASK_HAL_TP_20_DEG_C));
+	}
+
+	if(adcTSensor > TASK_HAL_TP_25_DEG_C)
+	{
+		return(this->CalculatingTPtcSensorDigC(adcTSensor, TASK_HAL_TP_25_DEG_C));
+	}
+
+	if(adcTSensor > TASK_HAL_TP_30_DEG_C)
+	{
+		return(this->CalculatingTPtcSensorDigC(adcTSensor, TASK_HAL_TP_30_DEG_C));
+	}
+
+	if(adcTSensor > TASK_HAL_TP_35_DEG_C)
+	{
+		return(this->CalculatingTPtcSensorDigC(adcTSensor, TASK_HAL_TP_35_DEG_C));
+	}
+
+	if(adcTSensor > TASK_HAL_TP_40_DEG_C)
+	{
+		return(this->CalculatingTPtcSensorDigC(adcTSensor, TASK_HAL_TP_40_DEG_C));
+	}
+
+	if(adcTSensor > TASK_HAL_TP_45_DEG_C)
+	{
+		return(this->CalculatingTPtcSensorDigC(adcTSensor, TASK_HAL_TP_45_DEG_C));
+	}
+
+	if(adcTSensor > TASK_HAL_TP_50_DEG_C)
+	{
+		return(this->CalculatingTPtcSensorDigC(adcTSensor, TASK_HAL_TP_50_DEG_C));
+	}
+
+	if(adcTSensor > TASK_HAL_TP_55_DEG_C)
+	{
+		return(this->CalculatingTPtcSensorDigC(adcTSensor, TASK_HAL_TP_55_DEG_C));
+	}
+
+	if(adcTSensor > TASK_HAL_TP_60_DEG_C)
+	{
+		return(this->CalculatingTPtcSensorDigC(adcTSensor, TASK_HAL_TP_60_DEG_C));
+	}
+
+	if(adcTSensor > TASK_HAL_TP_65_DEG_C)
+	{
+		return(this->CalculatingTPtcSensorDigC(adcTSensor, TASK_HAL_TP_65_DEG_C));
+	}
+
+
+	return(this->CalculatingTPtcSensorDigC(adcTSensor, TASK_HAL_TP_70_DEG_C));
+}
+//=== end CalculatingTPtcSensor ====================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+s8 TTaskHAL::CalculatingTPtcSensorDigC(u16 localAdcTHeater, u16 adcLowLevel)
+{
+	u16 rangeAdc;
+	u16 adcHighLevel;
+	s8 lowLevelT;
+
+
+	switch(adcLowLevel)
+	{
+		case TASK_HAL_TP_5_DEG_C:
+			adcHighLevel = TASK_HAL_TP_0_DEG_C;
+			lowLevelT = 0;
+			break;
+
+		case TASK_HAL_TP_10_DEG_C:
+			adcHighLevel = TASK_HAL_TP_5_DEG_C;
+			lowLevelT = 5;
+			break;
+
+		case TASK_HAL_TP_15_DEG_C:
+			adcHighLevel = TASK_HAL_TP_10_DEG_C;
+			lowLevelT = 10;
+			break;
+
+		case TASK_HAL_TP_20_DEG_C:
+			adcHighLevel = TASK_HAL_TP_15_DEG_C;
+			lowLevelT = 15;
+			break;
+
+		case TASK_HAL_TP_25_DEG_C:
+			adcHighLevel = TASK_HAL_TP_20_DEG_C;
+			lowLevelT = 20;
+			break;
+
+		case TASK_HAL_TP_30_DEG_C:
+			adcHighLevel = TASK_HAL_TP_25_DEG_C;
+			lowLevelT = 25;
+			break;
+
+		case TASK_HAL_TP_35_DEG_C:
+			adcHighLevel = TASK_HAL_TP_30_DEG_C;
+			lowLevelT = 30;
+			break;
+
+		case TASK_HAL_TP_40_DEG_C:
+			adcHighLevel = TASK_HAL_TP_35_DEG_C;
+			lowLevelT = 35;
+			break;
+
+		case TASK_HAL_TP_45_DEG_C:
+			adcHighLevel = TASK_HAL_TP_40_DEG_C;
+			lowLevelT = 40;
+			break;
+
+		case TASK_HAL_TP_50_DEG_C:
+			adcHighLevel = TASK_HAL_TP_45_DEG_C;
+			lowLevelT = 45;
+			break;
+
+		case TASK_HAL_TP_55_DEG_C:
+			adcHighLevel = TASK_HAL_TP_50_DEG_C;
+			lowLevelT = 50;
+			break;
+
+		case TASK_HAL_TP_60_DEG_C:
+			adcHighLevel = TASK_HAL_TP_55_DEG_C;
+			lowLevelT = 55;
+			break;
+
+		case TASK_HAL_TP_65_DEG_C:
+			adcHighLevel = TASK_HAL_TP_60_DEG_C;
+			lowLevelT = 60;
+			break;
+
+		case TASK_HAL_TP_70_DEG_C:
+			adcHighLevel = TASK_HAL_TP_65_DEG_C;
+			lowLevelT = 65;
+			break;
+
+
+		default:  // TASK_HAL_TP_75_DEG_C
+			adcHighLevel = TASK_HAL_TP_70_DEG_C;
+			lowLevelT = 70;
+			break;
+	}
+
+	rangeAdc = adcHighLevel - adcLowLevel;
+	rangeAdc /= 5;
+
+	if(localAdcTHeater >= (adcLowLevel + rangeAdc * 4))
+	{
+		return(lowLevelT);
+	}
+
+	if(localAdcTHeater >= (adcLowLevel + rangeAdc * 3))
+	{
+		return(lowLevelT + 1);
+	}
+
+	if(localAdcTHeater >= (adcLowLevel + rangeAdc * 2))
+	{
+		return(lowLevelT + 2);
+	}
+
+	if(localAdcTHeater >= (adcLowLevel + rangeAdc))
+	{
+		return(lowLevelT + 3);
+	}
+
+
+	return(lowLevelT + 4);
+}
+//=== end CalculatingTPtcSensorDigC ================================================
 
 //==================================================================================
 /**
@@ -1858,14 +2090,7 @@ EOsResult TTaskHAL::SendCommand(EIfcVipCommand command, u8* pBuffer)
 {
 	u32 resultBits;
 	EOsResult result;
-	u16 i;
 
-
-//	this->Delay(10);
-
-//	for(i = 0; i < 4; i ++)
-//	{
-		// this->InterfaceEvseController.ReInit();
 
 	this->InterfaceMasterVIP.StartRxData();
 	this->InterfaceMasterVIP.StartTxData(command, pBuffer);
@@ -1875,7 +2100,7 @@ EOsResult TTaskHAL::SendCommand(EIfcVipCommand command, u8* pBuffer)
 						TASK_HAL_EVENT_UART_ERROR   |
 						TASK_HAL_EVENT_UART_RX_TIMEOUT,
 						&resultBits,
-						40);
+						100);
 
 	if(result == OsResult_Timeout)
 	{
@@ -1893,13 +2118,6 @@ EOsResult TTaskHAL::SendCommand(EIfcVipCommand command, u8* pBuffer)
 		return(OsResult_ErrorI2cReceive);
 	}
 
-/*	if((resultBits & TASK_HAL_EVENT_UART_RX_TIMEOUT) > 0)
-	{
-		return(OsResult_Timeout);
-	} */
-
-
-//	}
 
 
 	return(OsResult_Timeout);
@@ -1918,6 +2136,7 @@ EOsResult TTaskHAL::Init(void)
 
 
 	this->AcPowerOff();
+	this->Gpio.SetLevelTopResetPin(GpioLevel_High);  // Set Reset Top CPU
 
 	this->flagSentEventTopRemoved = false;
 	this->flagSentEventTopPresent = true;
@@ -1936,7 +2155,7 @@ EOsResult TTaskHAL::Init(void)
 	this->lastTPtcLeft[0] = this->lastTPtcLeft[1] = 2000;
 	this->lastTPtcRight[0] = this->lastTPtcRight[1] = 2000;
 	
-	this->InterfaceMasterVIP.Init(&huart2, USART2);
+	this->InterfaceMasterVIP.Init(IfcUart_2);
 
 	this->counterPwmHeater = 0;
 

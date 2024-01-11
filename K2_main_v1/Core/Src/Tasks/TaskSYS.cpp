@@ -81,7 +81,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 	if(huart == &huart2)
 	{
-//		TaskHAL.SetEventUart2_RxCpltFromISR();
+		TaskHAL.SetEventUart2_RxCpltFromISR();
 	}
 
 }
@@ -95,7 +95,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 
 	if(huart == &huart2)
 	{
-//		TaskHAL.SetEventUart2_TxCpltFromISR();
+		TaskHAL.SetEventUart2_TxCpltFromISR();
 	}
 
 }
@@ -109,7 +109,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 
 	if(huart == &huart2)
 	{
-//		TaskHAL.SetEventUart2_ErrorFromISR();
+		TaskHAL.SetEventUart2_ErrorFromISR();
 	}
 
 }
@@ -577,8 +577,8 @@ void TTaskSYS::ProcessRxData()
 	this->InterfaceSlaveVIP.StartTxData(command, data);
 
 	// DEBUG
-	this->Delay(20);
-	this->Delay(2);
+//	this->Delay(20);
+//	this->Delay(2);
 	// DEBUG
 }
 //=== end ProcessEvseRxData ========================================================
@@ -1225,6 +1225,64 @@ u64 TTaskSYS::GetSystemCounter()
 *
 *  @return ... .
 */
+void TTaskSYS::TestChambers()
+{
+	TaskHAL.AcPowerOn();
+	this->Delay(1000);
+	while(true)
+	{
+		TaskChmLeft.MotorChamber.StartForward();
+		this->Delay(100);
+		TaskChmRight.MotorChamber.StartForward();
+		this->Delay(1000 * 120);  // 2 Minutes
+		TaskChmLeft.MotorChamber.Stop();
+		this->Delay(100);
+		TaskChmRight.MotorChamber.Stop();
+
+		this->Delay(1000);
+
+		TaskChmLeft.MotorChamber.StartBackward();
+		this->Delay(100);
+		TaskChmRight.MotorChamber.StartBackward();
+	   	this->Delay(1000 * 30);  // 30 Seconds
+	   	TaskChmLeft.MotorChamber.Stop();
+	   	this->Delay(100);
+	   	TaskChmRight.MotorChamber.Stop();
+
+	   	this->Delay(1000);
+
+	   	TaskChmLeft.MotorChamber.StartForward();
+	   	this->Delay(100);
+	   	TaskChmRight.MotorChamber.StartForward();
+	   	this->Delay(1000 * 120);  // 2 Minutes
+	   	TaskChmLeft.MotorChamber.Stop();
+	   	this->Delay(100);
+	   	TaskChmRight.MotorChamber.Stop();
+
+	   	this->Delay(1000);
+
+	   	TaskChmLeft.MotorChamber.StartBackward();
+	   	this->Delay(100);
+	   	TaskChmRight.MotorChamber.StartBackward();
+	   	this->Delay(1000 * 30);  // 30 Seconds
+	   	TaskChmLeft.MotorChamber.Stop();
+	   	this->Delay(100);
+	   	TaskChmRight.MotorChamber.Stop();
+
+	   	this->Delay(1000);
+
+	}
+
+
+}
+//=== end TestChambers =============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
 void TTaskSYS::TestChamberMotors()
 {
 	TaskHAL.AcPowerOn();
@@ -1279,7 +1337,7 @@ void TTaskSYS::TestMainMotor()
 		// added resistor
 		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
 
-		TaskHAL.StartMainMotorCCW();
+		TaskHAL.StartMainMotorCW();
 
 		this->Delay(1000);
 		// short cut resistor
@@ -1288,8 +1346,6 @@ void TTaskSYS::TestMainMotor()
 		this->Delay(9000);
 
 		TaskHAL.StopMainMotor();
-
-		continue;
 
 		this->Delay(200);
 		TaskHAL.BrakeOnMainMotor();
@@ -1322,7 +1378,7 @@ void TTaskSYS::TestMainMotor()
 
 
 		TaskHAL.AcPowerOff();
-		this->Delay(30000);  // 30 Sec
+		this->Delay(120 * 1000);  // 2 Minutes
 	}
 
 }
@@ -1353,14 +1409,14 @@ void TTaskSYS::TestPtcFans()
 
 		this->Delay(1000);
 
-		TaskChmRight.PtcFan.Start(PtcFanPwm_50, PtcFanMaxPwm_50);
+/*		TaskChmRight.PtcFan.Start(PtcFanPwm_50, PtcFanMaxPwm_50);
 		this->Delay(20000);
 		TaskChmRight.PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
 		this->Delay(20000);
 		TaskChmRight.PtcFan.Start(PtcFanPwm_100, PtcFanMaxPwm_66_100);
 		this->Delay(20000);
 
-		TaskChmRight.PtcFan.Stop();
+		TaskChmRight.PtcFan.Stop(); */
 
 	}
 }
@@ -1376,6 +1432,11 @@ void TTaskSYS::TestPtcHeaters()
 {
 	TaskHAL.AcPowerOn();
 	this->Delay(1000);
+
+	while(true)
+	{
+		this->Delay(20000);
+	}
 
 	while(true)
 	{
@@ -1469,7 +1530,7 @@ EOsResult TTaskSYS::Init(void)
 
 
 	this->SetSysState(SysState_Init);
-	this->InterfaceSlaveVIP.Init(&huart1, USART1);
+	this->InterfaceSlaveVIP.Init(IfcUart_1);
 	this->InterfaceSlaveVIP.ReInit();
    	this->StartRxData();
 
@@ -1489,10 +1550,11 @@ EOsResult TTaskSYS::Init(void)
 
    	// DEBUG
 // 	this->TestChamberMotors();
-   	this->TestMainMotor();
+ 	this->TestMainMotor();
 // 	this->TestPtcFans();
 // 	this->TestPtcHeaters();
-//   	this->TestPadHeaters();
+//  this->TestPadHeaters();
+// 	this->TestChambers();
    	// DEBUG
 
    	this->SelfTest();

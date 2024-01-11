@@ -227,12 +227,6 @@ enum EIfcControl
 	IfcControl_On = 0x01,
 };
 
-enum EIfcUart
-{
-	IfcUart_1,
-	IfcUart_2,
-};
-
 
 ////// Data. //////
 #define IFC_VIP_DATA_START       0
@@ -256,27 +250,11 @@ enum EIfcUart
 #define IFC_VIP_BME688_GAS_RESISTANCE  (IFC_VIP_BME688_PRESSURE + 4)         // 4 bytes
 #define IFC_VIP_BME688_HUMIDITY        (IFC_VIP_BME688_GAS_RESISTANCE + 4)   // 2 byte
 
-#define IFC_VIP_ADC_CHANNEL_INDEX     IFC_VIP_NUMBER_OF_ITEM
-#define IFC_VIP_FAN_SPEED_INDEX       (IFC_VIP_NUMBER_OF_ITEM + 1)        // 1 byte - PWM 0-100%
-#define IFC_VIP_T_SENSOR_INDEX        (IFC_VIP_NUMBER_OF_ITEM + 1)
+#define IFC_VIP_ADC_CHANNEL_INDEX  IFC_VIP_NUMBER_OF_ITEM
+#define IFC_VIP_FAN_PWM_INDEX      (IFC_VIP_NUMBER_OF_ITEM + 1)  // 1 byte - PWM 0-100%
+#define IFC_VIP_FAN_RPM_INDEX      (IFC_VIP_FAN_PWM_INDEX + 1)   // 2 bytes - RPM
+#define IFC_VIP_T_SENSOR_INDEX     (IFC_VIP_NUMBER_OF_ITEM + 1)
 
-#define IFC_VIP_TEST_COMPONENT_INDEX  IFC_VIP_NUMBER_OF_ITEM
-#define IFC_VIP_TEST_GAS_TYPE_INDEX   (IFC_VIP_TEST_COMPONENT_INDEX + 1)  // 1 byte
-
-#define IFC_VIP_HEATER_LOW_T_INDEX    (IFC_VIP_NUMBER_OF_ITEM + 1)        // 1 byte - +/-127
-#define IFC_VIP_HEATER_HIGH_T_INDEX   (IFC_VIP_HEATER_LOW_T_INDEX + 1)    // 1 byte - +/-127
-#define IFC_VIP_HEATER_PWM_INDEX      (IFC_VIP_HEATER_HIGH_T_INDEX + 1)   // 1 byte - PWM 0-100%
-
-#define IFC_VIP_MOTOR_ON_TIME_INDEX   (IFC_VIP_NUMBER_OF_ITEM + 1)        // 2 bytes - Sec
-#define IFC_VIP_MOTOR_OFF_TIME_INDEX  (IFC_VIP_MOTOR_ON_TIME_INDEX + 2)   // 2 bytes
-#define IFC_VIP_MOTOR_PWM_INDEX       (IFC_VIP_MOTOR_OFF_TIME_INDEX + 2)  // 1 byte
-
-#define IFC_VIP_LAMP_MAX_GAS_LEVEL_INDEX  (IFC_VIP_NUMBER_OF_ITEM + 1)            // 2 bytes - ppb
-#define IFC_VIP_LAMP_ON_TIME_INDEX        (IFC_VIP_LAMP_MAX_GAS_LEVEL_INDEX + 2)  // 2 bytes - Sec
-#define IFC_VIP_LAMP_OFF_TIME_INDEX       (IFC_VIP_LAMP_ON_TIME_INDEX + 2)        // 2 bytes
-
-#define IFC_VIP_GAS_TYPE_INDEX   (IFC_VIP_NUMBER_OF_ITEM + 1)        // 1 byte
-#define IFC_VIP_GAS_VALUE_INDEX  (IFC_VIP_GAS_TYPE_INDEX + 1)        // 4 bytes
 
 #define IFC_VIP_MEMORY_TYPE_INDEX     IFC_VIP_DATA_START               // 1 byte
 #define IFC_VIP_MEMORY_ADR_INDEX      (IFC_VIP_MEMORY_TYPE_INDEX + 1)  // 4 byte
@@ -287,12 +265,7 @@ enum EIfcUart
 #define IFC_VIP_LAMP_NUMBER_INDEX   IFC_VIP_DATA_START               // 1 byte
 #define IFC_VIP_LAMP_CONTROL_INDEX  (IFC_VIP_LAMP_NUMBER_INDEX + 1)  // 1 byte
 
-#define IFC_VIP_MOTOR_NUMBER_INDEX     IFC_VIP_DATA_START                 // 1 byte
-#define IFC_VIP_MOTOR_CONTROL_INDEX    (IFC_VIP_MOTOR_NUMBER_INDEX + 1)   // 1 byte
-#define IFC_VIP_MOTOR_DIRECTION_INDEX  (IFC_VIP_MOTOR_CONTROL_INDEX + 1)  // 1 byte
-
-#define IFC_VIP_HEATER_NUMBER_INDEX   IFC_VIP_DATA_START                 // 1 byte
-#define IFC_VIP_HEATER_CONTROL_INDEX  (IFC_VIP_HEATER_NUMBER_INDEX + 1)  // 1 byte
+#define IFC_VIP_POSITION_INDEX   (IFC_VIP_NUMBER_OF_ITEM + 1)  // 1 byte
 
 
 /**********************************************************************************/
@@ -307,7 +280,7 @@ public:
 
 
 	////// functions //////
-	void Init(EIfcUart ifcUart);
+	void Init(UART_HandleTypeDef* hUart, USART_TypeDef* uartInstance);
 	EOsResult StartTxData(EIfcVipCommand command, u8* data = NULL);
 	EOsResult StartRxData(void);
 	EOsResult ParsingRxPacket(void);
@@ -336,7 +309,9 @@ private:
 	u8 bufferUartDataRx[IFC_VIP_UART_SIZE_PACKET - 2];
     
 	EIfcVipCommand command;  // for slave mode and 'state' for master mode
-	EIfcUart ifcUart;
+
+//	UART_HandleTypeDef* hUart;
+//	USART_TypeDef* uartInstance;
     
     // DEBUG
     // DEBUG

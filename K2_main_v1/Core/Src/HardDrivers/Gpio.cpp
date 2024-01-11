@@ -75,6 +75,25 @@ EGpioLevel TGpio::ReadTopRemoved(void)
 *
 *  @return void .
 */
+EGpioLevel TGpio::ReadTopPresent(void)
+{
+	if(HAL_GPIO_ReadPin(TOP_PRESENT_GPIO_Port, TOP_PRESENT_Pin) == GPIO_PIN_RESET)
+	{
+		return(GpioLevel_Low);
+	}
+	else
+	{
+		return(GpioLevel_High);
+	}
+}
+//=== end ReadTopPresent ===========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
 EGpioLevel TGpio::ReadLidOpen(void)
 {
 	if(HAL_GPIO_ReadPin(LID_OPEN_GPIO_Port, LID_OPEN_Pin) == GPIO_PIN_RESET)
@@ -144,6 +163,25 @@ EGpioLevel TGpio::ReadPresentChamberRight(void)
 	}
 }
 //=== end ReadPresentChamberRight ==================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TGpio::SetLevelTopResetPin(EGpioLevel gpioLevel)
+{
+	if(gpioLevel == GpioLevel_Low)
+	{
+		HAL_GPIO_WritePin(TOP_RST_GPIO_Port, TOP_RST_Pin, GPIO_PIN_RESET);
+	}
+	else
+	{
+		HAL_GPIO_WritePin(TOP_RST_GPIO_Port, TOP_RST_Pin, GPIO_PIN_SET);
+	}
+}
+//=== end SetLevelTopResetPin ======================================================
 
 //==================================================================================
 /**
