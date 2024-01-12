@@ -436,7 +436,7 @@ void TTaskSYS::SetDamPosition()
 			return;
 		}
 
-		TaskHAL.DamMotorStartForward();
+		TaskHAL.DamMotorStartBackward();
 	}
 	else
 	{
@@ -446,13 +446,13 @@ void TTaskSYS::SetDamPosition()
 			return;
 		}
 
-		TaskHAL.DamMotorStartBackward();
+		TaskHAL.DamMotorStartForward();
 	}
 
 	this->SetSysState(SysState_Busy);
 
 	result = this->WaitDamPosition(4000); // timeout - 4 Sec
-	this->Delay(10);  // todo- ???
+	this->Delay(140);  // todo- ???
 	TaskHAL.DamMotorStop();
 
 	if(result != OsResult_Ok)
@@ -869,11 +869,21 @@ EOsResult TTaskSYS::Init(void)
 	this->enableTickHook = true;
 	while(true)
 	{
-		TaskHAL.StartFan(50);
+/*		TaskHAL.StartFan(50);
 		this->Delay(5000);
 		TaskHAL.StartFan(100);
 		this->Delay(5000);
 		TaskHAL.StopFan();
+
+		this->Delay(5000); */
+
+		this->setDamPosition = DamPosition_LeftOpen;
+		this->SetDamPosition();
+
+		this->Delay(5000);
+
+		this->setDamPosition = DamPosition_RightOpen;
+		this->SetDamPosition();
 
 		this->Delay(5000);
 	}

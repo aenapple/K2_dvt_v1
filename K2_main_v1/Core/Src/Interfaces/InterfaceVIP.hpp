@@ -125,24 +125,20 @@ enum EIfcVipSubState
 enum EIfcVipComponent
 {
 	IfcVipComponent_All = 0x00,
-	IfcVipComponent_LampUv = 0x01,
-	IfcVipComponent_LampOzone = 0x02,
-	IfcVipComponent_MotorChamber1 = 0x03,
-	IfcVipComponent_MotorChamber2 = 0x04,
-	IfcVipComponent_MotorMain = 0x05,
-	IfcVipComponent_GasSensor = 0x06,
-	IfcVipComponent_LevelSensorTank = 0x07,
-	IfcVipComponent_LevelSensorChamber1 = 0x08,
-	IfcVipComponent_LevelSensorChamber2 = 0x09,
-	IfcVipComponent_HeaterChamber1 = 0x0A,
-	IfcVipComponent_HeaterChamber2 = 0x0B,
-	IfcVipComponent_OpenLidSensor = 0x0C,
-	IfcVipComponent_OpenHopperSensor1 = 0x0D,
-	IfcVipComponent_OpenHopperSensor2 = 0x0E,
-	IfcVipComponent_Speaker = 0x0F,
-	IfcVipComponent_Leds = 0x10,
-	IfcVipComponent_Fan = 0x11,
-	IfcVipComponent_MainMotorTimer = 0x12,
+	IfcVipComponent_Lamp1 = 0x01,
+	IfcVipComponent_Lamp2 = 0x02,
+	IfcVipComponent_MainMotor = 0x03,
+	IfcVipComponent_MotorChamber1 = 0x04,
+	IfcVipComponent_MotorChamber2 = 0x05,
+	IfcVipComponent_PadHeater1 = 0x06,
+	IfcVipComponent_PadHeater2 = 0x07,
+	IfcVipComponent_PtcHeater1 = 0x08,
+	IfcVipComponent_PtcHeater2 = 0x09,
+	IfcVipComponent_MainFan = 0x0A,
+	IfcVipComponent_DamMotor = 0x0B,
+
+
+
 };
 
 enum EIfcVipGasType

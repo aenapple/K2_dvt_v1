@@ -94,12 +94,12 @@ void TTaskHAL::SetEventTickFromISR(void)
 		if(this->counterLampFront < TASK_HAL_AC_PULSE_NUMBERS)
 		{
 			this->halTurnLampFront = HalTurn_Off;
-			HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
+//			HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
 		}
 		else
 		{
 			this->halTurnLampFront = HalTurn_On;
-			HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_RESET);
+//			HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_RESET);
 		}
 		this->counterLampFront = 0;
 
@@ -433,7 +433,7 @@ u16 TTaskHAL::GetFanRpm()
 */
 void TTaskHAL::ControlLamp(EHalLamp halLamp, EHalTurn halTurn)
 {
-	if(halLamp == HalLamp_Back)
+	if(halLamp == HalLamp_Front)
 	{
 		if(halTurn == HalTurn_Off)
 		{
@@ -444,7 +444,7 @@ void TTaskHAL::ControlLamp(EHalLamp halLamp, EHalTurn halTurn)
 			HAL_GPIO_WritePin(ON_FRONT_LAMP_GPIO_Port, ON_FRONT_LAMP_Pin, GPIO_PIN_SET);
 		}
 	}
-	else  // HalLamp_Front
+	else  // HalLamp_Back
 	{
 		if(halTurn == HalTurn_Off)
 		{
@@ -547,7 +547,7 @@ EGpioLevel TTaskHAL::ReadDamSensorLeft()
 */
 EGpioLevel TTaskHAL::ReadDamSensorRight()
 {
-	if(HAL_GPIO_ReadPin(LOCK_RIGHT_GPIO_Port, LOCK_RIGHT_Pin) == GPIO_PIN_RESET)
+	if(HAL_GPIO_ReadPin(DAM_RIGHT_GPIO_Port, DAM_RIGHT_Pin) == GPIO_PIN_RESET)
 	{
 		return(GpioLevel_Low);
 	}
@@ -606,12 +606,12 @@ void TTaskHAL::DamMotorStop()
 */
 void TTaskHAL::HandlerGpioInterrupt(u16 gpioPin)
 {
-	if(gpioPin == IN_FRONT_LAMP_Pin)
+	if(gpioPin == IN_BACK_LAMP_Pin)
 	{
 		this->counterLampBack++;
 	}
 
-	if(gpioPin == IN_BACK_LAMP_Pin)
+	if(gpioPin == IN_FRONT_LAMP_Pin)
 	{
 		this->counterLampFront++;
 	}
