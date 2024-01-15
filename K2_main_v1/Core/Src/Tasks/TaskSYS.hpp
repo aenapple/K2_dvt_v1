@@ -29,6 +29,7 @@
 #define TASK_SYS_EVENT_LID_OPEN      (1<<8)
 #define TASK_SYS_EVENT_LID_CLOSED    (1<<9)
 #define TASK_SYS_EVENT_TICK_PROCESS  (1<<10)
+#define TASK_SYS_EVENT_START_TEST    (1<<11)
 
 
 #define TASK_SYS_EVENT_OK     (1<<14)
@@ -203,6 +204,8 @@ private:
 
     u16 counterTimeTickProcess;
 
+    EIfcVipComponent ifcVipComponent;
+
 
 	////// constants //////
     static const u8 errorCode[];
@@ -213,6 +216,7 @@ private:
 	////// functions //////
     void SelfTest(void);
     void ProcessLidOpen(void);
+    void ProcessTest(void);
     void ProcessError(void);
     void InitProcessError(EOsResult result);
     void ProcessRxData(void);
@@ -238,7 +242,7 @@ private:
     EOsResult ControlHeater(EIfcVipCommand ifcVipCommand, u8* pData);
     EOsResult GetStateHeater(EIfcVipCommand ifcVipCommand, u8* pData);
     void Reset(void);
-    void TickProcess();
+    void ProcessTick();
 
     // DEBUG
     void TestChambers(void);

@@ -142,7 +142,7 @@ void TTaskHAL::Run(void)
 					100
 					) == OsResult_Timeout)
         {
-            this->GetStateTopCpu();
+//            this->GetStateTopCpu();
             this->CheckTopRemoved();
             this->CheckLidOpen();
 //            this->GetSensorBme688();

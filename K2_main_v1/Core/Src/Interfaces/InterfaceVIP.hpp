@@ -40,7 +40,7 @@ enum EIfcVipCommand
 	IfcVipCommand_GetMotorParameters = 0x0C,
 	IfcVipCommand_GetLampParameters = 0x0D,
 	IfcVipCommand_GetHeaterParameters = 0x0E,
-	IfcVipCommand_Test = 0x0F,
+	IfcVipCommand_StartTest = 0x0F,
 	IfcVipCommand_ContinueProcess = 0x10,
 	IfcVipCommand_StopProcess = 0x11,
 	IfcVipCommand_StartProcess = 0x12,
@@ -58,6 +58,7 @@ enum EIfcVipCommand
 	IfcVipCommand_GetStateHeater = 0x1E,
 	IfcVipCommand_SetPosition = 0x1F,
 	IfcVipCommand_GetLevelSensor = 0x20,
+	IfcVipCommand_GetResultTest = 0x21,
 
 
 	IfcVipCommand_nAck = 0xFF,

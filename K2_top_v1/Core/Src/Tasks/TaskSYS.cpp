@@ -343,7 +343,7 @@ void TTaskSYS::ProcessRxData()
 //		case IfcVipCommand_GetHeaterParameters:
 //			break;
 
-		case IfcVipCommand_Test:
+		case IfcVipCommand_StartTest:
 			break;
 
 //		case IfcVipCommand_ContinueProcess:

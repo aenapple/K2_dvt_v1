@@ -210,6 +210,7 @@ void TTaskSYS::Run(void)
 					TASK_SYS_EVENT_TOP_REMOVED  |
 					TASK_SYS_EVENT_LID_OPEN     |
 					TASK_SYS_EVENT_TICK_PROCESS |
+					TASK_SYS_EVENT_START_TEST   |
 					TASK_SYS_EVENT_ERROR,
 					&resultBits,
 					1000  // 1 Sec
@@ -254,7 +255,12 @@ void TTaskSYS::Run(void)
 
  		if((resultBits & TASK_SYS_EVENT_TICK_PROCESS) > 0)
  		{
- 		   	this->TickProcess();
+ 		   	this->ProcessTick();
+ 		}
+
+ 		if((resultBits & TASK_SYS_EVENT_START_TEST) > 0)
+ 		{
+ 		   	this->ProcessTest();
  		}
 
 
@@ -346,6 +352,55 @@ void TTaskSYS::SelfTest()
 
 }
 //=== end SelfTest =================================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskSYS::ProcessTest()
+{
+
+
+/*	while(true)
+	{
+		if(this->EventGroup.WaitOrBits(
+					TASK_SYS_EVENT_UART_RX_CPLT |
+					TASK_SYS_EVENT_UART_ERROR	|
+					TASK_SYS_EVENT_TICK_PROCESS |
+					TASK_SYS_EVENT_ERROR,
+					&resultBits,
+					1000  // 1 Sec
+					) == OsResult_Timeout)
+	    {
+			continue;
+	    }
+
+	    if((resultBits & TASK_SYS_EVENT_ERROR) > 0)
+	    {
+	      	this->ProcessError();
+	    }
+
+	    if((resultBits & TASK_SYS_EVENT_UART_RX_CPLT) > 0)
+	    {
+	    	this->ProcessRxData();
+	    }
+
+	    if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
+	    {
+	    	this->InterfaceSlaveVIP.ReInit();
+	    	this->Delay(2);
+	    	this->StartRxData();
+
+	    	continue;
+	    }
+
+	} */
+
+
+}
+//=== end ProcessTest ==============================================================
 
 //==================================================================================
 /**
@@ -481,7 +536,11 @@ void TTaskSYS::ProcessRxData()
 //		case IfcVipCommand_GetHeaterParameters:
 //			break;
 
-		case IfcVipCommand_Test:
+		case IfcVipCommand_StartTest:
+//			this->ifcVipComponent = (EIfcVipComponent)pData[IFC_VIP_NUMBER_OF_ITEM];
+//			this->SetEvents(TASK_SYS_EVENT_START_TEST);
+			this->Delay(300);
+
 			break;
 
 //		case IfcVipCommand_ContinueProcess:
@@ -932,12 +991,12 @@ void TTaskSYS::Reset()
 *  @return
 *  		none.
 */
-void TTaskSYS::TickProcess()
+void TTaskSYS::ProcessTick()
 {
 	TaskChmLeft.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
 	TaskChmRight.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
 }
-//=== end TickProcess ==============================================================
+//=== end ProcessTick ==============================================================
 
 //==================================================================================
 /**
@@ -1550,14 +1609,14 @@ EOsResult TTaskSYS::Init(void)
 
    	// DEBUG
 // 	this->TestChamberMotors();
- 	this->TestMainMotor();
+// 	this->TestMainMotor();
 // 	this->TestPtcFans();
 // 	this->TestPtcHeaters();
 //  this->TestPadHeaters();
 // 	this->TestChambers();
    	// DEBUG
 
-   	this->SelfTest();
+//   	this->SelfTest();
 
 
 
