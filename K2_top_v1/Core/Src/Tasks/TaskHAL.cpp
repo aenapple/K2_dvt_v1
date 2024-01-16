@@ -93,12 +93,14 @@ void TTaskHAL::SetEventTickFromISR(void)
 
 		if(this->counterLampFront < TASK_HAL_AC_PULSE_NUMBERS)
 		{
-			this->halTurnLampFront = HalTurn_Off;
+			this->SetSysStateLamp(HalLamp_Front, IFC_ITEM_STATE_OFF);
+//			this->halTurnLampFront = HalTurn_Off;
 //			HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
 		}
 		else
 		{
-			this->halTurnLampFront = HalTurn_On;
+			this->SetSysStateLamp(HalLamp_Front, IFC_ITEM_STATE_ON);
+//			this->halTurnLampFront = HalTurn_On;
 //			HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_RESET);
 		}
 		this->counterLampFront = 0;
@@ -106,11 +108,13 @@ void TTaskHAL::SetEventTickFromISR(void)
 
 		if(this->counterLampBack < TASK_HAL_AC_PULSE_NUMBERS)
 		{
-			this->halTurnLampBack = HalTurn_Off;
+			this->SetSysStateLamp(HalLamp_Back, IFC_ITEM_STATE_OFF);
+//			this->halTurnLampBack = HalTurn_Off;
 		}
 		else
 		{
-			this->halTurnLampBack = HalTurn_On;
+			this->SetSysStateLamp(HalLamp_Back, IFC_ITEM_STATE_ON);
+//			this->halTurnLampBack = HalTurn_On;
 		}
 		this->counterLampBack = 0;
 
@@ -162,6 +166,7 @@ void TTaskHAL::Run(void)
 		if(result != OsResult_Ok)
 		{
 			this->flagErrorBme688_Fan = true;
+			this->SetSysStateSensor(IFC_SYS_STATE_BME688_FAN, IFC_ITEM_STATE_OFF);
 		}
 	}
 
@@ -171,6 +176,7 @@ void TTaskHAL::Run(void)
 		if(result != OsResult_Ok)
 		{
 			this->flagErrorBme688_Left = true;
+			this->SetSysStateSensor(IFC_SYS_STATE_BME688_LEFT, IFC_ITEM_STATE_OFF);
 		}
 	}
 
@@ -180,10 +186,9 @@ void TTaskHAL::Run(void)
 		if(result != OsResult_Ok)
 		{
 			this->flagErrorBme688_Right = true;
+			this->SetSysStateSensor(IFC_SYS_STATE_BME688_RIGHT, IFC_ITEM_STATE_OFF);
 		}
 	}
-
-
 
 
 	while(true)
@@ -196,6 +201,8 @@ void TTaskHAL::Run(void)
 					100
 					) == OsResult_Timeout)
         {
+        	this->UpdateHardwareStates();
+
         	continue;
         }
       
@@ -204,7 +211,7 @@ void TTaskHAL::Run(void)
         {
         	if(!this->flagErrorBme688_Fan)
         	{
-        	this->ProcessDataBme688(&this->Bme688_Fan);
+        		this->ProcessDataBme688(&this->Bme688_Fan);
         	}
         }
 
@@ -262,17 +269,20 @@ void TTaskHAL::ProcessDataBme688(TBme688* pBme688)
 		if(pBme688 == &this->Bme688_Fan)
 		{
 			this->flagErrorBme688_Fan = true;
+			this->SetSysStateSensor(IFC_SYS_STATE_BME688_FAN, IFC_ITEM_STATE_OFF);
 			return;
 		}
 
 		if(pBme688 == &this->Bme688_Left)
 		{
 			this->flagErrorBme688_Left = true;
+			this->SetSysStateSensor(IFC_SYS_STATE_BME688_LEFT, IFC_ITEM_STATE_OFF);
 			return;
 		}
 
 		////// if(pBme688 == &this->Bme688_Right) //////
 		this->flagErrorBme688_Right = true;
+		this->SetSysStateSensor(IFC_SYS_STATE_BME688_RIGHT, IFC_ITEM_STATE_OFF);
 		return;
 	}
 
@@ -353,6 +363,59 @@ void TTaskHAL::ProcessDataBme688(TBme688* pBme688)
 *  @return
 *  		none.
 */
+void TTaskHAL::UpdateHardwareStates(void)
+{
+	if(this->ReadLockLeft() == GpioLevel_Low)
+	{
+		this->SetSysStateSensor(IFC_SYS_STATE_SWITCH_LOCK_LEFT, IFC_ITEM_STATE_ON);
+	}
+	else
+	{
+		this->SetSysStateSensor(IFC_SYS_STATE_SWITCH_LOCK_LEFT, IFC_ITEM_STATE_OFF);
+	}
+
+	if(this->ReadLockRight() == GpioLevel_Low)
+	{
+		this->SetSysStateSensor(IFC_SYS_STATE_SWITCH_LOCK_RIGHT, IFC_ITEM_STATE_ON);
+	}
+	else
+	{
+		this->SetSysStateSensor(IFC_SYS_STATE_SWITCH_LOCK_RIGHT, IFC_ITEM_STATE_OFF);
+	}
+
+	if(this->ReadDamSensorLeft() == GpioLevel_Low)
+	{
+		this->SetSysStateSensor(IFC_SYS_STATE_SWITCH_DAM_LEFT, IFC_ITEM_STATE_ON);
+	}
+	else
+	{
+		this->SetSysStateSensor(IFC_SYS_STATE_SWITCH_DAM_LEFT, IFC_ITEM_STATE_OFF);
+	}
+
+	if(this->ReadDamSensorRight() == GpioLevel_Low)
+	{
+		this->SetSysStateSensor(IFC_SYS_STATE_SWITCH_DAM_RIGHT, IFC_ITEM_STATE_ON);
+	}
+	else
+	{
+		this->SetSysStateSensor(IFC_SYS_STATE_SWITCH_DAM_RIGHT, IFC_ITEM_STATE_OFF);
+	}
+
+	// todo:
+	// read Tank Level Sensor
+	// read Chamber Left Level Sensor
+	// read Chamber Right Level Sensor
+
+}
+//=== end UpdateHardwareStates =====================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return
+*  		none.
+*/
 s8 TTaskHAL::GetTemperatureCpu2(void)
 {
 	return(this->tCpu2);
@@ -423,6 +486,33 @@ u16 TTaskHAL::GetFanRpm()
 	return(this->rpmFan);
 }
 //=== end GetFanRpm ================================================================
+
+//==================================================================================
+/**
+*  The function ... .
+*
+*  @return
+*  		none.
+*/
+TBme688Sensors* TTaskHAL::GetPointerBme688Sensors(EIfcBme688Sensor ifcBme688Sensor)
+{
+	if(ifcBme688Sensor == IfcBme688Sensor_Fan)
+	{
+		return(this->Bme688_Fan.GetPointerBme688Sensors());
+	}
+	else
+	{
+		if(ifcBme688Sensor == IfcBme688Sensor_Left)
+		{
+			return(this->Bme688_Left.GetPointerBme688Sensors());
+		}
+		else
+		{
+			return(this->Bme688_Right.GetPointerBme688Sensors());
+		}
+	}
+}
+//=== end GetPointerBme688Sensors ==================================================
 
 //==================================================================================
 /**
@@ -527,7 +617,7 @@ EGpioLevel TTaskHAL::ReadLockRight()
 */
 EGpioLevel TTaskHAL::ReadDamSensorLeft()
 {
-	if(HAL_GPIO_ReadPin(DAM_LEFT_GPIO_Port, DAM_LEFT_Pin) == GPIO_PIN_RESET)
+	if(HAL_GPIO_ReadPin(DAM_RIGHT_GPIO_Port, DAM_RIGHT_Pin) == GPIO_PIN_RESET)
 	{
 		return(GpioLevel_Low);
 	}
@@ -547,7 +637,7 @@ EGpioLevel TTaskHAL::ReadDamSensorLeft()
 */
 EGpioLevel TTaskHAL::ReadDamSensorRight()
 {
-	if(HAL_GPIO_ReadPin(DAM_RIGHT_GPIO_Port, DAM_RIGHT_Pin) == GPIO_PIN_RESET)
+	if(HAL_GPIO_ReadPin(DAM_LEFT_GPIO_Port, DAM_LEFT_Pin) == GPIO_PIN_RESET)
 	{
 		return(GpioLevel_Low);
 	}
@@ -568,6 +658,7 @@ EGpioLevel TTaskHAL::ReadDamSensorRight()
 void TTaskHAL::DamMotorStartForward()
 {
 	this->DamMotor.StartForward();
+	this->SetSysStateDamMotor(IFC_ITEM_STATE_ON);
 }
 //=== end DamMotorStartForward =====================================================
 
@@ -581,6 +672,7 @@ void TTaskHAL::DamMotorStartForward()
 void TTaskHAL::DamMotorStartBackward()
 {
 	this->DamMotor.StartBackward();
+	this->SetSysStateDamMotor(IFC_ITEM_STATE_ON);
 }
 //=== end DamMotorStartBackward ====================================================
 
@@ -594,8 +686,124 @@ void TTaskHAL::DamMotorStartBackward()
 void TTaskHAL::DamMotorStop()
 {
 	this->DamMotor.Stop();
+	this->SetSysStateDamMotor(IFC_ITEM_STATE_OFF);
 }
 //=== end DamMotorStop =============================================================
+
+//==================================================================================
+/**
+*  The function ... .
+*
+*  @return
+*  		none.
+*/
+void TTaskHAL::SetSysStateDamMotor(u8 stateDmaMotor)
+{
+	this->IfcSystemState.motorStates = this->IfcSystemState.motorStates & (0xFF - IFC_SYS_STATE_MOTOR_DAM);
+	this->IfcSystemState.motorStates = this->IfcSystemState.motorStates | (stateDmaMotor << IFC_SYS_SHIFT_MOTOR_DAM);
+}
+//=== end SetSysStateDamMotor ======================================================
+
+//==================================================================================
+/**
+*  The function ... .
+*
+*  @return
+*  		none.
+*/
+void TTaskHAL::SetSysStateLamp(EHalLamp halLamp, u8 stateLamp)
+{
+	if(halLamp == HalLamp_Front)
+	{
+		this->IfcSystemState.lampStates = this->IfcSystemState.lampStates & (0xFF - IFC_SYS_STATE_LAMP_FRONT);
+		this->IfcSystemState.lampStates = this->IfcSystemState.lampStates | (stateLamp << IFC_SYS_SHIFT_LAMP_FRONT);
+	}
+	else  // HalLamp_Back
+	{
+		this->IfcSystemState.lampStates = this->IfcSystemState.lampStates & (0xFF - IFC_SYS_STATE_LAMP_BACK);
+		this->IfcSystemState.lampStates = this->IfcSystemState.lampStates | (stateLamp << IFC_SYS_SHIFT_LAMP_BACK);
+	}
+}
+//=== end SetSysStateLamp ==========================================================
+
+//==================================================================================
+/**
+*  The function ... .
+*
+*  @return
+*  		none.
+*/
+void TTaskHAL::SetSysStateSensor(u16 typeSensor, u8 stateSensor)
+{
+	this->IfcSystemState.sensorStates = this->IfcSystemState.sensorStates & (0xFFFF - typeSensor);
+	switch(typeSensor)
+	{
+		case IFC_SYS_STATE_SWITCH_LID_OPEN:
+			this->IfcSystemState.sensorStates = this->IfcSystemState.sensorStates | (stateSensor << IFC_SYS_SHIFT_SWITCH_LID_OPEN);
+			break;
+
+		case IFC_SYS_STATE_SWITCH_TOP_REMOVED:
+			this->IfcSystemState.sensorStates = this->IfcSystemState.sensorStates | (stateSensor << IFC_SYS_SHIFT_SWITCH_TOP_REMOVED);
+			break;
+
+		case IFC_SYS_STATE_SWITCH_LOCK_LEFT:
+			this->IfcSystemState.sensorStates = this->IfcSystemState.sensorStates | (stateSensor << IFC_SYS_SHIFT_SWITCH_LOCK_LEFT);
+			break;
+
+		case IFC_SYS_STATE_SWITCH_LOCK_RIGHT:
+			this->IfcSystemState.sensorStates = this->IfcSystemState.sensorStates | (stateSensor << IFC_SYS_SHIFT_SWITCH_LOCK_RIGHT);
+			break;
+
+		case IFC_SYS_STATE_SWITCH_PRESENT_TANK:
+			this->IfcSystemState.sensorStates = this->IfcSystemState.sensorStates | (stateSensor << IFC_SYS_SHIFT_SWITCH_PRESENT_TANK);
+			break;
+
+		case IFC_SYS_STATE_SWITCH_PRESENT_CH_LEFT:
+			this->IfcSystemState.sensorStates = this->IfcSystemState.sensorStates | (stateSensor << IFC_SYS_SHIFT_SWITCH_PRESENT_CH_LEFT);
+			break;
+
+		case IFC_SYS_STATE_SWITCH_PRESENT_CH_RIGHT:
+			this->IfcSystemState.sensorStates = this->IfcSystemState.sensorStates | (stateSensor << IFC_SYS_SHIFT_SWITCH_PRESENT_CH_RIGHT);
+			break;
+
+		case IFC_SYS_STATE_SWITCH_DAM_LEFT:
+			this->IfcSystemState.sensorStates = this->IfcSystemState.sensorStates | (stateSensor << IFC_SYS_SHIFT_SWITCH_DAM_LEFT);
+			break;
+
+		case IFC_SYS_STATE_SWITCH_DAM_RIGHT:
+			this->IfcSystemState.sensorStates = this->IfcSystemState.sensorStates | (stateSensor << IFC_SYS_SHIFT_SWITCH_DAM_RIGHT);
+			break;
+
+		case IFC_SYS_STATE_BME688_FAN:
+			this->IfcSystemState.sensorStates = this->IfcSystemState.sensorStates | (stateSensor << IFC_SYS_SHIFT_BME688_FAN);
+			break;
+
+		case IFC_SYS_STATE_BME688_LEFT:
+			this->IfcSystemState.sensorStates = this->IfcSystemState.sensorStates | (stateSensor << IFC_SYS_SHIFT_BME688_LEFT);
+			break;
+
+		case IFC_SYS_STATE_BME688_RIGHT:
+			this->IfcSystemState.sensorStates = this->IfcSystemState.sensorStates | (stateSensor << IFC_SYS_SHIFT_BME688_RIGHT);
+			break;
+
+
+	}
+
+}
+//=== end SetSysStateSwitch ========================================================
+
+//==================================================================================
+/**
+*  The function ... .
+*
+*  @return
+*  		none.
+*/
+TIfcSystemState* TTaskHAL::GetPointerIfcSystemState()
+{
+	return(&this->IfcSystemState);
+}
+//=== end GetPointerIfcSystemState =================================================
 
 //==================================================================================
 /**
@@ -638,7 +846,12 @@ EOsResult TTaskHAL::Init(void)
 	this->Fan.Init();
 
 	this->ControlLamp(HalLamp_Front, HalTurn_Off);
+	this->SetSysStateLamp(HalLamp_Front, IFC_ITEM_STATE_NO_STATE);
 	this->ControlLamp(HalLamp_Back, HalTurn_Off);
+	this->SetSysStateLamp(HalLamp_Back, IFC_ITEM_STATE_NO_STATE);
+
+	this->DamMotor.Init();
+	this->SetSysStateDamMotor(IFC_ITEM_STATE_NO_STATE);
 
 
 	u32 samplingTime;
@@ -648,24 +861,39 @@ EOsResult TTaskHAL::Init(void)
 	if(result != OsResult_Ok)
 	{
 		this->flagErrorBme688_Fan = true;
+		this->SetSysStateSensor(IFC_SYS_STATE_BME688_FAN, IFC_ITEM_STATE_OFF);
 	}
-	this->flagErrorBme688_Fan = false;
+	else
+	{
+		this->flagErrorBme688_Fan = false;
+		this->SetSysStateSensor(IFC_SYS_STATE_BME688_FAN, IFC_ITEM_STATE_ON);
+	}
 	this->Bme688_Fan.SetCounterSamplingTime(samplingTime);
 
 	result = this->Bme688_Left.Init(Bme688Sensor_Left);
 	if(result != OsResult_Ok)
 	{
 		this->flagErrorBme688_Left = true;
+		this->SetSysStateSensor(IFC_SYS_STATE_BME688_LEFT, IFC_ITEM_STATE_OFF);
 	}
-	this->flagErrorBme688_Left = false;
+	else
+	{
+		this->flagErrorBme688_Left = false;
+		this->SetSysStateSensor(IFC_SYS_STATE_BME688_LEFT, IFC_ITEM_STATE_ON);
+	}
 	this->Bme688_Left.SetCounterSamplingTime(samplingTime + (samplingTime / 3));
 
 	result = this->Bme688_Right.Init(Bme688Sensor_Right);
 	if(result != OsResult_Ok)
 	{
 		this->flagErrorBme688_Right = true;
+		this->SetSysStateSensor(IFC_SYS_STATE_BME688_RIGHT, IFC_ITEM_STATE_OFF);
 	}
-	this->flagErrorBme688_Right = false;
+	else
+	{
+		this->flagErrorBme688_Right = false;
+		this->SetSysStateSensor(IFC_SYS_STATE_BME688_RIGHT, IFC_ITEM_STATE_ON);
+	}
 	this->Bme688_Right.SetCounterSamplingTime(samplingTime + (samplingTime / 3) + (samplingTime / 3));
 
 

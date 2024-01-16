@@ -283,21 +283,26 @@ void TTaskSYS::ProcessRxData()
 	switch(command)
 	{
 		case IfcVipCommand_GetState:
-//			memcpy((void*)data, (void*)&this->getState, sizeof(TGetState));
+			TIfcSystemState* IfcSystemState;
+			IfcSystemState = TaskHAL.GetPointerIfcSystemState();
 			if(this->sysState < SysError_Start)
 			{
-				data[IFC_VIP_STATE_INDEX] = this->interfaceVipCode[this->sysState];
-				data[IFC_VIP_ERROR_INDEX] = 0;
+				IfcSystemState->sysState = this->interfaceVipCode[this->sysState];
+				IfcSystemState->error = 0;
 			}
 			else
 			{
-				data[IFC_VIP_STATE_INDEX] = IfcVipState_Error;
-				data[IFC_VIP_ERROR_INDEX] = this->interfaceVipCode[this->sysState];
+				IfcSystemState->sysState = IfcVipState_Error;
+				IfcSystemState->error = this->interfaceVipCode[this->sysState];
 			}
-			data[IFC_VIP_SUB_STATE_INDEX] = IfcVipSubState_Application;
+			IfcSystemState->subSysState = IfcVipSubState_Application;
+			memcpy((void*)data, (void*)IfcSystemState, sizeof(TIfcSystemState));
 			break;
 
 		case IfcVipCommand_GetBme688_Part1:
+			memcpy((void*)&data[IFC_VIP_NUMBER_OF_ITEM + 1],
+					(void*)TaskHAL.GetPointerBme688Sensors((EIfcBme688Sensor)pData[IFC_VIP_NUMBER_OF_ITEM]),
+					sizeof(TBme688Sensors));
 			break;
 
 //		case IfcVipCommand_GetBme688_Part2:
@@ -309,7 +314,7 @@ void TTaskSYS::ProcessRxData()
 
 		case IfcVipCommand_GetFanSpeed:
 			data[IFC_VIP_FAN_PWM_INDEX] = TaskHAL.GetFanPwm();
-			tempU16 = TaskHAL.GetFanPwm();
+			tempU16 = TaskHAL.GetFanRpm();
 			memcpy((void*)&data[IFC_VIP_FAN_RPM_INDEX], (void*)&tempU16, sizeof(u16));
 			break;
 
@@ -436,7 +441,7 @@ void TTaskSYS::SetDamPosition()
 			return;
 		}
 
-		TaskHAL.DamMotorStartBackward();
+		TaskHAL.DamMotorStartForward();
 	}
 	else
 	{
@@ -446,7 +451,7 @@ void TTaskSYS::SetDamPosition()
 			return;
 		}
 
-		TaskHAL.DamMotorStartForward();
+		TaskHAL.DamMotorStartBackward();
 	}
 
 	this->SetSysState(SysState_Busy);
@@ -864,52 +869,6 @@ EOsResult TTaskSYS::Init(void)
 
 	this->Delay(10);
 
-	// DEBUG
-	// TaskHAL.SetEvents(TASK_HAL_CMD_START);
-	this->enableTickHook = true;
-	while(true)
-	{
-/*		TaskHAL.StartFan(50);
-		this->Delay(5000);
-		TaskHAL.StartFan(100);
-		this->Delay(5000);
-		TaskHAL.StopFan();
-
-		this->Delay(5000); */
-
-		this->setDamPosition = DamPosition_LeftOpen;
-		this->SetDamPosition();
-
-		this->Delay(5000);
-
-		this->setDamPosition = DamPosition_RightOpen;
-		this->SetDamPosition();
-
-		this->Delay(5000);
-	}
-
-
-/*	while(true)
-	{
-		this->DamMotor.StartForward();
-
-		this->Delay(3400);
-
-		this->DamMotor.Stop();
-
-		this->Delay(500);
-
-		this->DamMotor.StartBackward();
-
-		this->Delay(3400);
-
-		this->DamMotor.Stop();
-
-		this->Delay(500);
-	} */
-	// DEBUG
-
-
 	this->SetSysState(SysState_Init);
 	this->InterfaceSlaveVIP.Init(&huart1, USART1);
 //	this->InterfaceSlaveVIP.ReInit();
@@ -929,12 +888,6 @@ EOsResult TTaskSYS::Init(void)
    	// DEBUG
 
    	// DEBUG
-
-
-
-
-
-
 
 
 	return(OsResult_Ok);

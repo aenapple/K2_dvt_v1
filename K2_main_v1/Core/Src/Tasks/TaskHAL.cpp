@@ -142,7 +142,11 @@ void TTaskHAL::Run(void)
 					100
 					) == OsResult_Timeout)
         {
-//            this->GetStateTopCpu();
+/*        	result = this->GetStateTopCpu();
+        	if(result != OsResult_Ok)
+        	{
+        		TaskSYS.SetSysState(SysError_InterfaceVipM);
+        	} */
             this->CheckTopRemoved();
             this->CheckLidOpen();
 //            this->GetSensorBme688();
@@ -195,7 +199,7 @@ void TTaskHAL::Run(void)
 *
 *  @return void .
 */
-void TTaskHAL::GetStateTopCpu(void)
+EOsResult TTaskHAL::GetStateTopCpu(void)
 {
 	EOsResult result;
 	u8* pData;
@@ -213,15 +217,17 @@ void TTaskHAL::GetStateTopCpu(void)
 		result = this->SendCommand(IfcVipCommand_GetState, 0);
 		if(result != OsResult_Ok)
 		{
-			TaskSYS.SetSysState(SysError_InterfaceVipM);
-			return;
+			return(result);
 		}
 	}
 
 	pData = this->InterfaceMasterVIP.GetPointerDataRx();
+	memcpy((void*)&this->IfcSystemState, (void*)pData, sizeof(TIfcSystemState));
 
-	TaskSYS.UpdateTopCpuState(pData);
+//	TaskSYS.UpdateTopCpuState(pData);
 
+
+	return(OsResult_Ok);
 }
 //=== end GetStateTopCpu ===========================================================
 
@@ -327,7 +333,8 @@ void TTaskHAL::ProcessSysCommand(void)
 */
 void TTaskHAL::ProcessSelfTest(void)
 {
-	// todo: turn off all - ???
+	EOsResult result;
+
 
 	this->AcPowerOff();
 	this->Delay(200);
@@ -337,7 +344,7 @@ void TTaskHAL::ProcessSelfTest(void)
 		return;
 	}
 
-/*	if(this->CheckTopRemoved())
+	if(this->CheckTopRemoved())
 	{
 		return;
 	}
@@ -345,7 +352,7 @@ void TTaskHAL::ProcessSelfTest(void)
 	if(this->CheckLidOpen())
 	{
 		return;
-	} */
+	}
 
 
 	// todo:
@@ -355,7 +362,7 @@ void TTaskHAL::ProcessSelfTest(void)
 
 
 	this->AcPowerOn();
-	this->Delay(200);
+	this->Delay(300);
 	if(!this->flagAcMainPresent)
 	{
 		this->AcPowerOff();
@@ -363,12 +370,45 @@ void TTaskHAL::ProcessSelfTest(void)
 		return;
 	}
 
+	if(!this->CheckTopPresent())
+	{
+		this->AcPowerOff();
+		TaskSYS.SetSysState(SysError_InterfaceVipM);
+		return;
+	}
+
 	this->Delay(100);
 	this->Gpio.SetLevelTopResetPin(GpioLevel_Low);  // Clear Reset Top CPU
+	this->Delay(100);
+
+	////// check connection with Top CPU and wait state 'IfcVipState_Idle' //////
+	result = this->CheckConnectionTopCpu();
+	if(result != OsResult_Ok)
+	{
+		this->AcPowerOff();
+		TaskSYS.SetSysState(SysError_InterfaceVipM);
+		return;
+	}
+
+
+	result = this->CheckLockTop();
+	if(result != OsResult_Ok)
+	{
+		this->AcPowerOff();
+		TaskSYS.SetSysState(SysError_InterfaceVipM);
+		return;
+	}
+
+	if(!this->flagTopLocked)
+	{
+		this->AcPowerOff();
+		this->flagSentEventTopRemoved = true;
+		TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_REMOVED);
+		return;
+	}
 
 	// todo:
-	// check connection with Top CPU
-	// check unlock Top part
+
 	// check level sensors
 	// check Bme688 sensor
 	// check lamps
@@ -390,9 +430,111 @@ void TTaskHAL::ProcessSelfTest(void)
 *
 *  @return void .
 */
+EOsResult TTaskHAL::CheckConnectionTopCpu()
+{
+	EOsResult result;
+	u16 counterTime;
+
+
+	counterTime = 0;
+	while(true)
+	{
+		result = this->GetStateTopCpu();
+		if(result != OsResult_Ok)
+		{
+			return(result);
+		}
+
+		if(this->IfcSystemState.sysState == IfcVipState_Idle)
+		{
+			break;
+		}
+
+		counterTime++;
+		if(counterTime == 5)  // timeout 500 mSec
+		{
+			return(OsResult_Timeout);
+		}
+
+		this->Delay(100);
+	}
+
+
+	return(OsResult_Ok);
+}
+//=== end CheckConnectionTopCpu ====================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+EOsResult TTaskHAL::CheckLockTop()
+{
+	EOsResult result;
+
+
+	result = this->GetStateTopCpu();
+	if(result != OsResult_Ok)
+	{
+		return(result);
+	}
+
+	if((this->IfcSystemState.sensorStates & IFC_SYS_STATE_SWITCH_LOCK_LEFT) > 0)
+	{
+		this->flagTopLocked = false;
+	}
+	else
+	{
+		if((this->IfcSystemState.sensorStates & IFC_SYS_STATE_SWITCH_LOCK_RIGHT) > 0)
+		{
+			this->flagTopLocked = false;
+		}
+		else
+		{
+			this->flagTopLocked = true;
+		}
+	}
+
+	// DEBUG
+	this->flagTopLocked = true;
+	// DEBUG
+
+
+	return(OsResult_Ok);
+}
+//=== end CheckTopPresent ==========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+bool TTaskHAL::CheckTopPresent()
+{
+	if((this->Gpio.ReadTopPresent() == GpioLevel_Low))
+	{
+		return(true);
+	}
+	else
+	{
+		return(false);
+	}
+
+}
+//=== end CheckTopPresent ==========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
 bool TTaskHAL::CheckTopRemoved()
 {
-	if((this->Gpio.ReadTopRemoved() == GpioLevel_High) || (this->flagTopUnlocked))
+	if((this->Gpio.ReadTopRemoved() == GpioLevel_High))
 	{
 		if(!this->flagSentEventTopRemoved)
 		{
@@ -428,7 +570,7 @@ bool TTaskHAL::CheckTopRemoved()
 */
 bool TTaskHAL::CheckTopRemovedFromISR()
 {
-	if((this->Gpio.ReadTopRemoved() == GpioLevel_High) || (this->flagTopUnlocked))
+	if((this->Gpio.ReadTopRemoved() == GpioLevel_High))
 	{
 		if(!this->flagSentEventTopRemoved)
 		{
@@ -465,7 +607,7 @@ bool TTaskHAL::CheckTopRemovedFromISR()
 bool TTaskHAL::CheckLidOpen()
 {
 	// DEBUG
-	if(this->Gpio.ReadPresentTank() == GpioLevel_High)
+/*	if(this->Gpio.ReadPresentTank() == GpioLevel_High)
 	{
 		this->flagPresentTank = false;
 	}
@@ -490,7 +632,7 @@ bool TTaskHAL::CheckLidOpen()
 	else
 	{
 		this->flagPresentChamberRight = true;
-	}
+	} */
 	// DEBUG
 
 
@@ -714,6 +856,26 @@ EOsResult TTaskHAL::ControlLamp(u8* parameters)
 	return(OsResult_Ok);
 }
 //=== end ControlLamp ==============================================================
+
+//==================================================================================
+/**
+*  The function ... .
+*
+*  @return
+*  		none.
+*/
+u8 TTaskHAL::SetSysStateSensor(u16 typeSensor)
+{
+	if((this->IfcSystemState.sensorStates & typeSensor) == 0)
+	{
+		return(IFC_ITEM_STATE_ON);
+	}
+	else
+	{
+		return(IFC_ITEM_STATE_OFF);
+	}
+}
+//=== end SetSysStateSensor ========================================================
 
 //==================================================================================
 /**
@@ -1874,6 +2036,19 @@ void TTaskHAL::SetEventAdcErrorFromISR(ADC_HandleTypeDef* hAdc)
 *  @return
 *  		none.
 */
+TIfcSystemState* TTaskHAL::GetPointerIfcSystemState()
+{
+	return(&this->IfcSystemState);
+}
+//=== end GetPointerIfcSystemState =================================================
+
+//==================================================================================
+/**
+*  The function ... .
+*
+*  @return
+*  		none.
+*/
 void TTaskHAL::HandlerGpioInterrupt(u16 gpioPin)
 {
 	if(gpioPin == AC_MAIN_Pin)
@@ -2142,7 +2317,7 @@ EOsResult TTaskHAL::Init(void)
 	this->flagSentEventTopPresent = true;
 	this->flagSentEventLidOpen = false;
 	this->flagSentEventLidClosed = true;
-	this->flagTopUnlocked = false;
+	this->flagTopLocked = false;
 
 	this->adcIndexConversion = 0;
 	this->accumulativeTPadLeft = 0;

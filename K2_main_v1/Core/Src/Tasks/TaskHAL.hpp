@@ -139,6 +139,7 @@ public:
 	void TurnOffHeater(EHeater heater);
 //	void TurnOnMotorChamber(EMotorChamber motorChamber, EDirMotorChamber dirMotorChamber, u8 pwm);
 //	void TurnOffMotorChamber(EMotorChamber motorChamber);
+	TIfcSystemState* GetPointerIfcSystemState(void);
 
 	void HandlerGpioInterrupt(u16 gpioPin);
 
@@ -208,6 +209,7 @@ private:
 
 	TOsQueue OsQueue;
 	TInterfaceVIP InterfaceMasterVIP;
+	TIfcSystemState IfcSystemState;
 	TAdc Adc;
 	TI2c I2c;
 	TGpio Gpio;
@@ -238,7 +240,7 @@ private:
 	bool flagSentEventTopPresent;
 	bool flagSentEventLidOpen;
 	bool flagSentEventLidClosed;
-	bool flagTopUnlocked;
+	bool flagTopLocked;
 
 	bool flagPresentTank;
 	bool flagPresentChamberLeft;
@@ -269,10 +271,13 @@ private:
 
 
 	////// functions //////
-	void GetStateTopCpu(void);
+	EOsResult GetStateTopCpu(void);
 	void GetSensorBme688(void);
 	void ProcessSysCommand(void);
 	void ProcessSelfTest(void);
+	EOsResult CheckConnectionTopCpu(void);
+	EOsResult CheckLockTop(void);
+	bool CheckTopPresent(void);
 	bool CheckTopRemoved(void);
 	bool CheckTopRemovedFromISR();
 	bool CheckLidOpen(void);
@@ -290,6 +295,7 @@ private:
 	EOsResult ControlMotor(u8* parameters);
 	EOsResult ControlHeater(u8* parameters);
 	EOsResult ControlLamp(u8* parameters);
+	u8 SetSysStateSensor(u16 typeSensor);
 
 
 	void Run(void);

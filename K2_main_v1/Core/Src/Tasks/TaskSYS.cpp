@@ -1386,10 +1386,10 @@ void TTaskSYS::TestChamberMotors()
 */
 void TTaskSYS::TestMainMotor()
 {
-	while(true)
-	{
-		TaskHAL.AcPowerOn();
-		this->Delay(1000);
+//	while(true)
+//	{
+//		TaskHAL.AcPowerOn();
+//		this->Delay(1000);
 
 		TaskUI.SetState(TASK_UI_EVENT_TOP_REMOVED);
 
@@ -1398,12 +1398,15 @@ void TTaskSYS::TestMainMotor()
 
 		TaskHAL.StartMainMotorCW();
 
-		this->Delay(1000);
+		this->Delay(200);
 		// short cut resistor
 		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_SET);
 
-		this->Delay(9000);
+		this->Delay(5800);
 
+		// added resistor
+		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
+		this->Delay(200);
 		TaskHAL.StopMainMotor();
 
 		this->Delay(200);
@@ -1423,6 +1426,9 @@ void TTaskSYS::TestMainMotor()
 
 		this->Delay(2000);
 
+		// added resistor
+		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
+		this->Delay(200);
 		TaskHAL.StopMainMotor();
 
 
@@ -1432,13 +1438,10 @@ void TTaskSYS::TestMainMotor()
 
 		TaskUI.SetState(TASK_UI_EVENT_INIT);
 
-		// added resistor
-		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
 
-
-		TaskHAL.AcPowerOff();
-		this->Delay(120 * 1000);  // 2 Minutes
-	}
+//		TaskHAL.AcPowerOff();
+//		this->Delay(120 * 1000);  // 2 Minutes
+//	}
 
 }
 //=== end TestMainMotor ============================================================
@@ -1616,9 +1619,17 @@ EOsResult TTaskSYS::Init(void)
 // 	this->TestChambers();
    	// DEBUG
 
-//   	this->SelfTest();
+   	this->SelfTest();
 
+   	// DEBUG
+/*   	this->Delay(2000);
+   	this->TestMainMotor();
 
+   	while(true)
+   	{
+   		this->Delay(1000);
+   	} */
+   	// DEBUG
 
 
 

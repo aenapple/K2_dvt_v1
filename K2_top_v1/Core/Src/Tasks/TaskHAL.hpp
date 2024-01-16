@@ -15,6 +15,7 @@
 #include "Bme688.hpp"
 #include "Fan.hpp"
 #include "Motor.hpp"
+#include "InterfaceVIP.hpp"
 
 
 /**********************************************************************************/
@@ -80,6 +81,7 @@ public:
 	void StopFan(void);
 	u8 GetFanPwm(void);
 	u16 GetFanRpm(void);
+	TBme688Sensors* GetPointerBme688Sensors(EIfcBme688Sensor ifcBme688Sensor);
 	void ControlLamp(EHalLamp halLamp, EHalTurn halTurn);
 	EHalTurn GetLampState(EHalLamp halLamp);
 	EGpioLevel ReadLockLeft(void);
@@ -89,6 +91,7 @@ public:
 	void DamMotorStartForward(void);
 	void DamMotorStartBackward(void);
 	void DamMotorStop(void);
+	TIfcSystemState* GetPointerIfcSystemState(void);
 
 	void HandlerGpioInterrupt(u16 gpioPin);
 
@@ -143,6 +146,12 @@ private:
 	u16 counterTimeAcMeasurement;
 
 	TMotor DamMotor;
+	TIfcSystemState IfcSystemState;
+//	u16 switchStates;
+//	u8 lampStates;
+//	u8 levelTank;          // cm
+//	u8 levelChamberLeft;   // cm
+//	u8 levelChamberRight;  // cm
 
 
 	////// constants //////
@@ -150,6 +159,10 @@ private:
 
 	////// functions //////
 	void ProcessDataBme688(TBme688* pBme688);
+	void UpdateHardwareStates(void);
+	void SetSysStateDamMotor(u8 stateDmaMotor);
+	void SetSysStateLamp(EHalLamp halLamp, u8 stateDmaMotor);
+	void SetSysStateSensor(u16 typeSensor, u8 stateSensor);
 
 
 	void Run(void);

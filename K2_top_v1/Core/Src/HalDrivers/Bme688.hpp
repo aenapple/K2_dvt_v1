@@ -256,6 +256,7 @@ public:
 	void DecreaseCounterSamplingTime(void);
 	void WriteSensors(TBme688Sensors* Bme688Sensors);
 	EOsResult GetData(DataBme688* dataBme688[]);
+	TBme688Sensors* GetPointerBme688Sensors(void);
 
 
 

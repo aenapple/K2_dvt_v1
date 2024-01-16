@@ -21,7 +21,7 @@
 */
 void TMotor::Init()
 {
-	this->Stop();
+	this->StopHZ();
 }
 //=== end Init =====================================================================
 
@@ -34,6 +34,7 @@ void TMotor::Init()
 void TMotor::StartForward()
 {
 	HAL_GPIO_WritePin(MOTOR_INA_GPIO_Port, MOTOR_INA_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(MOTOR_INB_GPIO_Port, MOTOR_INB_Pin, GPIO_PIN_RESET);
 }
 //=== end StartForward =============================================================
 
@@ -46,6 +47,7 @@ void TMotor::StartForward()
 void TMotor::StartBackward()
 {
 	HAL_GPIO_WritePin(MOTOR_INB_GPIO_Port, MOTOR_INB_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(MOTOR_INA_GPIO_Port, MOTOR_INA_Pin, GPIO_PIN_RESET);
 }
 //=== end StartBackward ============================================================
 
@@ -57,9 +59,22 @@ void TMotor::StartBackward()
 */
 void TMotor::Stop()
 {
+	HAL_GPIO_WritePin(MOTOR_INA_GPIO_Port, MOTOR_INA_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(MOTOR_INB_GPIO_Port, MOTOR_INB_Pin, GPIO_PIN_SET);
+}
+//=== end Stop =====================================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TMotor::StopHZ()
+{
 	HAL_GPIO_WritePin(MOTOR_INA_GPIO_Port, MOTOR_INA_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(MOTOR_INB_GPIO_Port, MOTOR_INB_Pin, GPIO_PIN_RESET);
 }
-//=== end Stop =====================================================================
+//=== end StopHZ ===================================================================
 
 /**********************************************************************************/

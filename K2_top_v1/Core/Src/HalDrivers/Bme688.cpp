@@ -271,6 +271,18 @@ void TBme688::WriteSensors(TBme688Sensors* Bme688Sensors)
 *
 *  @return ... .
 */
+TBme688Sensors* TBme688::GetPointerBme688Sensors()
+{
+	return(&this->Bme688Sensors);
+}
+//=== end GetPointerBme688Sensors ==================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
 EOsResult TBme688::GetData(DataBme688* dataBme688[])
 {
 	EOsResult result;
@@ -679,16 +691,16 @@ EOsResult TBme688::WriteRegister(u8 regAddress, u8 regData)
 	bufferTransmit[0] = regAddress;
 	bufferTransmit[1] = regData;
 
-	taskENTER_CRITICAL();
+//	taskENTER_CRITICAL();
 
 	resultHal = HAL_I2C_Master_Transmit(this->hI2c, (u16)(this->chipAddress << 1), bufferTransmit, 2, 100);  // timeout - 100 mSec
 	if(resultHal != HAL_OK)
 	{
-		taskEXIT_CRITICAL();
+//		taskEXIT_CRITICAL();
 		return(OsResult_ErrorI2cTransmit);
 	}
 
-	taskEXIT_CRITICAL();
+//	taskEXIT_CRITICAL();
 
 
 	return(OsResult_Ok);
@@ -709,23 +721,23 @@ EOsResult TBme688::ReadRegister(u8 regAddress, u8* regData)
 
 	bufferTransmit[0] = regAddress;
 
-	taskENTER_CRITICAL();
+//	taskENTER_CRITICAL();
 
 	resultHal = HAL_I2C_Master_Transmit(this->hI2c, (u16)(this->chipAddress << 1), bufferTransmit, 1, 100);  // timeout - 100 mSec
 	if(resultHal != HAL_OK)
 	{
-		taskEXIT_CRITICAL();
+//		taskEXIT_CRITICAL();
 		return(OsResult_ErrorI2cTransmit);
 	}
 
 	resultHal = HAL_I2C_Master_Receive(this->hI2c, (u16)(this->chipAddress << 1), bufferTransmit, 1, 100);  // timeout - 100 mSec
 	if(resultHal != HAL_OK)
 	{
-		taskEXIT_CRITICAL();
+//		taskEXIT_CRITICAL();
 		return(OsResult_ErrorI2cReceive);
 	}
 
-	taskEXIT_CRITICAL();
+//	taskEXIT_CRITICAL();
 
 	*regData = bufferTransmit[0];
 

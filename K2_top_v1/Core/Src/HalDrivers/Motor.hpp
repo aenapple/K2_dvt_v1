@@ -33,6 +33,7 @@ public:
 	void StartForward(void);
 	void StartBackward(void);
 	void Stop(void);
+	void StopHZ(void);
 
 
 protected:
