@@ -1633,8 +1633,10 @@ EOsResult TTaskSYS::Init(void)
 
 
 
-
-
+   	TaskChmRight.SetPadTemperatureLevels(45, 50);
+   	TaskChmRight.SetPtcTemperatureLevels(28, 30);
+   	TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+//   	TaskChmLeft.SetPadTime(repeatTime, workTime);
 
 
 

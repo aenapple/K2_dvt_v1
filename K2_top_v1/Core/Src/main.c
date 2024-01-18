@@ -53,9 +53,9 @@ UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
 DMA_HandleTypeDef hdma_usart1_tx;
 
-/* osThreadId defaultTaskHandle;
+osThreadId defaultTaskHandle;
 uint32_t defaultTaskBuffer[ 64 ];
-osStaticThreadDef_t defaultTaskControlBlock; */
+osStaticThreadDef_t defaultTaskControlBlock;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -70,7 +70,7 @@ static void MX_I2C2_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM17_Init(void);
-// void StartDefaultTask(void const * argument);
+void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 extern void CreateApplicationTasks(void);
@@ -138,8 +138,8 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  // osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 64, defaultTaskBuffer, &defaultTaskControlBlock);
-  // defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 64, defaultTaskBuffer, &defaultTaskControlBlock);
+  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -580,8 +580,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, RESET3_Pin|PROG2_Pin|RESET2_Pin|PROG1_Pin
-                          |RESET1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, RESET3_Pin|RESET2_Pin|RESET1_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOD, PROG2_Pin|PROG1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : ON_BACK_LAMP_Pin ON_FRONT_LAMP_Pin PROG3_Pin */
   GPIO_InitStruct.Pin = ON_BACK_LAMP_Pin|ON_FRONT_LAMP_Pin|PROG3_Pin;
@@ -602,11 +604,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : IN_BACK_LAMP_Pin IN_FRONT_LAMP_Pin */
-  GPIO_InitStruct.Pin = IN_BACK_LAMP_Pin|IN_FRONT_LAMP_Pin;
+  /*Configure GPIO pin : IN_BACK_LAMP_Pin */
+  GPIO_InitStruct.Pin = IN_BACK_LAMP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  HAL_GPIO_Init(IN_BACK_LAMP_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : MOTOR_INB_Pin MOTOR_INA_Pin */
   GPIO_InitStruct.Pin = MOTOR_INB_Pin|MOTOR_INA_Pin;
@@ -615,8 +617,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : DAM_RIGHT_Pin DAM_LEFT_Pin INT1_Pin */
-  GPIO_InitStruct.Pin = DAM_RIGHT_Pin|DAM_LEFT_Pin|INT1_Pin;
+  /*Configure GPIO pins : DAM_RIGHT_Pin DAM_LEFT_Pin */
+  GPIO_InitStruct.Pin = DAM_RIGHT_Pin|DAM_LEFT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -639,9 +641,15 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : INT3_Pin INT2_Pin */
   GPIO_InitStruct.Pin = INT3_Pin|INT2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : INT1_Pin */
+  GPIO_InitStruct.Pin = INT1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(INT1_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_1_IRQn, 3, 0);

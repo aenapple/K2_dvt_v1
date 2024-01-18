@@ -142,14 +142,18 @@ void TTaskHAL::Run(void)
 					100
 					) == OsResult_Timeout)
         {
+#ifndef	__DEBUG_TOP_CPU_NOT_PRESENT
 /*        	result = this->GetStateTopCpu();
         	if(result != OsResult_Ok)
         	{
         		TaskSYS.SetSysState(SysError_InterfaceVipM);
         	} */
+//			this->GetSensorBme688();
+#endif
+
             this->CheckTopRemoved();
             this->CheckLidOpen();
-//            this->GetSensorBme688();
+
 
         	continue;
         }
@@ -370,6 +374,7 @@ void TTaskHAL::ProcessSelfTest(void)
 		return;
 	}
 
+#ifndef	__DEBUG_TOP_CPU_NOT_PRESENT
 	if(!this->CheckTopPresent())
 	{
 		this->AcPowerOff();
@@ -406,6 +411,7 @@ void TTaskHAL::ProcessSelfTest(void)
 		TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_REMOVED);
 		return;
 	}
+#endif
 
 	// todo:
 
@@ -1198,6 +1204,8 @@ void TTaskHAL::CalculatingTSensors()
 		{
 			case 0:
 				temperature = this->CalculatingTPtcSensor(IfcVipTemperature_PtcHeater1);
+				if(temperature >= 20) temperature++;
+//				if(temperature >= 40) temperature++;
 //				if(temperature >= 50) temperature++;
 //				if(temperature >= 60) temperature++;
 				TaskChmLeft.SetPtcTemperature(temperature);
@@ -1205,6 +1213,8 @@ void TTaskHAL::CalculatingTSensors()
 
 			case 1:
 				temperature = this->CalculatingTPtcSensor(IfcVipTemperature_PtcHeater2);
+				if(temperature >= 20) temperature++;
+//				if(temperature >= 40) temperature++;
 //				if(temperature >= 50) temperature++;
 //				if(temperature >= 60) temperature++;
 				TaskChmRight.SetPtcTemperature(temperature);
@@ -1212,7 +1222,7 @@ void TTaskHAL::CalculatingTSensors()
 
 			case 2:
 				temperature = this->CalculatingTSensor(IfcVipTemperature_PadHeater1);
-				if(temperature >= 40) temperature++;
+//				if(temperature >= 40) temperature++;
 				if(temperature >= 50) temperature++;
 				if(temperature >= 60) temperature++;
 				TaskChmLeft.SetPadTemperature(temperature);
@@ -1220,7 +1230,7 @@ void TTaskHAL::CalculatingTSensors()
 
 			case 3:
 				temperature = this->CalculatingTSensor(IfcVipTemperature_PadHeater2);
-				if(temperature >= 40) temperature++;
+//				if(temperature >= 40) temperature++;
 				if(temperature >= 50) temperature++;
 				if(temperature >= 60) temperature++;
 				TaskChmRight.SetPadTemperature(temperature);

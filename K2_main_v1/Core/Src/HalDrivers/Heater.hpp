@@ -25,16 +25,16 @@ enum EHeater
 enum EHeaterPwm
 {
 	HeaterPwm_0 = 0,
-	HeaterPwm_10 = 10,
-	HeaterPwm_20 = 20,
-	HeaterPwm_30 = 30,
-	HeaterPwm_40 = 40,
-	HeaterPwm_50 = 50,
-	HeaterPwm_60 = 60,
-	HeaterPwm_70 = 70,
-	HeaterPwm_80 = 80,
-	HeaterPwm_90 = 90,
-	HeaterPwm_100 = 100,
+	HeaterPwm_10 = 1,
+	HeaterPwm_20 = 2,
+	HeaterPwm_30 = 3,
+	HeaterPwm_40 = 4,
+	HeaterPwm_50 = 5,
+	HeaterPwm_60 = 6,
+	HeaterPwm_70 = 7,
+	HeaterPwm_80 = 8,
+	HeaterPwm_90 = 9,
+	HeaterPwm_100 = 10,
 
 };
 

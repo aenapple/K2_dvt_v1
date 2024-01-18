@@ -134,10 +134,10 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
         	this->TickProcess();
         }
 
-        if((resultBits & TASK_CHM_EVENT_MIXING) > 0)
+/*        if((resultBits & TASK_CHM_EVENT_MIXING) > 0)
         {
         	this->Mixing();
-        }
+        } */
 
         if((resultBits & TASK_CHM_EVENT_STOP_PROCESS) > 0)
         {
@@ -203,13 +203,13 @@ void TTaskCHM::TickProcess()
 	}
 
 	///// Ptc Heater. //////
-	if((this->ptcTemperature < this->ptcLowLevel_T) && this->flagPtcOn)
+	if((this->ptcTemperature < this->ptcLowLevel_T)/* && this->flagPtcOn */)
 	{
-		this->PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
-		this->PtcHeater.TurnOn(HeaterPwm_30);
+		this->PtcFan.Start(PtcFanPwm_100, PtcFanMaxPwm_66_100);
+		this->PtcHeater.TurnOn(HeaterPwm_10);
 	}
 
-	if((this->ptcTemperature > this->ptcHighLevel_T) || (!this->flagPtcOn))
+	if((this->ptcTemperature > this->ptcHighLevel_T)/* || (!this->flagPtcOn) */)
 	{
 		this->PtcFan.Start(PtcFanPwm_50, PtcFanMaxPwm_50);
 		this->PtcHeater.TurnOff();

@@ -114,6 +114,22 @@ struct TSysCommand
     u8 parameters[IFC_VIP_UART_SIZE_DATA];
 };
 
+enum EBme688Sensor
+{
+	Bme688Sensor_Left,
+	Bme688Sensor_Right,
+	Bme688Sensor_Fan
+};
+
+struct TBme688Sensors
+{
+	s16 temperature;
+	u32 pressure;
+	u16 humidity;
+	u32 gasResistance;
+	u16 status;
+};
+
 /**********************************************************************************/
 //==================================================================================
 class TTaskHAL : public TOsTask
@@ -213,6 +229,9 @@ private:
 	TAdc Adc;
 	TI2c I2c;
 	TGpio Gpio;
+	TBme688Sensors Bme688FanSensors;
+	TBme688Sensors Bme688LeftSensors;
+	TBme688Sensors Bme688RightSensors;
 	u8 adcIndexConversion;
 	u16 calculationResultAdc1[ADC1_MAX_NUMBER_CHANNEL];
 

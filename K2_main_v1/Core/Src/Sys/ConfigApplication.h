@@ -14,6 +14,8 @@
 //	#define __DEBUG_SYS_OUTPUT_ENABLED
 //	#define __DEBUG_CONTROL_HEATER
 
+	#define __DEBUG_TOP_CPU_NOT_PRESENT
+
 #endif
 
 
