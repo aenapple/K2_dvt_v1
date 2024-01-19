@@ -73,6 +73,9 @@ void Error_Handler(void);
 #define IN_BACK_LAMP_Pin GPIO_PIN_0
 #define IN_BACK_LAMP_GPIO_Port GPIOC
 #define IN_BACK_LAMP_EXTI_IRQn EXTI0_1_IRQn
+#define IN_FRONT_LAMP_Pin GPIO_PIN_1
+#define IN_FRONT_LAMP_GPIO_Port GPIOC
+#define IN_FRONT_LAMP_EXTI_IRQn EXTI0_1_IRQn
 #define MOTOR_INB_Pin GPIO_PIN_12
 #define MOTOR_INB_GPIO_Port GPIOB
 #define MOTOR_INA_Pin GPIO_PIN_13
@@ -87,9 +90,6 @@ void Error_Handler(void);
 #define PROG3_GPIO_Port GPIOC
 #define RESET3_Pin GPIO_PIN_0
 #define RESET3_GPIO_Port GPIOD
-#define INT3_Pin GPIO_PIN_1
-#define INT3_GPIO_Port GPIOD
-#define INT3_EXTI_IRQn EXTI0_1_IRQn
 #define PROG2_Pin GPIO_PIN_2
 #define PROG2_GPIO_Port GPIOD
 #define RESET2_Pin GPIO_PIN_3

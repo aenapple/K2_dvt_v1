@@ -47,7 +47,7 @@ You can contact the authors of this program by email at support@chirpmicro.com
 #define TWI3_IRQn           FLEXCOM3_IRQn
 
 /* Processor sleep mode */
-#define	PROC_SLEEP_MODE		SAM_PM_SMODE_SLEEP_WFI		/* wait for interrupt */
+// #define	PROC_SLEEP_MODE		SAM_PM_SMODE_SLEEP_WFI		/* wait for interrupt */
 
 /* Structure to track non-blocking I2C transaction data */
 typedef struct {

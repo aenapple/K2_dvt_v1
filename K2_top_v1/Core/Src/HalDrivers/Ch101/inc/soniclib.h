@@ -58,7 +58,7 @@
  */
 
 /*
- Copyright © 2019-2021, Chirp Microsystems.  All rights reserved.
+ Copyright ï¿½ 2019-2021, Chirp Microsystems.  All rights reserved.
 
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -484,7 +484,7 @@ struct ch_dev_t {		/* [note tag name matches type to help Doxygen linkage] */
  * \note This function only performs internal initialization of data structures, etc.  It does not 
  * actually initialize the physical sensor device(s).  See \a ch_group_start().
  */
-uint8_t	ch_init(ch_dev_t *dev_ptr, ch_group_t *grp_ptr, uint8_t dev_num, ch_fw_init_func_t fw_init_func);
+// uint8_t	ch_init(ch_dev_t *dev_ptr, ch_group_t *grp_ptr, uint8_t dev_num, ch_fw_init_func_t fw_init_func);
 
 /*!
  * \brief	Program and start a group of sensors.

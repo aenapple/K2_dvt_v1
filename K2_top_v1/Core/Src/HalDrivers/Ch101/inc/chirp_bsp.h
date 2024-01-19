@@ -130,7 +130,7 @@
  */
 
 /*
- Copyright © 2016-2019, Chirp Microsystems. All rights reserved.
+ Copyright ï¿½ 2016-2019, Chirp Microsystems. All rights reserved.
 
  Chirp Microsystems CONFIDENTIAL
 
@@ -759,7 +759,7 @@ int chbsp_i2c_read(ch_dev_t *dev_ptr, uint8_t *data, uint16_t num_bytes);
  * \note Implementations of this function should use the \a ch_get_i2c_address() function to obtain
  * the device I2C address.
  */
-int chbsp_i2c_mem_read(ch_dev_t *dev_ptr, uint16_t mem_addr, uint8_t *data, uint16_t num_bytes);
+// int chbsp_i2c_mem_read(ch_dev_t *dev_ptr, uint16_t mem_addr, uint8_t *data, uint16_t num_bytes);
 
 /*!
  * \brief Read bytes from an I2C slave, non-blocking.

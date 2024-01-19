@@ -11,7 +11,7 @@
 
 /**********************************************************************************/
 #include "Os.hpp"
-#include "soniclib.h"
+#include "app_config.h"
 
 
 /**********************************************************************************/
@@ -19,21 +19,31 @@
 
 
 
+enum ECh101Sensor
+{
+	Ch101Sensor_Left = 0,
+	Ch101Sensor_Right = 1,
+	Ch101Sensor_Tank = 2
+};
+
 /**********************************************************************************/
 //==================================================================================
-class TCh101
+class TCh101 : public TOs
 {
 public:
 	////// variables //////
 
 
 	////// constants //////
+	static const u8 i2cAddresses[];
+	static const u8 i2c_buses[];
 
 
 	////// functions //////
 	void Init(void);
+	EOsResult FindSensor(ECh101Sensor ch101Sensor);
 	EOsResult ReadRegisterI2c1(u8 devAddress, u8 regAddress, u16 regLength, u8* regValue);
-	EOsResult ReadRawRegisterI2c1(u8 devAddress, u16 regLength, u8* regValue);
+	EOsResult ReadRawI2c1(u8 devAddress, u16 dataLength, u8* readData);
 	EOsResult WriteRegisterI2c1(u8 devAddress, u8 regAddress, u16 regLength, u8* regValue);
 	EOsResult WriteRawRegisterI2c1(u8 devAddress, u16 regLength, u8* regValue);
 	EOsResult ReadRegisterI2c2(u8 devAddress, u8 regAddress, u16 regLength, u8* regValue);
@@ -55,7 +65,11 @@ protected:
 
 private:
     ////// variables //////
-	ch_group_t 	chirp_group;
+	ch_group_t chirp_group;
+	ch_dev_t chirp_devices[CHIRP_MAX_NUM_SENSORS];
+	bool presentLeftSensor;
+	bool presentRightSensor;
+	bool presentTankSensor;
 
 
     ////// constants //////

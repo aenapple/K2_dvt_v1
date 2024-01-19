@@ -16,6 +16,7 @@
 #include "Fan.hpp"
 #include "Motor.hpp"
 #include "InterfaceVIP.hpp"
+#include "Ch101.hpp"
 
 
 /**********************************************************************************/
@@ -130,6 +131,8 @@ private:
 	bool flagErrorBme688_Right;
 	TBme688 Bme688_Fan;
 	bool flagErrorBme688_Fan;
+
+	TCh101 Ch101;
 
 	EHalTurn halTurnLampFront;
 	u8 counterLampFront;

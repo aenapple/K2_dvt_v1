@@ -896,6 +896,8 @@ EOsResult TTaskHAL::Init(void)
 	}
 	this->Bme688_Right.SetCounterSamplingTime(samplingTime + (samplingTime / 3) + (samplingTime / 3));
 
+	Ch101.Init();
+
 
 
 	return(OsResult_Ok);

@@ -11,7 +11,7 @@
  */
 
 /*
- * Copyright © 2016-2020, Chirp Microsystems.  All rights reserved.
+ * Copyright ï¿½ 2016-2020, Chirp Microsystems.  All rights reserved.
  *
  * Chirp Microsystems CONFIDENTIAL
  *
@@ -67,7 +67,7 @@ uint16_t get_ch101_gpr_narrow_fw_ram_init_size(void);
 
 const unsigned char * get_ram_ch101_gpr_narrow_init_ptr(void);
 
-uint8_t ch101_gpr_narrow_init(ch_dev_t *dev_ptr, ch_group_t *grp_ptr, uint8_t i2c_addr, uint8_t dev_num, uint8_t i2c_bus_index);
+// uint8_t ch101_gpr_narrow_init(ch_dev_t *dev_ptr, ch_group_t *grp_ptr, uint8_t i2c_addr, uint8_t dev_num, uint8_t i2c_bus_index);
 
 void ch101_gpr_narrow_store_pt_result(ch_dev_t *dev_ptr);
 
