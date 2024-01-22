@@ -95,7 +95,7 @@ public:
 	TIfcSystemState* GetPointerIfcSystemState(void);
 
 	void HandlerGpioInterrupt(u16 gpioPin);
-
+	void HandlerCh101Interrupt(u16 gpioPin);
 
 
 	s8 GetTemperatureCpu2(void);
@@ -132,7 +132,7 @@ private:
 	TBme688 Bme688_Fan;
 	bool flagErrorBme688_Fan;
 
-	TCh101 Ch101;
+	TCh101* Ch101;
 
 	EHalTurn halTurnLampFront;
 	u8 counterLampFront;

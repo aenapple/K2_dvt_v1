@@ -28,10 +28,10 @@ extern TTaskSYS TaskSYS;
 /**********************************************************************************/
 
 
-/* void HAL_GPIO_EXTI_Rising_Callback(u16 gpioPin)
+void HAL_GPIO_EXTI_Rising_Callback(u16 gpioPin)
 {
-	TaskHAL.HandlerGpioInterrupt(gpioPin);
-} */
+	TaskHAL.HandlerCh101Interrupt(gpioPin);
+}
 
 void HAL_GPIO_EXTI_Falling_Callback(u16 gpioPin)
 {
@@ -834,6 +834,33 @@ void TTaskHAL::HandlerGpioInterrupt(u16 gpioPin)
 
 //==================================================================================
 /**
+*  The function ... .
+*
+*  @return
+*  		none.
+*/
+void TTaskHAL::HandlerCh101Interrupt(u16 gpioPin)
+{
+/*	if(gpioPin == IN_BACK_LAMP_Pin)
+	{
+		this->counterLampBack++;
+	}
+
+	if(gpioPin == IN_FRONT_LAMP_Pin)
+	{
+		this->counterLampFront++;
+	}
+
+	if(gpioPin == FAN_RPM_Pin)
+	{
+		this->Fan.IncrementCounterRpm();
+	}
+*/
+}
+//=== end HandlerCh101Interrupt ====================================================
+
+//==================================================================================
+/**
 *  Todo: function description..
 *
 *  @return ... .
@@ -896,7 +923,14 @@ EOsResult TTaskHAL::Init(void)
 	}
 	this->Bme688_Right.SetCounterSamplingTime(samplingTime + (samplingTime / 3) + (samplingTime / 3));
 
-	Ch101.Init();
+
+	static TCh101& ch101 = TCh101::GetInstance();
+	this->Ch101 = &ch101;
+	result = this->Ch101->Init();
+	if(result != OsResult_Ok)
+	{
+		return(result);
+	}
 
 
 

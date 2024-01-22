@@ -35,15 +35,35 @@ public:
 
 
 	////// constants //////
-	static const u8 i2cAddresses[];
-	static const u8 i2c_buses[];
 
 
 	////// functions //////
-	void Init(void);
+	static TCh101& GetInstance(void);
+	EOsResult Init(void);
 	EOsResult FindSensor(ECh101Sensor ch101Sensor);
-	EOsResult ReadRegisterI2c1(u8 devAddress, u8 regAddress, u16 regLength, u8* regValue);
-	EOsResult ReadRawI2c1(u8 devAddress, u16 dataLength, u8* readData);
+	EOsResult Read(ch_dev_t *dev_ptr, uint8_t *data, uint16_t num_bytes);
+	EOsResult ReadMemory(ch_dev_t *dev_ptr, u16 mem_addr, u8 *data, u16 num_bytes);
+	EOsResult Write(ch_dev_t *dev_ptr, uint8_t *data, uint16_t num_byte);
+	EOsResult WriteMemory(ch_dev_t *dev_ptr, u16 mem_addr, u8 *data, u16 num_bytes);
+	EOsResult GetInfo(u8 dev_num, ch_i2c_info_t *info_ptr);
+	void SetPinProgram(u8 io_index);
+	void ResetPinProgram(u8 io_index);
+	void SetPinIntOutput(u8 io_index);
+	void SetPinIntInputEXTI(u8 io_index);
+	void SetGroupPinIntOutput(void);
+	void SetGroupPinIntInputEXTI(void);
+	void ClearPinInt(u8 io_index);
+	void SetPinInt(u8 io_index);
+	void ClearGroupPinInt(void);
+	void SetGroupPinInt(void);
+	void InitAllPins(void);
+	void InterruptEnable(u8 io_index);
+	void InterruptGroupEnable(void);
+	void InterruptDisable(u8 io_index);
+	void InterruptGroupDisable(void);
+	bool GetInterruptEnable(ECh101Sensor ch101Sensor);
+
+
 	EOsResult WriteRegisterI2c1(u8 devAddress, u8 regAddress, u16 regLength, u8* regValue);
 	EOsResult WriteRawRegisterI2c1(u8 devAddress, u16 regLength, u8* regValue);
 	EOsResult ReadRegisterI2c2(u8 devAddress, u8 regAddress, u16 regLength, u8* regValue);
@@ -70,14 +90,22 @@ private:
 	bool presentLeftSensor;
 	bool presentRightSensor;
 	bool presentTankSensor;
+	bool leftInterruptEnable;
+	bool rightInterruptEnable;
+	bool tankInterruptEnable;
 
 
     ////// constants //////
+	static const u8 i2cAddresses[];
+	static const u8 i2c_buses[];
 
 
-    ////// functions //////
+	////// functions //////
 
 
+	TCh101(void);
+	TCh101(TCh101 const&);
+	TCh101& operator= (TCh101 const&);
 
 
 };
