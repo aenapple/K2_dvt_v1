@@ -25,7 +25,9 @@ SYS_STATE_TABLE	 (SysError_LampBack,  			IfcVipError_Lamp2,			TASK_SYS_ERROR_LAM
 SYS_STATE_TABLE	 (SysError_I2cErrorChannel1,  	IfcVipError_I2c1,			TASK_SYS_ERROR_I2C1),
 SYS_STATE_TABLE	 (SysError_I2cErrorChannel2,  	IfcVipError_I2c2,			TASK_SYS_ERROR_I2C2),
 SYS_STATE_TABLE	 (SysError_ApplicationError,  	IfcVipError_Application,	TASK_SYS_ERROR_APPLICATION),
-
+SYS_STATE_TABLE	 (SysError_LevelSensor1,  		IfcVipError_LevelSensor1,	TASK_SYS_ERROR_LEVEL_1),
+SYS_STATE_TABLE	 (SysError_LevelSensor2,  		IfcVipError_LevelSensor2,	TASK_SYS_ERROR_LEVEL_2),
+SYS_STATE_TABLE	 (SysError_LevelSensor3,  		IfcVipError_LevelSensor3,	TASK_SYS_ERROR_LEVEL_3),
 
 
 

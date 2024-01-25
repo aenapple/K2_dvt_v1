@@ -190,6 +190,11 @@ void TTaskHAL::Run(void)
 		}
 	}
 
+	result = this->Ch101->Init();
+	if(result != OsResult_Ok)
+	{
+		TaskSYS.SetSysState(SysError_LevelSensor1);
+	}
 
 	while(true)
 	{
@@ -220,6 +225,17 @@ void TTaskHAL::Run(void)
         	if(!this->flagErrorBme688_Left)
         	{
         		this->ProcessDataBme688(&this->Bme688_Left);
+
+/*        		TBme688Sensors* bme688Sensors;
+        		bme688Sensors = this->Bme688_Left.GetPointerBme688Sensors();
+        		if(bme688Sensors->humidity > 3500)
+        		{
+        			this->Fan.Start(100);
+        		}
+        		else
+        		{
+        			this->Fan.Stop();
+        		} */
         	}
         }
 
@@ -229,6 +245,17 @@ void TTaskHAL::Run(void)
         	{
         		this->ProcessDataBme688(&this->Bme688_Right);
         	}
+
+/*        	TBme688Sensors* bme688Sensors;
+        	bme688Sensors = this->Bme688_Left.GetPointerBme688Sensors();
+        	if(bme688Sensors->humidity > 3500)
+        	{
+        		this->Fan.Start(100);
+        	}
+        	else
+        	{
+        		this->Fan.Stop();
+        	} */
         }
 
         

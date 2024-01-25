@@ -112,7 +112,10 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 	this->Delay(10);
 
 	this->taskChmState = taskChmState;
-
+	this->SetEvents(TASK_CHM_EVENT_MIXING);
+	this->ptcCounterRepeatTime = 0;
+	this->ptcCounterWorkTime = this->ptcWorkTime;
+	this->flagPtcOn = true;
 	while(true)
 	{
 		if(this->EventGroup.WaitOrBits(
@@ -134,10 +137,10 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
         	this->TickProcess();
         }
 
-/*        if((resultBits & TASK_CHM_EVENT_MIXING) > 0)
+        if((resultBits & TASK_CHM_EVENT_MIXING) > 0)
         {
         	this->Mixing();
-        } */
+        }
 
         if((resultBits & TASK_CHM_EVENT_STOP_PROCESS) > 0)
         {
@@ -167,6 +170,16 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 */
 void TTaskCHM::TickProcess()
 {
+
+	if(this->mixingCounterRepeatTime < TASK_CHM_REPEAT_TIME_MIXING)
+	{
+		this->mixingCounterRepeatTime++;
+	}
+	else
+	{
+		this->mixingCounterRepeatTime = 0;
+		this->SetEvents(TASK_CHM_EVENT_MIXING);
+	}
 
 	if(this->ptcCounterRepeatTime < this->ptcRepeatTime)
 	{
@@ -203,15 +216,15 @@ void TTaskCHM::TickProcess()
 	}
 
 	///// Ptc Heater. //////
-	if((this->ptcTemperature < this->ptcLowLevel_T)/* && this->flagPtcOn */)
+	if((this->ptcTemperature < this->ptcLowLevel_T) && this->flagPtcOn)
 	{
 		this->PtcFan.Start(PtcFanPwm_100, PtcFanMaxPwm_66_100);
-		this->PtcHeater.TurnOn(HeaterPwm_10);
+		this->PtcHeater.TurnOn(HeaterPwm_20);
 	}
 
-	if((this->ptcTemperature > this->ptcHighLevel_T)/* || (!this->flagPtcOn) */)
+	if((this->ptcTemperature > this->ptcHighLevel_T) || (!this->flagPtcOn))
 	{
-		this->PtcFan.Start(PtcFanPwm_50, PtcFanMaxPwm_50);
+		this->PtcFan.Stop(); // .Start(PtcFanPwm_50, PtcFanMaxPwm_50);
 		this->PtcHeater.TurnOff();
 	}
 
@@ -541,7 +554,7 @@ void TTaskCHM::SetPtcTemperatureLevels(s8 lowLevel, s8 highLevel)
 *
 *  @return ... .
 */
-void TTaskCHM::SetPtcTime(u16 repeatTime, u16 workTime)
+void TTaskCHM::SetPtcTime(u32 repeatTime, u32 workTime)
 {
 	this->ptcRepeatTime = repeatTime;
 	this->ptcWorkTime = workTime;

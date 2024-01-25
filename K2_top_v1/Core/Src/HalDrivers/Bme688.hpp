@@ -227,11 +227,11 @@ enum EBme688Sensor
 	Bme688Sensor_Fan
 };
 
-struct TBme688Sensors
+struct TBme688Sensors  // sizeof = 16 bytes
 {
 	s16 temperature;
-	u32 pressure;
 	u16 humidity;
+	u32 pressure;
 	u32 gasResistance;
 	u16 status;
 };

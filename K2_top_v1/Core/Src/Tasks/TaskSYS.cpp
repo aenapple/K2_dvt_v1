@@ -164,7 +164,7 @@ void TTaskSYS::Run(void)
 //	DiagNotice("TaskSYS started!");
 
 	this->SetSysState(SysState_Idle);
-	this->InterfaceSlaveVIP.ReInit();
+	this->InterfaceSlaveVIP.ReInit(IfcUart_1);
 	this->StartRxData();
 
 	while(true)
@@ -194,7 +194,7 @@ void TTaskSYS::Run(void)
 
  		if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
        	{
-       		this->InterfaceSlaveVIP.ReInit();
+       		this->InterfaceSlaveVIP.ReInit(IfcUart_1);
        		this->Delay(2);
        		this->StartRxData();
 
@@ -296,13 +296,13 @@ void TTaskSYS::ProcessRxData()
 				IfcSystemState->error = this->interfaceVipCode[this->sysState];
 			}
 			IfcSystemState->subSysState = IfcVipSubState_Application;
-			memcpy((void*)data, (void*)IfcSystemState, sizeof(TIfcSystemState));
+			memcpy((void*)data, (void*)IfcSystemState, sizeof(TIfcSystemState) - 2);
 			break;
 
 		case IfcVipCommand_GetBme688_Part1:
 			memcpy((void*)&data[IFC_VIP_NUMBER_OF_ITEM + 1],
 					(void*)TaskHAL.GetPointerBme688Sensors((EIfcBme688Sensor)pData[IFC_VIP_NUMBER_OF_ITEM]),
-					sizeof(TBme688Sensors));
+					sizeof(TBme688Sensors) - sizeof(u16));
 			break;
 
 //		case IfcVipCommand_GetBme688_Part2:
@@ -666,7 +666,7 @@ EOsResult TTaskSYS::Delay_IT(u16 timeDelay)
 
  		if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
        	{
-       		this->InterfaceSlaveVIP.ReInit();
+       		this->InterfaceSlaveVIP.ReInit(IfcUart_1);
        		this->Delay(2);
        		this->StartRxData();
 
@@ -748,7 +748,7 @@ EOsResult TTaskSYS::WaitDamPosition(u16 waitTime)
 
  		if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
        	{
-       		this->InterfaceSlaveVIP.ReInit();
+       		this->InterfaceSlaveVIP.ReInit(IfcUart_1);
        		this->Delay(2);
        		this->StartRxData();
 
@@ -797,6 +797,35 @@ void TTaskSYS::SetEventUartRxCpltFromISR(void)
 //	this->flagUartRxTimeout = false;
 }
 //=== end SetEventUartRxCpltFromISR ================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskSYS::ReInitUart(EIfcUart ifcUart)
+{
+	if(ifcUart == IfcUart_1)
+	{
+		HAL_UART_DeInit(&huart1);
+		huart1.Instance = USART1;
+		huart1.Init.BaudRate = 9600;
+		huart1.Init.WordLength = UART_WORDLENGTH_8B;
+		huart1.Init.StopBits = UART_STOPBITS_1;
+		huart1.Init.Parity = UART_PARITY_NONE;
+		huart1.Init.Mode = UART_MODE_TX_RX;
+		huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+		huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+		huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+		huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+		huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_TXINVERT_INIT;
+		huart1.AdvancedInit.TxPinLevelInvert = UART_ADVFEATURE_TXINV_ENABLE;
+		HAL_UART_Init(&huart1);
+	}
+
+}
+//=== end ReInitUart ===============================================================
 
 //==================================================================================
 /**
@@ -870,7 +899,7 @@ EOsResult TTaskSYS::Init(void)
 	this->Delay(10);
 
 	this->SetSysState(SysState_Init);
-	this->InterfaceSlaveVIP.Init(&huart1, USART1);
+	this->InterfaceSlaveVIP.Init(IfcUart_1);
 //	this->InterfaceSlaveVIP.ReInit();
 // 	this->StartRxData();
 

@@ -30,9 +30,6 @@ extern TTaskCHM TaskChmRight;
 #endif
 
 /**********************************************************************************/
-
-extern "C" void CreateApplicationTasks(void);
-
 //==================================================================================
 extern "C" void vApplicationTickHook(void)
 {
@@ -130,7 +127,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 *
 *  @return ... .
 */
-void CreateApplicationTasks()
+extern "C" void CreateApplicationTasks()
 {
 	TaskUI.CreateTaskStatic();
 	TaskHAL.CreateTaskStatic();
@@ -231,7 +228,7 @@ void TTaskSYS::Run(void)
 
  		if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
        	{
-       		this->InterfaceSlaveVIP.ReInit();
+       		this->InterfaceSlaveVIP.ReInit(IfcUart_1);
        		this->Delay(2);
        		this->StartRxData();
 
@@ -342,7 +339,7 @@ void TTaskSYS::SelfTest()
 
 	    if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
 	    {
-	    	this->InterfaceSlaveVIP.ReInit();
+	    	this->InterfaceSlaveVIP.ReInit(IfcUart_1);
 	    	this->StartRxData();
        	}
 
@@ -480,7 +477,7 @@ void TTaskSYS::ProcessRxData()
 	switch(command)
 	{
 		case IfcVipCommand_GetState:
-			memcpy((void*)data, (void*)&this->getState, sizeof(TGetState));
+			memcpy((void*)data, (void*)&this->ifcSystemState, sizeof(TIfcSystemState) - 2);
 			if(this->sysState < SysError_Start)
 			{
 				data[IFC_VIP_STATE_INDEX] = this->interfaceVipCode[this->sysState];
@@ -995,6 +992,9 @@ void TTaskSYS::ProcessTick()
 {
 	TaskChmLeft.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
 	TaskChmRight.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
+
+
+//	if(this->bme688SensorLeft.humidity)
 }
 //=== end ProcessTick ==============================================================
 
@@ -1079,7 +1079,7 @@ ESysState TTaskSYS::GetSysState()
 */
 void TTaskSYS::UpdateTopCpuState(u8* pBufferState)
 {
-	TGetState readGetState;
+/*	TGetState readGetState;
 
 
 	taskENTER_CRITICAL();
@@ -1111,7 +1111,7 @@ void TTaskSYS::UpdateTopCpuState(u8* pBufferState)
 	{
 		this->SetSysState(this->getState.error);
 	}
-
+*/
 }
 //=== end UpdateTopCpuState ========================================================
 
@@ -1122,12 +1122,26 @@ void TTaskSYS::UpdateTopCpuState(u8* pBufferState)
 *  @return
 *  		none.
 */
-void TTaskSYS::UpdateSensorBme688(u8* pBufferState)
+void TTaskSYS::UpdateSensorBme688(EIfcBme688Sensor ifcBme688Sensor, u8* pBufferState)
 {
 
 	taskENTER_CRITICAL();
 
-	memcpy((void*)&this->bme688Sensor, (void*)pBufferState, sizeof(TBme688Sensor));
+	if(ifcBme688Sensor == IfcBme688Sensor_Fan)
+	{
+		memcpy((void*)&this->bme688SensorFan, (void*)pBufferState, sizeof(TBme688Sensor));
+	}
+	else
+	{
+		if(ifcBme688Sensor == IfcBme688Sensor_Left)
+		{
+			memcpy((void*)&this->bme688SensorLeft, (void*)pBufferState, sizeof(TBme688Sensor));
+		}
+		else  // IfcBme688Sensor_Right
+		{
+			memcpy((void*)&this->bme688SensorRight, (void*)pBufferState, sizeof(TBme688Sensor));
+		}
+	}
 
 	taskEXIT_CRITICAL();
 
@@ -1249,6 +1263,53 @@ void TTaskSYS::SetEventUartErrorFromISR(void)
 *
 *  @return ... .
 */
+void TTaskSYS::ReInitUart(EIfcUart ifcUart)
+{
+	if(ifcUart == IfcUart_1)
+	{
+		HAL_UART_DeInit(&huart1);
+		huart1.Instance = USART1;
+		huart1.Init.BaudRate = 115200;
+		huart1.Init.WordLength = UART_WORDLENGTH_8B;
+		huart1.Init.StopBits = UART_STOPBITS_1;
+		huart1.Init.Parity = UART_PARITY_NONE;
+		huart1.Init.Mode = UART_MODE_TX_RX;
+		huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+		huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+		huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+		huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+		huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+		HAL_UART_Init(&huart1);
+	}
+
+	if(ifcUart == IfcUart_2)
+	{
+		HAL_UART_DeInit(&huart2);
+		huart2.Instance = USART2;
+		huart2.Init.BaudRate = 19200;
+		huart2.Init.WordLength = UART_WORDLENGTH_8B;
+		huart2.Init.StopBits = UART_STOPBITS_1;
+		huart2.Init.Parity = UART_PARITY_NONE;
+		huart2.Init.Mode = UART_MODE_TX_RX;
+		huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+		huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+		huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+		huart2.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+		huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_TXINVERT_INIT;
+		huart2.AdvancedInit.TxPinLevelInvert = UART_ADVFEATURE_TXINV_ENABLE;
+		HAL_UART_Init(&huart2);
+	}
+
+
+}
+//=== end ReInitUart ===============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
 TTaskSYS::TimeSystem TTaskSYS::GetTimeSystem(void)
 {
 	TTaskSYS::TimeSystem timeSystem;
@@ -1349,28 +1410,28 @@ void TTaskSYS::TestChamberMotors()
 	while(true)
 	{
 		TaskChmLeft.MotorChamber.StartForward();
-		this->Delay(10000);
+		this->Delay(20000);
 		TaskChmLeft.MotorChamber.Stop();
 
 		this->Delay(1000);
 
 		TaskChmLeft.MotorChamber.StartBackward();
-	   	this->Delay(10000);
+	   	this->Delay(20000);
 	   	TaskChmLeft.MotorChamber.Stop();
 
-	   	this->Delay(10000);
+	   	this->Delay(1000);
 
 	   	TaskChmRight.MotorChamber.StartForward();
-	   	this->Delay(10000);
+	   	this->Delay(20000);
 	   	TaskChmRight.MotorChamber.Stop();
 
 	   	this->Delay(1000);
 
 	   	TaskChmRight.MotorChamber.StartBackward();
-	   	this->Delay(10000);
+	   	this->Delay(20000);
 	   	TaskChmRight.MotorChamber.Stop();
 
-	   	this->Delay(10000);
+	   	this->Delay(1000);
 
 	}
 
@@ -1593,7 +1654,7 @@ EOsResult TTaskSYS::Init(void)
 
 	this->SetSysState(SysState_Init);
 	this->InterfaceSlaveVIP.Init(IfcUart_1);
-	this->InterfaceSlaveVIP.ReInit();
+	this->InterfaceSlaveVIP.ReInit(IfcUart_1);
    	this->StartRxData();
 
    	result = TaskHAL.Init();
@@ -1633,10 +1694,15 @@ EOsResult TTaskSYS::Init(void)
 
 
 
-   	TaskChmRight.SetPadTemperatureLevels(45, 50);
-   	TaskChmRight.SetPtcTemperatureLevels(28, 30);
+/*   	TaskChmRight.SetPadTemperatureLevels(50, 55);
+   	TaskChmRight.SetPtcTemperatureLevels(33, 35);
+   	TaskChmRight.SetPtcTime(24 * 60 * 60, 1 * 60 * 60);
    	TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
-//   	TaskChmLeft.SetPadTime(repeatTime, workTime);
+
+   	TaskChmLeft.SetPadTemperatureLevels(50, 55);
+   	TaskChmLeft.SetPtcTemperatureLevels(33, 35);
+   	TaskChmRight.SetPtcTime(24 * 60 * 60, 1 * 60 * 60);
+   	TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING); */
 
 
 

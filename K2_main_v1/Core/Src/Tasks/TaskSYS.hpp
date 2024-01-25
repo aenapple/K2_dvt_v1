@@ -12,7 +12,7 @@
 
 /**********************************************************************************/
 #include "OsTask.hpp"
-#include "InterfaceVIP.hpp"
+#include "Interfaces/InterfaceVIP.hpp"
 
 
 /**********************************************************************************/
@@ -91,27 +91,12 @@
 
 
 /**********************************************************************************/
-struct TGetState
-{
-	EIfcVipState state;
-	ESysState error;
-	EIfcVipSubState subState;
-	u8 stateSensors;
-	u8 stateDamShutter;
-	u8 stateMotors;
-	u8 stateLamps;
-	u16 acCurrent;  // mA
-	u8 levelTank;          // cm
-	u8 levelChamverLeft;   // cm
-	u8 levelChamverRight;  // cm
-};
-
-struct TBme688Sensor
+struct TBme688Sensor  // sizeof = 16 bytes
 {
 	s16 temperature;
+	u16 humidity;
 	u32 pressure;
 	u32 gasResistance;
-	u16 humidity;
 };
 
 /**********************************************************************************/
@@ -159,7 +144,7 @@ public:
 	void SetSysState(ESysState sysState);
 	ESysState GetSysState(void);
 	void UpdateTopCpuState(u8* pBufferState);
-	void UpdateSensorBme688(u8* pBufferState);
+	void UpdateSensorBme688(EIfcBme688Sensor ifcBme688Sensor, u8* pBufferState);
 
 
 	void CreateTask(void);
@@ -170,6 +155,8 @@ public:
 	void SetEventUartRxCpltFromISR(void);
 	void SetEventUartErrorFromISR(void);
 //	void SetEventUartRxHalfCpltFromISR(void);
+
+	void ReInitUart(EIfcUart ifcUart);
 
     
   
@@ -197,8 +184,10 @@ private:
 //    ESysState error;
     ESysState sysState;
     EIfcVipState ifcVipState;
-    TGetState getState;
-    TBme688Sensor bme688Sensor;
+    TIfcSystemState ifcSystemState;
+    TBme688Sensor bme688SensorFan;
+    TBme688Sensor bme688SensorLeft;
+    TBme688Sensor bme688SensorRight;
 
     TInterfaceVIP InterfaceSlaveVIP;
 

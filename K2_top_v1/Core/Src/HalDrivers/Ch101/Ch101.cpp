@@ -209,8 +209,8 @@ extern "C" void chbsp_program_disable(ch_dev_t *dev_ptr)
  */
 void chbsp_set_io_dir_out(ch_dev_t *dev_ptr)
 {
-	static TCh101& Ch101 = TCh101::GetInstance();
-	Ch101.SetPinIntOutput(dev_ptr->io_index);
+//	static TCh101& Ch101 = TCh101::GetInstance();
+//	Ch101.SetPinIntOutput(dev_ptr->io_index);
 }
 
 
@@ -238,8 +238,8 @@ void chbsp_set_io_dir_in(ch_dev_t *dev_ptr)
  */
 void chbsp_group_set_io_dir_out(ch_group_t *grp_ptr)
 {
-	static TCh101& Ch101 = TCh101::GetInstance();
-	Ch101.SetGroupPinIntOutput();
+//	static TCh101& Ch101 = TCh101::GetInstance();
+//	Ch101.SetGroupPinIntOutput();
 }
 
 /*!
@@ -278,8 +278,8 @@ void chbsp_group_pin_init(ch_group_t *grp_ptr)
  */
 void chbsp_io_clear(ch_dev_t *dev_ptr)
 {
-	static TCh101& Ch101 = TCh101::GetInstance();
-	Ch101.ClearPinInt(dev_ptr->io_index);
+//	static TCh101& Ch101 = TCh101::GetInstance();
+//	Ch101.ClearPinInt(dev_ptr->io_index);
 }
 
 /*!
@@ -291,8 +291,8 @@ void chbsp_io_clear(ch_dev_t *dev_ptr)
  */
 void chbsp_io_set(ch_dev_t *dev_ptr)
 {
-	static TCh101& Ch101 = TCh101::GetInstance();
-	Ch101.SetPinInt(dev_ptr->io_index);
+//	static TCh101& Ch101 = TCh101::GetInstance();
+//	Ch101.SetPinInt(dev_ptr->io_index);
 }
 
 /*!
@@ -304,8 +304,8 @@ void chbsp_io_set(ch_dev_t *dev_ptr)
  */
 void chbsp_group_io_clear(ch_group_t *grp_ptr)
 {
-	static TCh101& Ch101 = TCh101::GetInstance();
-	Ch101.ClearGroupPinInt();
+//	static TCh101& Ch101 = TCh101::GetInstance();
+//	Ch101.ClearGroupPinInt();
 }
 
  /*!
@@ -317,8 +317,8 @@ void chbsp_group_io_clear(ch_group_t *grp_ptr)
  */
 void chbsp_group_io_set(ch_group_t *grp_ptr)
 {
-	static TCh101& Ch101 = TCh101::GetInstance();
-	Ch101.SetGroupPinInt();
+//	static TCh101& Ch101 = TCh101::GetInstance();
+//	Ch101.SetGroupPinInt();
 }
 
 /*!
@@ -359,8 +359,8 @@ void chbsp_io_interrupt_enable(ch_dev_t *dev_ptr)
  */
 void chbsp_group_io_interrupt_disable(ch_group_t *grp_ptr)
 {
-	static TCh101& Ch101 = TCh101::GetInstance();
-	Ch101.InterruptGroupDisable();
+//	static TCh101& Ch101 = TCh101::GetInstance();
+//	Ch101.InterruptGroupDisable();
 }
 
 /*!
@@ -373,8 +373,8 @@ void chbsp_group_io_interrupt_disable(ch_group_t *grp_ptr)
  */
 void chbsp_io_interrupt_disable(ch_dev_t *dev_ptr)
 {
-	static TCh101& Ch101 = TCh101::GetInstance();
-	Ch101.InterruptDisable(dev_ptr->io_index);
+//	static TCh101& Ch101 = TCh101::GetInstance();
+//	Ch101.InterruptDisable(dev_ptr->io_index);
 }
 
 /*!
@@ -490,13 +490,49 @@ EOsResult TCh101::Init()
 	for(u8 dev_num = 0; dev_num < chirp_group.num_ports; dev_num++)
 	{
 		dev_ptr = &this->chirp_devices[dev_num];	// init struct in array
-		ch_init(dev_ptr, &this->chirp_group, dev_num, CHIRP_SENSOR_FW_INIT_FUNC);
+		if(ch_init(dev_ptr, &this->chirp_group, dev_num, CHIRP_SENSOR_FW_INIT_FUNC) != 0)
+		{
+			return(OsResult_Error);
+		}
 	}
 
 
 	return(OsResult_Ok);
 }
 //=== end Init =====================================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+EOsResult TCh101::StartMeasurement(ECh101Sensor ch101Sensor)
+{
+//	EOsResult result;
+	ch_dev_t* dev_ptr;
+	ch_config_t dev_config;
+
+
+	dev_config.mode = CH_MODE_FREERUN;
+	dev_config.sample_interval = MEASUREMENT_INTERVAL_MS;  // 1 Sec
+	dev_config.thresh_ptr = 0;
+	dev_config.max_range       = CHIRP_SENSOR_MAX_RANGE_MM;
+	dev_config.static_range    = CHIRP_SENSOR_STATIC_RANGE;
+
+
+	for(u8 dev_num = 0; dev_num < chirp_group.num_ports; dev_num++)
+	{
+		dev_ptr = &this->chirp_devices[dev_num];	// init struct in array
+		if(ch_set_config(dev_ptr, &dev_config) != 0)
+		{
+			return(OsResult_Error);
+		}
+	}
+
+	return(OsResult_Ok);
+}
+//=== end StartMeasurement =========================================================
 
 //==================================================================================
 /**

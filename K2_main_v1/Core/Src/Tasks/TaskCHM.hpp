@@ -42,6 +42,8 @@
 // #define TASK_CHM_PTC_LOW_LEVEL_T   40  // 40C
 // #define TASK_CHM_PTC_HIGH_LEVEL_T  45  // 45C
 
+#define TASK_CHM_REPEAT_TIME_MIXING  (120 * 60)  // 120 Minutes
+
 
 /**********************************************************************************/
 typedef enum
@@ -86,7 +88,7 @@ public:
 	void SetPtcTemperature(s8 temperature);
 	s8 GetPtcTemperature(void);
 	void SetPtcTemperatureLevels(s8 lowLevel, s8 highLevel);
-	void SetPtcTime(u16 repeatTime, u16 workTime);
+	void SetPtcTime(u32 repeatTime, u32 workTime);
 	void SetPadTemperature(s8 temperature);
 	s8 GetPadTemperature(void);
 	void SetPadTemperatureLevels(s8 lowLevel, s8 highLevel);
@@ -128,10 +130,10 @@ private:
 	s8 ptcLowLevel_T;
 	s8 ptcHighLevel_T;
 	s8 ptcTemperature;
-	u16 ptcRepeatTime;
-	u16 ptcCounterRepeatTime;
-	u16 ptcWorkTime;
-	u16 ptcCounterWorkTime;
+	u32 ptcRepeatTime;
+	u32 ptcCounterRepeatTime;
+	u32 ptcWorkTime;
+	u32 ptcCounterWorkTime;
 	bool flagPtcOn;
 	s8 padLowLevel_T;
 	s8 padHighLevel_T;
@@ -141,6 +143,7 @@ private:
 	u16 padWorkTime;
 	u16 padCounterWorkTime;
 	bool flagPadOn;
+	u16 mixingCounterRepeatTime;
 
 
 	////// constants //////

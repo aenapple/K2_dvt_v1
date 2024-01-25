@@ -15,7 +15,7 @@
 #include "Bme688.hpp"
 #include "Fan.hpp"
 #include "Motor.hpp"
-#include "InterfaceVIP.hpp"
+#include "Interfaces/InterfaceVIP.hpp"
 #include "Ch101.hpp"
 
 

@@ -99,6 +99,27 @@ void TTaskHAL::SetEventTickFromISR(void)
 
 	}
 
+#ifndef	__DEBUG_TOP_CPU_NOT_PRESENT
+	if(this->counterGetBme688 < TASK_HAL_TIME_GET_BME688_RIGHT)
+	{
+		this->counterGetBme688++;
+		if(this->counterGetBme688 == TASK_HAL_TIME_GET_BME688_LEFT)
+		{
+			this->SetEventsFromISR(TASK_HAL_EVENT_GET_BME688_LEFT);
+		}
+
+		if(this->counterGetBme688 == TASK_HAL_TIME_GET_BME688_FAN)
+		{
+			this->SetEventsFromISR(TASK_HAL_EVENT_GET_BME688_FAN);
+		}
+	}
+	else
+	{
+		this->SetEventsFromISR(TASK_HAL_EVENT_GET_BME688_RIGHT);
+		this->counterGetBme688 = 0;
+	}
+#endif
+
 }
 //=== end SetEventTickFromISR ======================================================
 
@@ -112,6 +133,7 @@ void TTaskHAL::Run(void)
 {
 	u32 resultBits;
 //	EOsResult result;
+	u8 counterGetBme688;
 
 
 	this->Delay(20);
@@ -126,17 +148,19 @@ void TTaskHAL::Run(void)
 
 //	this->Gpio.SetLevelTopResetPin(GpioLevel_Low);  // Clear Reset Top CPU
 	this->Delay(200);
-	this->InterfaceMasterVIP.ReInit();
+	this->InterfaceMasterVIP.ReInit(IfcUart_2);
 
-
+	counterGetBme688 = 0;
 	while(true)
 	{
         if(this->EventGroup.WaitOrBits(
-//        			TASK_HAL_EVENT_GET_BME688	|
-					TASK_HAL_EVENT_UART_RX_CPLT	|
-					TASK_HAL_EVENT_UART_ERROR	|
-					TASK_HAL_EVENT_SYS_COMMAND	|
-					TASK_HAL_EVENT_T_READY      |
+					TASK_HAL_EVENT_UART_RX_CPLT	    |
+					TASK_HAL_EVENT_UART_ERROR	    |
+					TASK_HAL_EVENT_SYS_COMMAND	    |
+					TASK_HAL_EVENT_T_READY          |
+					TASK_HAL_EVENT_GET_BME688_FAN   |
+					TASK_HAL_EVENT_GET_BME688_LEFT  |
+					TASK_HAL_EVENT_GET_BME688_RIGHT |
 					TASK_HAL_CMD_SELF_TEST,
 					&resultBits,
 					100
@@ -148,7 +172,6 @@ void TTaskHAL::Run(void)
         	{
         		TaskSYS.SetSysState(SysError_InterfaceVipM);
         	} */
-//			this->GetSensorBme688();
 #endif
 
             this->CheckTopRemoved();
@@ -167,13 +190,28 @@ void TTaskHAL::Run(void)
         
         if((resultBits & TASK_HAL_EVENT_UART_ERROR) > 0)
         {
-            this->InterfaceMasterVIP.ReInit();
+            this->InterfaceMasterVIP.ReInit(IfcUart_2);
             this->Delay(2);
         }
 
         if((resultBits & TASK_HAL_EVENT_SYS_COMMAND) > 0)
         {
             this->ProcessSysCommand();
+        }
+
+        if((resultBits & TASK_HAL_EVENT_GET_BME688_FAN) > 0)
+        {
+            this->GetSensorBme688(IfcBme688Sensor_Fan);
+        }
+
+        if((resultBits & TASK_HAL_EVENT_GET_BME688_LEFT) > 0)
+        {
+            this->GetSensorBme688(IfcBme688Sensor_Left);
+        }
+
+        if((resultBits & TASK_HAL_EVENT_GET_BME688_RIGHT) > 0)
+        {
+            this->GetSensorBme688(IfcBme688Sensor_Right);
         }
 
         if((resultBits & TASK_HAL_CMD_SELF_TEST) > 0)
@@ -215,7 +253,7 @@ EOsResult TTaskHAL::GetStateTopCpu(void)
 	// DEBUG
 	if(result != OsResult_Ok)
 	{
-		this->InterfaceMasterVIP.ReInit();
+		this->InterfaceMasterVIP.ReInit(IfcUart_2);
 		this->Delay(10);
 
 		result = this->SendCommand(IfcVipCommand_GetState, 0);
@@ -241,19 +279,21 @@ EOsResult TTaskHAL::GetStateTopCpu(void)
 *
 *  @return void .
 */
-void TTaskHAL::GetSensorBme688(void)
+void TTaskHAL::GetSensorBme688(EIfcBme688Sensor ifcBme688Sensor)
 {
 	EOsResult result;
 	u8* pData;
+	u8 buffer[IFC_VIP_UART_SIZE_DATA];
 
 
-	result = this->SendCommand(IfcVipCommand_GetBme688_Part1, 0);
+	buffer[0] = (u8)ifcBme688Sensor;
+	result = this->SendCommand(IfcVipCommand_GetBme688_Part1, buffer);
 	if(result != OsResult_Ok)
 	{
-		this->InterfaceMasterVIP.ReInit();
+		this->InterfaceMasterVIP.ReInit(IfcUart_2);
 		this->Delay(10);
 
-		result = this->SendCommand(IfcVipCommand_GetBme688_Part1, 0);
+		result = this->SendCommand(IfcVipCommand_GetBme688_Part1, buffer);
 		if(result != OsResult_Ok)
 		{
 			TaskSYS.SetSysState(SysError_InterfaceVipM);
@@ -261,9 +301,10 @@ void TTaskHAL::GetSensorBme688(void)
 		}
 	}
 
+
 	pData = this->InterfaceMasterVIP.GetPointerDataRx();
 
-	TaskSYS.UpdateSensorBme688(pData + IFC_VIP_BME688_TEMPERATURE);
+	TaskSYS.UpdateSensorBme688(ifcBme688Sensor, pData + IFC_VIP_BME688_TEMPERATURE);
 
 }
 //=== end GetSensorBme688 ==========================================================
@@ -300,6 +341,10 @@ void TTaskHAL::ProcessSysCommand(void)
 
 			case SysCommand_ControlLamp:
 				this->ControlLamp(sysCommand.parameters);
+				break;
+
+			case SysCommand_ControlFan:
+				this->ControlFan(sysCommand.parameters);
 				break;
 
 			case SysCommand_SetPosition:
@@ -384,7 +429,7 @@ void TTaskHAL::ProcessSelfTest(void)
 
 	this->Delay(100);
 	this->Gpio.SetLevelTopResetPin(GpioLevel_Low);  // Clear Reset Top CPU
-	this->Delay(100);
+	this->Delay(200);
 
 	////// check connection with Top CPU and wait state 'IfcVipState_Idle' //////
 	result = this->CheckConnectionTopCpu();
@@ -411,6 +456,11 @@ void TTaskHAL::ProcessSelfTest(void)
 		TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_REMOVED);
 		return;
 	}
+
+#else
+	this->Delay(100);
+	this->Gpio.SetLevelTopResetPin(GpioLevel_Low);  // Clear Reset Top CPU
+	this->Delay(100);
 #endif
 
 	// todo:
@@ -776,14 +826,14 @@ EOsResult TTaskHAL::ControlMotor(u8* parameters)
 */
 EOsResult TTaskHAL::ControlHeater(u8* parameters)
 {
-	EHeaterPwm heaterPwm;
+/*	EHeaterPwm heaterPwm;
 
 
 	heaterPwm = (EHeaterPwm)parameters[IFC_VIP_HEATER_CONTROL_INDEX];
 	switch(parameters[IFC_VIP_HEATER_NUMBER_INDEX])
 	{
 		case IfcVipHeater_Ptc1:
-/*			if(heaterPwm < HeaterPwm_10)
+			if(heaterPwm < HeaterPwm_10)
 			{
 				this->PtcFanLeft.Stop();
 			}
@@ -805,11 +855,11 @@ EOsResult TTaskHAL::ControlHeater(u8* parameters)
 					}
 				}
 			}
-			this->PtcHeaterLeft.TurnOn(heaterPwm); */
+			this->PtcHeaterLeft.TurnOn(heaterPwm);
 			break;
 
 		case IfcVipHeater_Ptc2:
-/*			if(heaterPwm < HeaterPwm_10)
+			if(heaterPwm < HeaterPwm_10)
 			{
 				this->PtcFanRight.Stop();
 			}
@@ -831,7 +881,7 @@ EOsResult TTaskHAL::ControlHeater(u8* parameters)
 					}
 				}
 			}
-			this->PtcHeaterRight.TurnOn(heaterPwm); */
+			this->PtcHeaterRight.TurnOn(heaterPwm);
 			break;
 
 		case IfcVipHeater_Pad1:
@@ -843,7 +893,7 @@ EOsResult TTaskHAL::ControlHeater(u8* parameters)
 			break;
 
 	}
-
+*/
 
 	return(OsResult_Ok);
 }
@@ -862,6 +912,68 @@ EOsResult TTaskHAL::ControlLamp(u8* parameters)
 	return(OsResult_Ok);
 }
 //=== end ControlLamp ==============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+EOsResult TTaskHAL::ControlFan(u8* parameters)
+{
+	EOsResult result;
+
+
+	result = this->SendCommand(IfcVipCommand_SetFanSpeed, parameters);
+	if(result != OsResult_Ok)
+	{
+		this->InterfaceMasterVIP.ReInit(IfcUart_2);
+		this->Delay(10);
+
+		result = this->SendCommand(IfcVipCommand_SetFanSpeed, parameters);
+		if(result != OsResult_Ok)
+		{
+			TaskSYS.SetSysState(SysError_InterfaceVipM);
+			return(result);
+		}
+	}
+
+
+	return(OsResult_Ok);
+}
+//=== end ControlFan ===============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::StartMainFan(u8 pwm)
+{
+	TSysCommand SysCommand;
+
+
+	SysCommand.command = SysCommand_ControlFan;
+	SysCommand.parameters[IFC_VIP_NUMBER_OF_ITEM] = IfcVipFan_Main;
+	SysCommand.parameters[IFC_VIP_FAN_PWM_INDEX] = pwm;
+
+	this->SendSysCommand(&SysCommand);
+
+}
+//=== end StartMainFan =============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::StopMainFan()
+{
+	this->StartMainFan(0);
+}
+//=== end StopMainFan ==============================================================
 
 //==================================================================================
 /**
@@ -989,7 +1101,7 @@ void TTaskHAL::BrakeOffMainMotor()
 */
 void TTaskHAL::TurnOnHeater(EHeater heater, EHeaterPwm heaterPwm)
 {
-	TSysCommand SysCommand;
+/*	TSysCommand SysCommand;
 	EOsResult result;
 
 
@@ -1021,7 +1133,7 @@ void TTaskHAL::TurnOnHeater(EHeater heater, EHeaterPwm heaterPwm)
 	{
 		// todo: set ERROR
 	}
-
+*/
 
 }
 
@@ -1204,25 +1316,25 @@ void TTaskHAL::CalculatingTSensors()
 		{
 			case 0:
 				temperature = this->CalculatingTPtcSensor(IfcVipTemperature_PtcHeater1);
-				if(temperature >= 20) temperature++;
-//				if(temperature >= 40) temperature++;
-//				if(temperature >= 50) temperature++;
-//				if(temperature >= 60) temperature++;
+//				if(temperature >= 20) temperature++;
+				if(temperature >= 40) temperature++;
+				if(temperature >= 50) temperature++;
+				if(temperature >= 60) temperature++;
 				TaskChmLeft.SetPtcTemperature(temperature);
 				break;
 
 			case 1:
 				temperature = this->CalculatingTPtcSensor(IfcVipTemperature_PtcHeater2);
-				if(temperature >= 20) temperature++;
-//				if(temperature >= 40) temperature++;
-//				if(temperature >= 50) temperature++;
-//				if(temperature >= 60) temperature++;
+//				if(temperature >= 20) temperature++;
+				if(temperature >= 40) temperature++;
+				if(temperature >= 50) temperature++;
+				if(temperature >= 60) temperature++;
 				TaskChmRight.SetPtcTemperature(temperature);
 				break;
 
 			case 2:
 				temperature = this->CalculatingTSensor(IfcVipTemperature_PadHeater1);
-//				if(temperature >= 40) temperature++;
+				if(temperature >= 40) temperature++;
 				if(temperature >= 50) temperature++;
 				if(temperature >= 60) temperature++;
 				TaskChmLeft.SetPadTemperature(temperature);
@@ -1230,7 +1342,7 @@ void TTaskHAL::CalculatingTSensors()
 
 			case 3:
 				temperature = this->CalculatingTSensor(IfcVipTemperature_PadHeater2);
-//				if(temperature >= 40) temperature++;
+				if(temperature >= 40) temperature++;
 				if(temperature >= 50) temperature++;
 				if(temperature >= 60) temperature++;
 				TaskChmRight.SetPadTemperature(temperature);
@@ -2343,6 +2455,7 @@ EOsResult TTaskHAL::Init(void)
 	this->InterfaceMasterVIP.Init(IfcUart_2);
 
 	this->counterPwmHeater = 0;
+	this->counterGetBme688 = 0;
 
 
 	this->acPhase = false;

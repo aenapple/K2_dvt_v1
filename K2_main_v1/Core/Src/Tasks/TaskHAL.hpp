@@ -15,7 +15,7 @@
 #include "Adc.hpp"
 #include "I2c.hpp"
 #include "Gpio.hpp"
-#include "InterfaceVIP.hpp"
+#include "Interfaces/InterfaceVIP.hpp"
 #include "Heater.hpp"
 #include "MotorMain.hpp"
 // #include "PtcFan.hpp"
@@ -31,11 +31,14 @@
 #define TASK_HAL_EVENT_UART_ERROR         (1<<3)
 #define TASK_HAL_EVENT_SYS_COMMAND        (1<<4)
 
-// #define TASK_HAL_EVENT_GET_BME688  (1<<1)
-// #define TASK_HAL_EVT_NEW_RPM_READY     (1<<2)
-#define TASK_HAL_EVENT_T_READY     (1<<5)
+#define TASK_HAL_EVENT_GET_BME688_FAN    (1<<5)
+#define TASK_HAL_EVENT_GET_BME688_LEFT   (1<<6)
+#define TASK_HAL_EVENT_GET_BME688_RIGHT  (1<<7)
 
-#define TASK_HAL_CMD_SELF_TEST  (1<<6)
+// #define TASK_HAL_EVT_NEW_RPM_READY     (1<<2)
+#define TASK_HAL_EVENT_T_READY     (1<<8)
+
+#define TASK_HAL_CMD_SELF_TEST  (1<<9)
 
 
 #define TASK_HAL_MAX_NUMBER_COMMANDS  10
@@ -55,6 +58,9 @@
 #define TASK_HAL_AC_TIME_MEASUREMENT  100        // 0.1 Sec
 #define TASK_HAL_AC_PULSE_NUMBERS     (12 - 1)   // 60*2 times per 1 Sec
 
+#define TASK_HAL_TIME_GET_BME688_FAN    1000  // 1 Sec
+#define TASK_HAL_TIME_GET_BME688_LEFT   2000  // 2 Sec
+#define TASK_HAL_TIME_GET_BME688_RIGHT  3000  // 3 Sec
 
 /**********************************************************************************/
 ///// VREF = 2.5V - Pad Heater temperature sensor (10K) //////
@@ -100,6 +106,7 @@ typedef enum
 	SysCommand_ControlHeater,
 	SysCommand_ControlMotor,
 	SysCommand_ControlLamp,
+	SysCommand_ControlFan,
 	SysCommand_SetPosition,
 	SysCommand_AcPowerOn,
 	SysCommand_AcPowerOff,
@@ -108,10 +115,11 @@ typedef enum
 
 } ESysCommand;
 
-struct TSysCommand
+struct TSysCommand  // sizeof = 16 bytes
 {
 	ESysCommand command;
     u8 parameters[IFC_VIP_UART_SIZE_DATA];
+    u8 reserved;
 };
 
 enum EBme688Sensor
@@ -121,7 +129,7 @@ enum EBme688Sensor
 	Bme688Sensor_Fan
 };
 
-struct TBme688Sensors
+struct TBme688Sensors  // sizeof = 16bytes.
 {
 	s16 temperature;
 	u32 pressure;
@@ -153,6 +161,8 @@ public:
 	s8 GetTemperature(EIfcVipTemperature ifcVipTemperature);
 	void TurnOnHeater(EHeater heater, EHeaterPwm heaterPwm);
 	void TurnOffHeater(EHeater heater);
+	void StartMainFan(u8 pwm);
+	void StopMainFan(void);
 //	void TurnOnMotorChamber(EMotorChamber motorChamber, EDirMotorChamber dirMotorChamber, u8 pwm);
 //	void TurnOffMotorChamber(EMotorChamber motorChamber);
 	TIfcSystemState* GetPointerIfcSystemState(void);
@@ -229,9 +239,6 @@ private:
 	TAdc Adc;
 	TI2c I2c;
 	TGpio Gpio;
-	TBme688Sensors Bme688FanSensors;
-	TBme688Sensors Bme688LeftSensors;
-	TBme688Sensors Bme688RightSensors;
 	u8 adcIndexConversion;
 	u16 calculationResultAdc1[ADC1_MAX_NUMBER_CHANNEL];
 
@@ -245,6 +252,8 @@ private:
 //	u8 pwmAcPadHeater;
 //	u8 pwmAcPtcHeater;
 	u8 counterPwmHeater;
+
+	u16 counterGetBme688;
 
 	u16 counterTimeAcMeasurement;
 	bool acPhase;
@@ -291,7 +300,7 @@ private:
 
 	////// functions //////
 	EOsResult GetStateTopCpu(void);
-	void GetSensorBme688(void);
+	void GetSensorBme688(EIfcBme688Sensor ifcBme688Sensor);
 	void ProcessSysCommand(void);
 	void ProcessSelfTest(void);
 	EOsResult CheckConnectionTopCpu(void);
@@ -314,6 +323,7 @@ private:
 	EOsResult ControlMotor(u8* parameters);
 	EOsResult ControlHeater(u8* parameters);
 	EOsResult ControlLamp(u8* parameters);
+	EOsResult ControlFan(u8* parameters);
 	u8 SetSysStateSensor(u16 typeSensor);
 
 

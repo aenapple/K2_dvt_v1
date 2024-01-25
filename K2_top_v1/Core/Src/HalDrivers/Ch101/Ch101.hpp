@@ -40,6 +40,7 @@ public:
 	////// functions //////
 	static TCh101& GetInstance(void);
 	EOsResult Init(void);
+	EOsResult StartMeasurement(ECh101Sensor ch101Sensor);
 	EOsResult FindSensor(ECh101Sensor ch101Sensor);
 	EOsResult Read(ch_dev_t *dev_ptr, uint8_t *data, uint16_t num_bytes);
 	EOsResult ReadMemory(ch_dev_t *dev_ptr, u16 mem_addr, u8 *data, u16 num_bytes);
@@ -64,12 +65,7 @@ public:
 	bool GetInterruptEnable(ECh101Sensor ch101Sensor);
 
 
-	EOsResult WriteRegisterI2c1(u8 devAddress, u8 regAddress, u16 regLength, u8* regValue);
-	EOsResult WriteRawRegisterI2c1(u8 devAddress, u16 regLength, u8* regValue);
-	EOsResult ReadRegisterI2c2(u8 devAddress, u8 regAddress, u16 regLength, u8* regValue);
-	EOsResult ReadRawRegisterI2c2(u8 devAddress, u16 regLength, u8* regValue);
-	EOsResult WriteRegisterI2c2(u8 devAddress, u8 regAddress, u16 regLength, u8* regValue);
-	EOsResult WriteRawRegisterI2c2(u8 devAddress, u16 regLength, u8* regValue);
+
 
 
 

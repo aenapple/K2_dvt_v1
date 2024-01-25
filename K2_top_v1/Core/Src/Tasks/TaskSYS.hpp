@@ -12,7 +12,7 @@
 
 /**********************************************************************************/
 #include "OsTask.hpp"
-#include "InterfaceVIP.hpp"
+#include "Interfaces/InterfaceVIP.hpp"
 #include "Motor.hpp"
 
 
@@ -46,7 +46,9 @@
 #define TASK_SYS_ERROR_I2C1         4
 #define TASK_SYS_ERROR_I2C2         5
 #define TASK_SYS_ERROR_APPLICATION	6
-
+#define TASK_SYS_ERROR_LEVEL_1      7
+#define TASK_SYS_ERROR_LEVEL_2      8
+#define TASK_SYS_ERROR_LEVEL_3      9
 
 
 #define TASK_SYS_ADDRESS_APPLICATION  0x800C000
@@ -123,6 +125,7 @@ public:
 	void SetEventUartTxCpltFromISR(void);
 	void SetEventUartRxCpltFromISR(void);
 	void SetEventUartErrorFromISR(void);
+	void ReInitUart(EIfcUart ifcUart);
 //	void SetEventUartRxHalfCpltFromISR(void);
 
     

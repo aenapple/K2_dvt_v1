@@ -22,10 +22,10 @@ extern TIM_HandleTypeDef htim17;
 */
 void TFan::Init()
 {
-	this->pwm = 0;
+	this->pwm = 50;
 	this->pwmStarted = true;
 
-	this->StopPwm();
+	this->Stop();
 }
 //=== end Init =====================================================================
 

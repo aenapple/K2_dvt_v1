@@ -30,4 +30,21 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>Core/Src/Interfaces</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/Interfaces/InterfaceVIP.cpp</name>
+			<type>1</type>
+			<location>C:/WorkAen/Projects/Stm32cubeIde/VcLibrary/Interfaces/InterfaceVIP.cpp</location>
+		</link>
+		<link>
+			<name>Core/Src/Interfaces/InterfaceVIP.hpp</name>
+			<type>1</type>
+			<location>C:/WorkAen/Projects/Stm32cubeIde/VcLibrary/Interfaces/InterfaceVIP.hpp</location>
+		</link>
+	</linkedResources>
 </projectDescription>
