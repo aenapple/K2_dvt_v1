@@ -29,6 +29,10 @@
 #define TASK_HAL_EVENT_GET_BME688_LEFT   (1<<2)
 #define TASK_HAL_EVENT_GET_BME688_RIGHT  (1<<3)
 
+#define TASK_HAL_EVENT_GET_CH101_TANK   (1<<4)
+#define TASK_HAL_EVENT_GET_CH101_LEFT   (1<<5)
+#define TASK_HAL_EVENT_GET_CH101_RIGHT  (1<<6)
+
 
 
 
@@ -66,7 +70,11 @@ class TTaskHAL : public TOsTask
 {
 public:
 	////// variables //////
-
+	// DEBUG
+	u32 counterExti1;
+	u32 counterExti2;
+	u32 counterExti3;
+	// DEBUG
 //	TMotor Fan;
 //	TMotor MotorDc;
 //	TMotor Heater;
@@ -133,6 +141,7 @@ private:
 	bool flagErrorBme688_Fan;
 
 	TCh101* Ch101;
+	bool enableCh101;
 
 	EHalTurn halTurnLampFront;
 	u8 counterLampFront;

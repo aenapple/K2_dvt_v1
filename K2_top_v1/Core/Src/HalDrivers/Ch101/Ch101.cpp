@@ -19,6 +19,8 @@ extern TIM_HandleTypeDef htim3;
 /**********************************************************************************/
 extern "C" uint8_t	ch_init(ch_dev_t *dev_ptr, ch_group_t *grp_ptr, uint8_t dev_num, ch_fw_init_func_t fw_init_func);
 extern "C" uint8_t ch101_gpr_narrow_init(ch_dev_t *dev_ptr, ch_group_t *grp_ptr, uint8_t i2c_addr, uint8_t dev_num, uint8_t i2c_bus_index);
+extern "C" uint8_t	ch_set_config(ch_dev_t *dev_ptr, ch_config_t *config_ptr);
+extern "C" uint8_t	ch_group_start(ch_group_t *grp_ptr);
 
 
 /**********************************************************************************/
@@ -142,7 +144,11 @@ extern "C" int chbsp_i2c_write(ch_dev_t *dev_ptr, uint8_t *data, uint16_t num_by
  */
 extern "C" int chbsp_i2c_read(ch_dev_t *dev_ptr, uint8_t *data, uint16_t num_bytes)
 {
-
+	static TCh101& Ch101 = TCh101::GetInstance();
+	if(Ch101.Read(dev_ptr, data, num_bytes) == OsResult_Ok)
+	{
+		return(0);
+	}
 
 
 	return(1); //  error;
@@ -207,10 +213,10 @@ extern "C" void chbsp_program_disable(ch_dev_t *dev_ptr)
  * This function configures the Chirp sensor INT pin as an output (from the perspective
  * of the host system).
  */
-void chbsp_set_io_dir_out(ch_dev_t *dev_ptr)
+extern "C" void chbsp_set_io_dir_out(ch_dev_t *dev_ptr)
 {
-//	static TCh101& Ch101 = TCh101::GetInstance();
-//	Ch101.SetPinIntOutput(dev_ptr->io_index);
+	static TCh101& Ch101 = TCh101::GetInstance();
+	Ch101.SetPinIntOutput(dev_ptr->io_index);
 }
 
 
@@ -222,7 +228,7 @@ void chbsp_set_io_dir_out(ch_dev_t *dev_ptr)
  * This function configures the Chirp sensor INT pin as an input (from the perspective of
  * the host system).
  */
-void chbsp_set_io_dir_in(ch_dev_t *dev_ptr)
+extern "C" void chbsp_set_io_dir_in(ch_dev_t *dev_ptr)
 {
 	static TCh101& Ch101 = TCh101::GetInstance();
 	Ch101.SetPinIntInputEXTI(dev_ptr->io_index);
@@ -236,10 +242,10 @@ void chbsp_set_io_dir_in(ch_dev_t *dev_ptr)
  * This function configures each Chirp sensor's INT pin as an output (from the perspective
  * of the host system).
  */
-void chbsp_group_set_io_dir_out(ch_group_t *grp_ptr)
+extern "C" void chbsp_group_set_io_dir_out(ch_group_t *grp_ptr)
 {
-//	static TCh101& Ch101 = TCh101::GetInstance();
-//	Ch101.SetGroupPinIntOutput();
+	static TCh101& Ch101 = TCh101::GetInstance();
+	Ch101.SetGroupPinIntOutput();
 }
 
 /*!
@@ -249,7 +255,7 @@ void chbsp_group_set_io_dir_out(ch_group_t *grp_ptr)
  *
  * \note This function assumes a bidirectional level shifter is interfacing the ICs.
  */
-void chbsp_group_set_io_dir_in(ch_group_t *grp_ptr)
+extern "C" void chbsp_group_set_io_dir_in(ch_group_t *grp_ptr)
 {
 	static TCh101& Ch101 = TCh101::GetInstance();
 	Ch101.SetGroupPinIntInputEXTI();
@@ -263,7 +269,7 @@ void chbsp_group_set_io_dir_in(ch_group_t *grp_ptr)
  * Configure reset and program pins as outputs. Assert reset and program. Configure
  * sensor INT pin as input.
  */
-void chbsp_group_pin_init(ch_group_t *grp_ptr)
+extern "C" void chbsp_group_pin_init(ch_group_t *grp_ptr)
 {
 	static TCh101& Ch101 = TCh101::GetInstance();
 	Ch101.InitAllPins();
@@ -276,10 +282,10 @@ void chbsp_group_pin_init(ch_group_t *grp_ptr)
  *
  * This function drives the INT line low for one sensor.
  */
-void chbsp_io_clear(ch_dev_t *dev_ptr)
+extern "C" void chbsp_io_clear(ch_dev_t *dev_ptr)
 {
-//	static TCh101& Ch101 = TCh101::GetInstance();
-//	Ch101.ClearPinInt(dev_ptr->io_index);
+	static TCh101& Ch101 = TCh101::GetInstance();
+	Ch101.ClearPinInt(dev_ptr->io_index);
 }
 
 /*!
@@ -289,10 +295,10 @@ void chbsp_io_clear(ch_dev_t *dev_ptr)
  *
  * This function drives the INT line high for one sensor.
  */
-void chbsp_io_set(ch_dev_t *dev_ptr)
+extern "C" void chbsp_io_set(ch_dev_t *dev_ptr)
 {
-//	static TCh101& Ch101 = TCh101::GetInstance();
-//	Ch101.SetPinInt(dev_ptr->io_index);
+	static TCh101& Ch101 = TCh101::GetInstance();
+	Ch101.SetPinInt(dev_ptr->io_index);
 }
 
 /*!
@@ -302,10 +308,10 @@ void chbsp_io_set(ch_dev_t *dev_ptr)
  *
  * This function drives the INT line low for each sensor in the group.
  */
-void chbsp_group_io_clear(ch_group_t *grp_ptr)
+extern "C" void chbsp_group_io_clear(ch_group_t *grp_ptr)
 {
-//	static TCh101& Ch101 = TCh101::GetInstance();
-//	Ch101.ClearGroupPinInt();
+	static TCh101& Ch101 = TCh101::GetInstance();
+	Ch101.ClearGroupPinInt();
 }
 
  /*!
@@ -315,10 +321,10 @@ void chbsp_group_io_clear(ch_group_t *grp_ptr)
  *
  * This function drives the INT line high for each sensor in the group.
  */
-void chbsp_group_io_set(ch_group_t *grp_ptr)
+extern "C" void chbsp_group_io_set(ch_group_t *grp_ptr)
 {
-//	static TCh101& Ch101 = TCh101::GetInstance();
-//	Ch101.SetGroupPinInt();
+	static TCh101& Ch101 = TCh101::GetInstance();
+	Ch101.SetGroupPinInt();
 }
 
 /*!
@@ -329,7 +335,7 @@ void chbsp_group_io_set(ch_group_t *grp_ptr)
  * For each sensor in the group, this function disables the host interrupt associated
  * with the Chirp sensor device's INT line.
  */
-void chbsp_group_io_interrupt_enable(ch_group_t *grp_ptr)
+extern "C" void chbsp_group_io_interrupt_enable(ch_group_t *grp_ptr)
 {
 	static TCh101& Ch101 = TCh101::GetInstance();
 	Ch101.InterruptGroupEnable();
@@ -343,7 +349,7 @@ void chbsp_group_io_interrupt_enable(ch_group_t *grp_ptr)
  * This function enables the host interrupt associated with the Chirp sensor device's
  * INT line.
  */
-void chbsp_io_interrupt_enable(ch_dev_t *dev_ptr)
+extern "C" void chbsp_io_interrupt_enable(ch_dev_t *dev_ptr)
 {
 	static TCh101& Ch101 = TCh101::GetInstance();
 	Ch101.InterruptEnable(dev_ptr->io_index);
@@ -357,10 +363,10 @@ void chbsp_io_interrupt_enable(ch_dev_t *dev_ptr)
  * For each sensor in the group, this function disables the host interrupt associated
  * with the Chirp sensor device's INT line.
  */
-void chbsp_group_io_interrupt_disable(ch_group_t *grp_ptr)
+extern "C" void chbsp_group_io_interrupt_disable(ch_group_t *grp_ptr)
 {
-//	static TCh101& Ch101 = TCh101::GetInstance();
-//	Ch101.InterruptGroupDisable();
+	static TCh101& Ch101 = TCh101::GetInstance();
+	Ch101.InterruptGroupDisable();
 }
 
 /*!
@@ -371,10 +377,10 @@ void chbsp_group_io_interrupt_disable(ch_group_t *grp_ptr)
  * This function disables the host interrupt associated with the Chirp sensor device's
  * INT line.
  */
-void chbsp_io_interrupt_disable(ch_dev_t *dev_ptr)
+extern "C" void chbsp_io_interrupt_disable(ch_dev_t *dev_ptr)
 {
-//	static TCh101& Ch101 = TCh101::GetInstance();
-//	Ch101.InterruptDisable(dev_ptr->io_index);
+	static TCh101& Ch101 = TCh101::GetInstance();
+	Ch101.InterruptDisable(dev_ptr->io_index);
 }
 
 /*!
@@ -385,11 +391,11 @@ void chbsp_io_interrupt_disable(ch_dev_t *dev_ptr)
  * This function waits for the specified number of microseconds before returning to
  * the caller.
  */
-void chbsp_delay_us(uint32_t us)
+extern "C" void chbsp_delay_us(uint32_t us)
 {
 	uint32_t counter;
 
-	counter = us * 64 - 1;  // clk = 64MHz
+	counter = us * 32 - 1;  // clk = 32MHz
 	htim3.Instance->CNT = 0;
 	while(htim3.Instance->CNT < counter);
 }
@@ -402,13 +408,43 @@ void chbsp_delay_us(uint32_t us)
  * This function waits for the specified number of milliseconds before returning to
  * the caller.
  */
-void chbsp_delay_ms(uint32_t ms)
+extern "C" void chbsp_delay_ms(uint32_t ms)
 {
-	chbsp_delay_us(ms * 1000);
+	for(u16 i = 0; i < ms; i++)
+	{
+		chbsp_delay_us(1000);
+	}
 }
 
+/*!
+ * \brief Reset I2C bus associated with device.
+ *
+ * \param dev_ptr 		pointer to the ch_dev_t config structure for a sensor
+ *
+ * This function should perform a reset of the I2C interface for the specified device.
+ */
+//!
+extern "C" void chbsp_i2c_reset(ch_dev_t *dev_ptr)
+{
 
+}
 
+/*!
+ * \brief Initialize the host's I2C hardware.
+ *
+ * \return 0 if successful, 1 on error
+ *
+ * This function should perform general I2C initialization on the host system.  This includes
+ * both hardware initialization and setting up any necessary software structures.  Upon
+ * successful return from this routine, the system should be ready to perform I/O operations
+ * such as \a chbsp_i2c_read() and \a chbsp_i2c_write().
+ *
+ * This function is REQUIRED.
+ */
+extern "C" int chbsp_i2c_init(void)
+{
+	return(0);
+}
 
 
 
@@ -426,8 +462,6 @@ const u8 TCh101::i2c_buses[] = { 0, 0, 1 };
 */
 TCh101::TCh101()
 {
-	HAL_TIM_Base_Start(&htim3);
-
 	HAL_GPIO_WritePin(RESET1_GPIO_Port, RESET1_Pin, GPIO_PIN_SET);  // reset = '1'
 	HAL_GPIO_WritePin(RESET2_GPIO_Port, RESET2_Pin, GPIO_PIN_SET);  // reset = '1'
 	HAL_GPIO_WritePin(RESET3_GPIO_Port, RESET3_Pin, GPIO_PIN_SET);  // reset = '1'
@@ -463,6 +497,8 @@ EOsResult TCh101::Init()
 	ch_dev_t* dev_ptr;
 
 
+	HAL_TIM_Base_Start(&htim3);
+
 	this->leftInterruptEnable = true;
 	this->rightInterruptEnable = true;
 	this->tankInterruptEnable = true;
@@ -496,6 +532,11 @@ EOsResult TCh101::Init()
 		}
 	}
 
+	if(ch_group_start(&this->chirp_group) != 0)
+	{
+		return(OsResult_Error);
+	}
+
 
 	return(OsResult_Ok);
 }
@@ -517,18 +558,18 @@ EOsResult TCh101::StartMeasurement(ECh101Sensor ch101Sensor)
 	dev_config.mode = CH_MODE_FREERUN;
 	dev_config.sample_interval = MEASUREMENT_INTERVAL_MS;  // 1 Sec
 	dev_config.thresh_ptr = 0;
-	dev_config.max_range       = CHIRP_SENSOR_MAX_RANGE_MM;
-	dev_config.static_range    = CHIRP_SENSOR_STATIC_RANGE;
+	dev_config.max_range = CHIRP_SENSOR_MAX_RANGE_MM;
+	dev_config.static_range = CHIRP_SENSOR_STATIC_RANGE;
 
 
-	for(u8 dev_num = 0; dev_num < chirp_group.num_ports; dev_num++)
+	dev_ptr = &this->chirp_devices[ch101Sensor];	// init struct in array
+	if(ch_set_config(dev_ptr, &dev_config) != 0)
 	{
-		dev_ptr = &this->chirp_devices[dev_num];	// init struct in array
-		if(ch_set_config(dev_ptr, &dev_config) != 0)
-		{
-			return(OsResult_Error);
-		}
+		return(OsResult_Error);
 	}
+
+	this->SetPinIntInputEXTI(ch101Sensor);
+
 
 	return(OsResult_Ok);
 }
@@ -632,7 +673,7 @@ EOsResult TCh101::Read(ch_dev_t *dev_ptr, uint8_t *data, uint16_t num_bytes)
 	if(dev_ptr->i2c_bus_index == 0)
 	{
 		// I2C bus 0 (hi2c1)
-		halResult = HAL_I2C_Master_Receive(&hi2c1, (u16)(dev_ptr->i2c_address << 1), data, num_bytes, 100);
+		halResult = HAL_I2C_Master_Receive(&hi2c1, (u16)(dev_ptr->i2c_address << 1), data, num_bytes, 1000);
 		if(halResult == HAL_OK)
 		{
 			return(OsResult_Ok);
@@ -643,7 +684,7 @@ EOsResult TCh101::Read(ch_dev_t *dev_ptr, uint8_t *data, uint16_t num_bytes)
 		if(dev_ptr->i2c_bus_index == 1)
 		{
 			// I2C bus 1 (hi2c2)
-			halResult = HAL_I2C_Master_Receive(&hi2c2, (u16)(dev_ptr->i2c_address << 1), data, num_bytes, 100);
+			halResult = HAL_I2C_Master_Receive(&hi2c2, (u16)(dev_ptr->i2c_address << 1), data, num_bytes, 1000);
 			if(halResult == HAL_OK)
 			{
 				return(OsResult_Ok);
@@ -670,7 +711,7 @@ EOsResult TCh101::ReadMemory(ch_dev_t *dev_ptr, u16 mem_addr, u8 *data, u16 num_
 	if(dev_ptr->i2c_bus_index == 0)
 	{
 		// I2C bus 0 (hi2c1)
-		halResult = HAL_I2C_Mem_Read(&hi2c1, (u16)(dev_ptr->i2c_address << 1), mem_addr, I2C_MEMADD_SIZE_8BIT, data, num_bytes, 100);
+		halResult = HAL_I2C_Mem_Read(&hi2c1, (u16)(dev_ptr->i2c_address << 1), mem_addr, I2C_MEMADD_SIZE_8BIT, data, num_bytes, 1000);
 		if(halResult == HAL_OK)
 		{
 			return(OsResult_Ok);
@@ -681,7 +722,7 @@ EOsResult TCh101::ReadMemory(ch_dev_t *dev_ptr, u16 mem_addr, u8 *data, u16 num_
 		if(dev_ptr->i2c_bus_index == 1)
 		{
 			// I2C bus 1 (hi2c2)
-			halResult = HAL_I2C_Mem_Read(&hi2c2, (u16)(dev_ptr->i2c_address << 1), mem_addr, I2C_MEMADD_SIZE_8BIT, data, num_bytes, 100);
+			halResult = HAL_I2C_Mem_Read(&hi2c2, (u16)(dev_ptr->i2c_address << 1), mem_addr, I2C_MEMADD_SIZE_8BIT, data, num_bytes, 1000);
 			if(halResult == HAL_OK)
 			{
 				return(OsResult_Ok);
@@ -710,7 +751,7 @@ EOsResult TCh101::Write(ch_dev_t *dev_ptr, uint8_t *data, uint16_t num_bytes)
 	if(dev_ptr->i2c_bus_index == 0)
 	{
 		// I2C bus 0 (hi2c1)
-		halResult = HAL_I2C_Master_Transmit(&hi2c1, (u16)(dev_ptr->i2c_address << 1), data, num_bytes, 100);
+		halResult = HAL_I2C_Master_Transmit(&hi2c1, (u16)(dev_ptr->i2c_address << 1), data, num_bytes, 1000);
 		if(halResult == HAL_OK)
 		{
 			return(OsResult_Ok);
@@ -721,7 +762,7 @@ EOsResult TCh101::Write(ch_dev_t *dev_ptr, uint8_t *data, uint16_t num_bytes)
 		if(dev_ptr->i2c_bus_index == 1)
 		{
 			// I2C bus 1 (hi2c2)
-			halResult = HAL_I2C_Master_Transmit(&hi2c2, (u16)(dev_ptr->i2c_address << 1), data, num_bytes, 100);
+			halResult = HAL_I2C_Master_Transmit(&hi2c2, (u16)(dev_ptr->i2c_address << 1), data, num_bytes, 1000);
 			if(halResult == HAL_OK)
 			{
 				return(OsResult_Ok);
@@ -748,7 +789,7 @@ EOsResult TCh101::WriteMemory(ch_dev_t *dev_ptr, u16 mem_addr, u8 *data, u16 num
 	if(dev_ptr->i2c_bus_index == 0)
 	{
 		// I2C bus 0 (hi2c1)
-		halResult = HAL_I2C_Mem_Write(&hi2c1, (u16)(dev_ptr->i2c_address << 1), mem_addr, I2C_MEMADD_SIZE_8BIT, data, num_bytes, 100);
+		halResult = HAL_I2C_Mem_Write(&hi2c1, (u16)(dev_ptr->i2c_address << 1), mem_addr, I2C_MEMADD_SIZE_8BIT, data, num_bytes, 1000);
 		if(halResult == HAL_OK)
 		{
 			return(OsResult_Ok);
@@ -759,7 +800,7 @@ EOsResult TCh101::WriteMemory(ch_dev_t *dev_ptr, u16 mem_addr, u8 *data, u16 num
 		if(dev_ptr->i2c_bus_index == 1)
 		{
 			// I2C bus 1 (hi2c2)
-			halResult = HAL_I2C_Mem_Write(&hi2c2, (u16)(dev_ptr->i2c_address << 1), mem_addr, I2C_MEMADD_SIZE_8BIT, data, num_bytes, 100);
+			halResult = HAL_I2C_Mem_Write(&hi2c2, (u16)(dev_ptr->i2c_address << 1), mem_addr, I2C_MEMADD_SIZE_8BIT, data, num_bytes, 1000);
 			if(halResult == HAL_OK)
 			{
 				return(OsResult_Ok);
@@ -898,9 +939,10 @@ void TCh101::SetPinIntInputEXTI(u8 io_index)
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 
 
-	GPIO_InitStruct.Pin = IN_FRONT_LAMP_Pin|INT1_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+//	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
 
 	switch(io_index)
 	{

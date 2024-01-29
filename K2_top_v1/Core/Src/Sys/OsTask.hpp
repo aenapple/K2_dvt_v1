@@ -10,11 +10,11 @@
 #define __OsTask_H
 
 /**********************************************************************************/
-#include "Os.hpp"
-#include "OsEventGroup.hpp"
-#include "OsQueue.hpp"
-#include "OsSemaphore.hpp"
-#include "OsStreamBuffer.hpp"
+#include "Os/Os.hpp"
+#include "Os/OsEventGroup.hpp"
+#include "Os/OsQueue.hpp"
+#include "Os/OsSemaphore.hpp"
+#include "Os/OsStreamBuffer.hpp"
 #include "ConfigApplication.h"
 #include "SysState.h"
 // #include "SysError.h"

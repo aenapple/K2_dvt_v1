@@ -33,10 +33,11 @@ void HAL_GPIO_EXTI_Rising_Callback(u16 gpioPin)
 	TaskHAL.HandlerCh101Interrupt(gpioPin);
 }
 
-void HAL_GPIO_EXTI_Falling_Callback(u16 gpioPin)
+/* void HAL_GPIO_EXTI_Falling_Callback(u16 gpioPin)
 {
 	TaskHAL.HandlerGpioInterrupt(gpioPin);
-}
+	TaskHAL.HandlerCh101Interrupt(gpioPin);
+} */
 
 
 
@@ -145,6 +146,9 @@ void TTaskHAL::Run(void)
 {
 	u32 resultBits;
 	EOsResult result;
+	bool flagBme688_Left;
+	bool flagBme688_Right;
+	u64 timeStamp;
 
 
 	this->Delay(20);
@@ -190,27 +194,67 @@ void TTaskHAL::Run(void)
 		}
 	}
 
-	result = this->Ch101->Init();
+
+	result = this->Ch101->StartMeasurement(Ch101Sensor_Left);
+	if(result != OsResult_Ok)
+	{
+		TaskSYS.SetSysState(SysError_LevelSensor2);
+	}
+
+	result = this->Ch101->StartMeasurement(Ch101Sensor_Right);
+	if(result != OsResult_Ok)
+	{
+		TaskSYS.SetSysState(SysError_LevelSensor3);
+	}
+
+	result = this->Ch101->StartMeasurement(Ch101Sensor_Tank);
 	if(result != OsResult_Ok)
 	{
 		TaskSYS.SetSysState(SysError_LevelSensor1);
 	}
 
+	this->enableCh101 = true;
+	flagBme688_Left = false;
+	flagBme688_Right = false;
 	while(true)
 	{
         if(this->EventGroup.WaitOrBits(
-        			TASK_HAL_EVENT_GET_BME688_FAN  |
-					TASK_HAL_EVENT_GET_BME688_LEFT |
-					TASK_HAL_EVENT_GET_BME688_RIGHT,
+        			TASK_HAL_EVENT_GET_BME688_FAN   |
+					TASK_HAL_EVENT_GET_BME688_LEFT  |
+					TASK_HAL_EVENT_GET_BME688_RIGHT |
+					TASK_HAL_EVENT_GET_CH101_TANK   |
+					TASK_HAL_EVENT_GET_CH101_LEFT   |
+					TASK_HAL_EVENT_GET_CH101_RIGHT,
 					&resultBits,
 					100
 					) == OsResult_Timeout)
         {
         	this->UpdateHardwareStates();
 
+        	this->counterExti1 = 0;
+        	this->counterExti2 = 0;
+        	this->counterExti3 = 0;
         	continue;
         }
       
+
+        if((resultBits & TASK_HAL_EVENT_GET_CH101_TANK) > 0)
+        {
+        	this->counterExti1++;
+        	// this->GetCh101_Tank()
+        }
+
+		if((resultBits & TASK_HAL_EVENT_GET_CH101_LEFT) > 0)
+		{
+			this->counterExti2++;
+			// this->GetCh101_Tank()
+		}
+
+		if((resultBits & TASK_HAL_EVENT_GET_CH101_RIGHT) > 0)
+		{
+			this->counterExti3++;
+			// this->GetCh101_Tank()
+		}
 
         if((resultBits & TASK_HAL_EVENT_GET_BME688_FAN) > 0)
         {
@@ -226,17 +270,19 @@ void TTaskHAL::Run(void)
         	{
         		this->ProcessDataBme688(&this->Bme688_Left);
 
-/*        		TBme688Sensors* bme688Sensors;
+        		TBme688Sensors* bme688Sensors;
         		bme688Sensors = this->Bme688_Left.GetPointerBme688Sensors();
         		if(bme688Sensors->humidity > 3500)
         		{
-        			this->Fan.Start(100);
+        			flagBme688_Left = true;
         		}
         		else
         		{
-        			this->Fan.Stop();
-        		} */
+        			flagBme688_Left = false;
+        		}
+
         	}
+
         }
 
         if((resultBits & TASK_HAL_EVENT_GET_BME688_RIGHT) > 0)
@@ -244,21 +290,29 @@ void TTaskHAL::Run(void)
         	if(!this->flagErrorBme688_Right)
         	{
         		this->ProcessDataBme688(&this->Bme688_Right);
+        		TBme688Sensors* bme688Sensors;
+        		bme688Sensors = this->Bme688_Right.GetPointerBme688Sensors();
+        		if(bme688Sensors->humidity > 3500)
+        		{
+        			flagBme688_Right = true;
+        		}
+        		else
+        		{
+        			flagBme688_Right = false;
+        		}
+
         	}
 
-/*        	TBme688Sensors* bme688Sensors;
-        	bme688Sensors = this->Bme688_Left.GetPointerBme688Sensors();
-        	if(bme688Sensors->humidity > 3500)
-        	{
-        		this->Fan.Start(100);
-        	}
-        	else
-        	{
-        		this->Fan.Stop();
-        	} */
         }
 
-        
+/*        if(flagBme688_Left || flagBme688_Right)
+        {
+        	this->Fan.Start(100);
+        }
+        else
+        {
+        	this->Fan.Stop();
+        } */
         
         
         // this->Delay(50);  // mSec
@@ -868,21 +922,28 @@ void TTaskHAL::HandlerGpioInterrupt(u16 gpioPin)
 */
 void TTaskHAL::HandlerCh101Interrupt(u16 gpioPin)
 {
-/*	if(gpioPin == IN_BACK_LAMP_Pin)
+	if(this->enableCh101)
 	{
-		this->counterLampBack++;
+		if(gpioPin == INT1_Pin)
+		{
+			this->SetEventsFromISR(TASK_HAL_EVENT_GET_CH101_LEFT);
+//			this->counterExti1++;
+		}
+
+		if(gpioPin == INT2_Pin)
+		{
+			this->SetEventsFromISR(TASK_HAL_EVENT_GET_CH101_RIGHT);
+//			this->counterExti2++;
+		}
+
+		if(gpioPin == INT3_Pin)
+		{
+			this->SetEventsFromISR(TASK_HAL_EVENT_GET_CH101_TANK);
+//			this->counterExti3++;
+		}
+
 	}
 
-	if(gpioPin == IN_FRONT_LAMP_Pin)
-	{
-		this->counterLampFront++;
-	}
-
-	if(gpioPin == FAN_RPM_Pin)
-	{
-		this->Fan.IncrementCounterRpm();
-	}
-*/
 }
 //=== end HandlerCh101Interrupt ====================================================
 
@@ -896,6 +957,8 @@ EOsResult TTaskHAL::Init(void)
 {
 	EOsResult result;
 
+
+	this->enableCh101 = false;
 
 	this->Fan.Init();
 

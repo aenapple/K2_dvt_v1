@@ -42,7 +42,7 @@
 // #define TASK_CHM_PTC_LOW_LEVEL_T   40  // 40C
 // #define TASK_CHM_PTC_HIGH_LEVEL_T  45  // 45C
 
-#define TASK_CHM_REPEAT_TIME_MIXING  (120 * 60)  // 120 Minutes
+#define TASK_CHM_REPEAT_TIME_MIXING  (10 * 60)  // (120 * 60)  // 120 Minutes
 
 
 /**********************************************************************************/

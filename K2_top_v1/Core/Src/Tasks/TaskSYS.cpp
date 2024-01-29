@@ -882,6 +882,18 @@ TTaskSYS::TimeSystem TTaskSYS::GetTimeSystem(void)
 *
 *  @return ... .
 */
+u64 TTaskSYS::GetSystemCounter(void)
+{
+	return(this->systemCounter);
+}
+//=== end GetSystemCounter =========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
 EOsResult TTaskSYS::Init(void)
 {
 	EOsResult result;

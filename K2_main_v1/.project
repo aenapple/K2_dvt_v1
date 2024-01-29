@@ -37,6 +37,11 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
+			<name>Core/Src/Os</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
 			<name>Core/Src/Interfaces/InterfaceVIP.cpp</name>
 			<type>1</type>
 			<location>C:/WorkAen/Projects/Stm32cubeIde/VcLibrary/Interfaces/InterfaceVIP.cpp</location>
@@ -45,6 +50,76 @@
 			<name>Core/Src/Interfaces/InterfaceVIP.hpp</name>
 			<type>1</type>
 			<location>C:/WorkAen/Projects/Stm32cubeIde/VcLibrary/Interfaces/InterfaceVIP.hpp</location>
+		</link>
+		<link>
+			<name>Core/Src/Os/Os.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/VcLibrary/Os/Os.cpp</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/Os/Os.hpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/VcLibrary/Os/Os.hpp</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/Os/OsEventGroup.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/VcLibrary/Os/OsEventGroup.cpp</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/Os/OsEventGroup.hpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/VcLibrary/Os/OsEventGroup.hpp</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/Os/OsMutex.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/VcLibrary/Os/OsMutex.cpp</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/Os/OsMutex.hpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/VcLibrary/Os/OsMutex.hpp</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/Os/OsQueue.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/VcLibrary/Os/OsQueue.cpp</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/Os/OsQueue.hpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/VcLibrary/Os/OsQueue.hpp</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/Os/OsSemaphore.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/VcLibrary/Os/OsSemaphore.cpp</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/Os/OsSemaphore.hpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/VcLibrary/Os/OsSemaphore.hpp</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/Os/OsSoftwareTimer.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/VcLibrary/Os/OsSoftwareTimer.cpp</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/Os/OsSoftwareTimer.hpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/VcLibrary/Os/OsSoftwareTimer.hpp</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/Os/OsStreamBuffer.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/VcLibrary/Os/OsStreamBuffer.cpp</locationURI>
+		</link>
+		<link>
+			<name>Core/Src/Os/OsStreamBuffer.hpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/VcLibrary/Os/OsStreamBuffer.hpp</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

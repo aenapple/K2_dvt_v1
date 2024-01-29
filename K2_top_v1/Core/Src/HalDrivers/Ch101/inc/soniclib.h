@@ -516,7 +516,7 @@ struct ch_dev_t {		/* [note tag name matches type to help Doxygen linkage] */
  * define the \b MAX_PROG_XFER_SIZE symbol in the \b chirp_board_config.h header file.  For more
  * information, see chirp_bsp.h.
  */
-uint8_t	ch_group_start(ch_group_t *grp_ptr);
+// uint8_t	ch_group_start(ch_group_t *grp_ptr);
 
 /*!
  * \brief Get current configuration settings for a sensor.
@@ -553,7 +553,7 @@ uint8_t	ch_get_config(ch_dev_t *dev_ptr, ch_config_t *config_ptr);
  * See \a ch_set_mode(), \a ch_set_max_range(), \a ch_set_sample_interval(), \a ch_set_static_range(), 
  * and \a ch_set_thresholds().
  */
-uint8_t	ch_set_config(ch_dev_t *dev_ptr, ch_config_t *config_ptr);
+// uint8_t	ch_set_config(ch_dev_t *dev_ptr, ch_config_t *config_ptr);
 
 /*!
  * \brief Trigger a measurement on one sensor.

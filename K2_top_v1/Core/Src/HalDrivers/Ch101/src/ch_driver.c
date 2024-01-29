@@ -7,7 +7,7 @@
  */
 
 /*
- Copyright © 2016-2020, Chirp Microsystems.  All rights reserved.
+ Copyright ï¿½ 2016-2020, Chirp Microsystems.  All rights reserved.
 
  Chirp Microsystems CONFIDENTIAL
 
@@ -30,6 +30,7 @@
 #include "chirp_bsp.h"
 #include "ch_driver.h"
 
+extern void chbsp_group_io_clear(ch_group_t *grp_ptr);
 
 /*!
  * \brief Write bytes to a sensor device in programming mode.

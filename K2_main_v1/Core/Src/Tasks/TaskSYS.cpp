@@ -1694,15 +1694,15 @@ EOsResult TTaskSYS::Init(void)
 
 
 
-/*   	TaskChmRight.SetPadTemperatureLevels(50, 55);
-   	TaskChmRight.SetPtcTemperatureLevels(33, 35);
+  	TaskChmRight.SetPadTemperatureLevels(50, 55);
+   	TaskChmRight.SetPtcTemperatureLevels(50, 55);
    	TaskChmRight.SetPtcTime(24 * 60 * 60, 1 * 60 * 60);
    	TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 
    	TaskChmLeft.SetPadTemperatureLevels(50, 55);
-   	TaskChmLeft.SetPtcTemperatureLevels(33, 35);
+   	TaskChmLeft.SetPtcTemperatureLevels(50, 55);
    	TaskChmRight.SetPtcTime(24 * 60 * 60, 1 * 60 * 60);
-   	TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING); */
+   	TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 
 
 
