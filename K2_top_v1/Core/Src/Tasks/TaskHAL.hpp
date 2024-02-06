@@ -142,6 +142,9 @@ private:
 
 	TCh101* Ch101;
 	bool enableCh101;
+	TCh101Sensor Ch101SensorLeft;
+	TCh101Sensor Ch101SensorRight;
+	TCh101Sensor Ch101SensorTank;
 
 	EHalTurn halTurnLampFront;
 	u8 counterLampFront;

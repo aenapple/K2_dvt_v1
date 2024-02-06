@@ -21,7 +21,8 @@ extern "C" uint8_t	ch_init(ch_dev_t *dev_ptr, ch_group_t *grp_ptr, uint8_t dev_n
 extern "C" uint8_t ch101_gpr_narrow_init(ch_dev_t *dev_ptr, ch_group_t *grp_ptr, uint8_t i2c_addr, uint8_t dev_num, uint8_t i2c_bus_index);
 extern "C" uint8_t	ch_set_config(ch_dev_t *dev_ptr, ch_config_t *config_ptr);
 extern "C" uint8_t	ch_group_start(ch_group_t *grp_ptr);
-
+extern "C" uint32_t ch_get_range(ch_dev_t *dev_ptr, ch_range_t range_type);
+extern "C" uint16_t ch_get_amplitude(ch_dev_t *dev_ptr);
 
 /**********************************************************************************/
 /*!
@@ -619,7 +620,7 @@ EOsResult TCh101::FindSensor(ECh101Sensor ch101Sensor)
 		else
 		{
 			this->presentTankSensor = false;
-			return(OsResult_ErrorI2cReceive);
+			return(OsResult_ErrorI2c2);
 		}
 
 	}
@@ -635,7 +636,7 @@ EOsResult TCh101::FindSensor(ECh101Sensor ch101Sensor)
 			else
 			{
 				this->presentLeftSensor = false;
-				return(OsResult_ErrorI2cReceive);
+				return(OsResult_ErrorI2c1);
 			}
 
 		}
@@ -649,7 +650,7 @@ EOsResult TCh101::FindSensor(ECh101Sensor ch101Sensor)
 			else
 			{
 				this->presentRightSensor = false;
-				return(OsResult_ErrorI2cReceive);
+				return(OsResult_ErrorI2c1);
 			}
 		}
 	}
@@ -674,9 +675,9 @@ EOsResult TCh101::Read(ch_dev_t *dev_ptr, uint8_t *data, uint16_t num_bytes)
 	{
 		// I2C bus 0 (hi2c1)
 		halResult = HAL_I2C_Master_Receive(&hi2c1, (u16)(dev_ptr->i2c_address << 1), data, num_bytes, 1000);
-		if(halResult == HAL_OK)
+		if(halResult != HAL_OK)
 		{
-			return(OsResult_Ok);
+			return(OsResult_ErrorI2c1);
 		}
 	}
 	else
@@ -685,15 +686,15 @@ EOsResult TCh101::Read(ch_dev_t *dev_ptr, uint8_t *data, uint16_t num_bytes)
 		{
 			// I2C bus 1 (hi2c2)
 			halResult = HAL_I2C_Master_Receive(&hi2c2, (u16)(dev_ptr->i2c_address << 1), data, num_bytes, 1000);
-			if(halResult == HAL_OK)
+			if(halResult != HAL_OK)
 			{
-				return(OsResult_Ok);
+				return(OsResult_ErrorI2c2);
 			}
 		}
 	}
 
 
-	return(OsResult_ErrorI2cReceive);
+	return(OsResult_Ok);
 }
 //=== end Read =====================================================================
 
@@ -712,9 +713,9 @@ EOsResult TCh101::ReadMemory(ch_dev_t *dev_ptr, u16 mem_addr, u8 *data, u16 num_
 	{
 		// I2C bus 0 (hi2c1)
 		halResult = HAL_I2C_Mem_Read(&hi2c1, (u16)(dev_ptr->i2c_address << 1), mem_addr, I2C_MEMADD_SIZE_8BIT, data, num_bytes, 1000);
-		if(halResult == HAL_OK)
+		if(halResult != HAL_OK)
 		{
-			return(OsResult_Ok);
+			return(OsResult_ErrorI2c1);
 		}
 	}
 	else
@@ -723,15 +724,15 @@ EOsResult TCh101::ReadMemory(ch_dev_t *dev_ptr, u16 mem_addr, u8 *data, u16 num_
 		{
 			// I2C bus 1 (hi2c2)
 			halResult = HAL_I2C_Mem_Read(&hi2c2, (u16)(dev_ptr->i2c_address << 1), mem_addr, I2C_MEMADD_SIZE_8BIT, data, num_bytes, 1000);
-			if(halResult == HAL_OK)
+			if(halResult != HAL_OK)
 			{
-				return(OsResult_Ok);
+				return(OsResult_ErrorI2c2);
 			}
 		}
 	}
 
 
-	return(OsResult_ErrorI2cReceive);
+	return(OsResult_Ok);
 }
 //=== end ReadMemory ===============================================================
 
@@ -752,9 +753,9 @@ EOsResult TCh101::Write(ch_dev_t *dev_ptr, uint8_t *data, uint16_t num_bytes)
 	{
 		// I2C bus 0 (hi2c1)
 		halResult = HAL_I2C_Master_Transmit(&hi2c1, (u16)(dev_ptr->i2c_address << 1), data, num_bytes, 1000);
-		if(halResult == HAL_OK)
+		if(halResult != HAL_OK)
 		{
-			return(OsResult_Ok);
+			return(OsResult_ErrorI2c1);
 		}
 	}
 	else
@@ -763,15 +764,15 @@ EOsResult TCh101::Write(ch_dev_t *dev_ptr, uint8_t *data, uint16_t num_bytes)
 		{
 			// I2C bus 1 (hi2c2)
 			halResult = HAL_I2C_Master_Transmit(&hi2c2, (u16)(dev_ptr->i2c_address << 1), data, num_bytes, 1000);
-			if(halResult == HAL_OK)
+			if(halResult != HAL_OK)
 			{
-				return(OsResult_Ok);
+				return(OsResult_ErrorI2c1);
 			}
 		}
 	}
 
 
-	return(OsResult_ErrorI2cTransmit);
+	return(OsResult_Ok);
 }
 //=== end Write ====================================================================
 
@@ -790,9 +791,9 @@ EOsResult TCh101::WriteMemory(ch_dev_t *dev_ptr, u16 mem_addr, u8 *data, u16 num
 	{
 		// I2C bus 0 (hi2c1)
 		halResult = HAL_I2C_Mem_Write(&hi2c1, (u16)(dev_ptr->i2c_address << 1), mem_addr, I2C_MEMADD_SIZE_8BIT, data, num_bytes, 1000);
-		if(halResult == HAL_OK)
+		if(halResult != HAL_OK)
 		{
-			return(OsResult_Ok);
+			return(OsResult_ErrorI2c1);
 		}
 	}
 	else
@@ -801,15 +802,15 @@ EOsResult TCh101::WriteMemory(ch_dev_t *dev_ptr, u16 mem_addr, u8 *data, u16 num
 		{
 			// I2C bus 1 (hi2c2)
 			halResult = HAL_I2C_Mem_Write(&hi2c2, (u16)(dev_ptr->i2c_address << 1), mem_addr, I2C_MEMADD_SIZE_8BIT, data, num_bytes, 1000);
-			if(halResult == HAL_OK)
+			if(halResult != HAL_OK)
 			{
-				return(OsResult_Ok);
+				return(OsResult_ErrorI2c2);
 			}
 		}
 	}
 
 
-	return(OsResult_ErrorI2cTransmit);
+	return(OsResult_Ok);
 }
 //=== end WriteMemory ==============================================================
 
@@ -1218,5 +1219,44 @@ bool TCh101::GetInterruptEnable(ECh101Sensor ch101Sensor)
 
 }
 //=== end GetInterruptEnable =======================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TCh101::GetCh101Sensor(ECh101Sensor ch101Sensor, TCh101Sensor* Ch101Sensor)
+{
+	TCh101Sensor localCh101Sensor;
+	ch_dev_t* dev_ptr;
+	u32 range;
+
+
+	dev_ptr = this->chirp_group.device[ch101Sensor];
+	range = ch_get_range(dev_ptr, CH_RANGE_ECHO_ONE_WAY);
+
+	if(range == CH_NO_TARGET)
+	{
+		////// No target object was detected - no range value //////
+		localCh101Sensor.amplitude = 0;  // no updated amplitude
+	}
+	else
+	{
+		////// Target object was successfully detected (range available) ///////
+
+		 ////// Get the new amplitude value - it's only updated if range, was successfully measured. //////
+		localCh101Sensor.amplitude = ch_get_amplitude(dev_ptr);
+		localCh101Sensor.range = (float)range / 32.0;
+
+		////// Store number of active samples in this measurement //////
+		localCh101Sensor.num_samples = dev_ptr->num_rx_samples;
+
+		memcpy((void*)Ch101Sensor, (void*)&localCh101Sensor, sizeof(TCh101Sensor));
+	}
+
+
+}
+//=== end GetCh101Sensor ===========================================================
 
 /**********************************************************************************/

@@ -126,7 +126,6 @@ public:
 	void SetEventUartTxCpltFromISR(void);
 	void SetEventUartRxCpltFromISR(void);
 	void SetEventUartErrorFromISR(void);
-	void ReInitUart(EIfcUart ifcUart);
 //	void SetEventUartRxHalfCpltFromISR(void);
 
     
@@ -183,6 +182,7 @@ private:
 
     void Reset(void);
     EOsResult Delay_IT(u16 timeDelay);
+    void ReInitUart(void);
 
 
     void Run(void);

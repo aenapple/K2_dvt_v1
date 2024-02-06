@@ -17,12 +17,17 @@
 /**********************************************************************************/
 #define CH101_RTC_CAL_PULSE_MS	100
 
-
+struct TCh101Sensor  // sizeof = 8 bytes
+{
+	u16 amplitude;
+	u16 num_samples;
+	float range;
+};
 
 enum ECh101Sensor
 {
-	Ch101Sensor_Left = 0,
-	Ch101Sensor_Right = 1,
+	Ch101Sensor_Left = 1,
+	Ch101Sensor_Right = 0,
 	Ch101Sensor_Tank = 2
 };
 
@@ -64,6 +69,8 @@ public:
 	void InterruptGroupDisable(void);
 	bool GetInterruptEnable(ECh101Sensor ch101Sensor);
 
+
+	void GetCh101Sensor(ECh101Sensor ch101Sensor, TCh101Sensor* Ch101Sensor);
 
 
 

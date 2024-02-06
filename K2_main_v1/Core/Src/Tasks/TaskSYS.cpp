@@ -228,7 +228,7 @@ void TTaskSYS::Run(void)
 
  		if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
        	{
-       		this->InterfaceSlaveVIP.ReInit(IfcUart_1);
+       		this->ReInitUart();
        		this->Delay(2);
        		this->StartRxData();
 
@@ -339,7 +339,7 @@ void TTaskSYS::SelfTest()
 
 	    if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
 	    {
-	    	this->InterfaceSlaveVIP.ReInit(IfcUart_1);
+	    	this->ReInitUart();
 	    	this->StartRxData();
        	}
 
@@ -629,8 +629,8 @@ void TTaskSYS::ProcessRxData()
 			break;
 	}
 
-	this->InterfaceSlaveVIP.StartRxData();
-	this->InterfaceSlaveVIP.StartTxData(command, data);
+	this->InterfaceSlaveVIP.StartRxData(&huart1);
+	this->InterfaceSlaveVIP.StartTxData(&huart1, command, data);
 
 	// DEBUG
 //	this->Delay(20);
@@ -1025,7 +1025,7 @@ void TTaskSYS::ProcessTick()
 void TTaskSYS::StartRxData(void)
 {
 //	this->ClearEvents(TASK_SYS_EVENT_UART_RX_TIMEOUT);
-	this->InterfaceSlaveVIP.StartRxData();
+	this->InterfaceSlaveVIP.StartRxData(&huart1);
 }
 //=== end StartRxData ==============================================================
 
@@ -1263,43 +1263,21 @@ void TTaskSYS::SetEventUartErrorFromISR(void)
 *
 *  @return ... .
 */
-void TTaskSYS::ReInitUart(EIfcUart ifcUart)
+void TTaskSYS::ReInitUart()
 {
-	if(ifcUart == IfcUart_1)
-	{
-		HAL_UART_DeInit(&huart1);
-		huart1.Instance = USART1;
-		huart1.Init.BaudRate = 115200;
-		huart1.Init.WordLength = UART_WORDLENGTH_8B;
-		huart1.Init.StopBits = UART_STOPBITS_1;
-		huart1.Init.Parity = UART_PARITY_NONE;
-		huart1.Init.Mode = UART_MODE_TX_RX;
-		huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-		huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-		huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-		huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-		huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-		HAL_UART_Init(&huart1);
-	}
-
-	if(ifcUart == IfcUart_2)
-	{
-		HAL_UART_DeInit(&huart2);
-		huart2.Instance = USART2;
-		huart2.Init.BaudRate = 19200;
-		huart2.Init.WordLength = UART_WORDLENGTH_8B;
-		huart2.Init.StopBits = UART_STOPBITS_1;
-		huart2.Init.Parity = UART_PARITY_NONE;
-		huart2.Init.Mode = UART_MODE_TX_RX;
-		huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-		huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-		huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-		huart2.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-		huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_TXINVERT_INIT;
-		huart2.AdvancedInit.TxPinLevelInvert = UART_ADVFEATURE_TXINV_ENABLE;
-		HAL_UART_Init(&huart2);
-	}
-
+	HAL_UART_DeInit(&huart1);
+	huart1.Instance = USART1;
+	huart1.Init.BaudRate = 115200;
+	huart1.Init.WordLength = UART_WORDLENGTH_8B;
+	huart1.Init.StopBits = UART_STOPBITS_1;
+	huart1.Init.Parity = UART_PARITY_NONE;
+	huart1.Init.Mode = UART_MODE_TX_RX;
+	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+	huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+	huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+	HAL_UART_Init(&huart1);
 
 }
 //=== end ReInitUart ===============================================================
@@ -1653,8 +1631,7 @@ EOsResult TTaskSYS::Init(void)
 
 
 	this->SetSysState(SysState_Init);
-	this->InterfaceSlaveVIP.Init(IfcUart_1);
-	this->InterfaceSlaveVIP.ReInit(IfcUart_1);
+	this->ReInitUart();
    	this->StartRxData();
 
    	result = TaskHAL.Init();
@@ -1683,13 +1660,13 @@ EOsResult TTaskSYS::Init(void)
    	this->SelfTest();
 
    	// DEBUG
-/*   	this->Delay(2000);
+   	this->Delay(10000);
    	this->TestMainMotor();
 
    	while(true)
    	{
    		this->Delay(1000);
-   	} */
+   	}
    	// DEBUG
 
 

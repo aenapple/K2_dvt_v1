@@ -319,6 +319,7 @@ private:
 	EOsResult SendCommand(EIfcVipCommand command, u8* pBuffer);
 	void ProcessAcPhase(void);
 	void ProcessHeater(void);
+	void ReInitUart(void);
 
 	EOsResult ControlMotor(u8* parameters);
 	EOsResult ControlHeater(u8* parameters);

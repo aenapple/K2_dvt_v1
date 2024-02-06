@@ -14,7 +14,13 @@
 //	#define __DEBUG_SYS_OUTPUT_ENABLED
 
 
-//	#define __DEBUG_BME688_ENABLED
+//	#define __SENSORS_BME688_ENABLED
+//	#define __SENSORS_CH101_ENABLED
+
+#else
+
+	#define __SENSORS_BME688_ENABLED
+	#define __SENSORS_CH101_ENABLED
 
 #endif
 

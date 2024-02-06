@@ -148,7 +148,7 @@ void TTaskHAL::Run(void)
 
 //	this->Gpio.SetLevelTopResetPin(GpioLevel_Low);  // Clear Reset Top CPU
 	this->Delay(200);
-	this->InterfaceMasterVIP.ReInit(IfcUart_2);
+	this->ReInitUart();
 
 	counterGetBme688 = 0;
 	while(true)
@@ -190,7 +190,7 @@ void TTaskHAL::Run(void)
         
         if((resultBits & TASK_HAL_EVENT_UART_ERROR) > 0)
         {
-            this->InterfaceMasterVIP.ReInit(IfcUart_2);
+            this->ReInitUart();
             this->Delay(2);
         }
 
@@ -253,7 +253,7 @@ EOsResult TTaskHAL::GetStateTopCpu(void)
 	// DEBUG
 	if(result != OsResult_Ok)
 	{
-		this->InterfaceMasterVIP.ReInit(IfcUart_2);
+		this->ReInitUart();
 		this->Delay(10);
 
 		result = this->SendCommand(IfcVipCommand_GetState, 0);
@@ -290,7 +290,7 @@ void TTaskHAL::GetSensorBme688(EIfcBme688Sensor ifcBme688Sensor)
 	result = this->SendCommand(IfcVipCommand_GetBme688_Part1, buffer);
 	if(result != OsResult_Ok)
 	{
-		this->InterfaceMasterVIP.ReInit(IfcUart_2);
+		this->ReInitUart();
 		this->Delay(10);
 
 		result = this->SendCommand(IfcVipCommand_GetBme688_Part1, buffer);
@@ -927,7 +927,7 @@ EOsResult TTaskHAL::ControlFan(u8* parameters)
 	result = this->SendCommand(IfcVipCommand_SetFanSpeed, parameters);
 	if(result != OsResult_Ok)
 	{
-		this->InterfaceMasterVIP.ReInit(IfcUart_2);
+		this->ReInitUart();
 		this->Delay(10);
 
 		result = this->SendCommand(IfcVipCommand_SetFanSpeed, parameters);
@@ -2389,8 +2389,8 @@ EOsResult TTaskHAL::SendCommand(EIfcVipCommand command, u8* pBuffer)
 	EOsResult result;
 
 
-	this->InterfaceMasterVIP.StartRxData();
-	this->InterfaceMasterVIP.StartTxData(command, pBuffer);
+	this->InterfaceMasterVIP.StartRxData(&huart2);
+	this->InterfaceMasterVIP.StartTxData(&huart2, command, pBuffer);
 
 	result = this->EventGroup.WaitOrBits(
 						TASK_HAL_EVENT_UART_RX_CPLT |
@@ -2412,7 +2412,7 @@ EOsResult TTaskHAL::SendCommand(EIfcVipCommand command, u8* pBuffer)
 
 	if((resultBits & TASK_HAL_EVENT_UART_ERROR) > 0)
 	{
-		return(OsResult_ErrorI2cReceive);
+		return(OsResult_ErrorUart);
 	}
 
 
@@ -2420,6 +2420,32 @@ EOsResult TTaskHAL::SendCommand(EIfcVipCommand command, u8* pBuffer)
 	return(OsResult_Timeout);
 }
 //=== end SendCommand ==============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskHAL::ReInitUart()
+{
+	HAL_UART_DeInit(&huart2);
+	huart2.Instance = USART2;
+	huart2.Init.BaudRate = 9600;
+	huart2.Init.WordLength = UART_WORDLENGTH_8B;
+	huart2.Init.StopBits = UART_STOPBITS_1;
+	huart2.Init.Parity = UART_PARITY_NONE;
+	huart2.Init.Mode = UART_MODE_TX_RX;
+	huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+	huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	huart2.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+	huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_TXINVERT_INIT;
+	huart2.AdvancedInit.TxPinLevelInvert = UART_ADVFEATURE_TXINV_ENABLE;
+	HAL_UART_Init(&huart2);
+
+}
+//=== end ReInitUart ===============================================================
 
 //==================================================================================
 /**
@@ -2452,8 +2478,6 @@ EOsResult TTaskHAL::Init(void)
 	this->lastTPtcLeft[0] = this->lastTPtcLeft[1] = 2000;
 	this->lastTPtcRight[0] = this->lastTPtcRight[1] = 2000;
 	
-	this->InterfaceMasterVIP.Init(IfcUart_2);
-
 	this->counterPwmHeater = 0;
 	this->counterGetBme688 = 0;
 

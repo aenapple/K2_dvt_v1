@@ -67,7 +67,7 @@ const u8 TTaskSYS::interfaceVipCode[Number_ESysState] =
 
 /**********************************************************************************/
 extern UART_HandleTypeDef huart1;
-extern UART_HandleTypeDef huart2;
+
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -151,7 +151,6 @@ void TTaskSYS::Run(void)
 {
 	u32 resultBits;
 	EOsResult result;
-	// u16 tmpCounter;
 
 
 	result = this->Init();
@@ -159,12 +158,12 @@ void TTaskSYS::Run(void)
 	{
 		this->InitProcessError(result);
 	}
+	else
+	{
+		this->SetSysState(SysState_Idle);
+	}
 
-
-//	DiagNotice("TaskSYS started!");
-
-	this->SetSysState(SysState_Idle);
-	this->InterfaceSlaveVIP.ReInit(IfcUart_1);
+	this->ReInitUart();
 	this->StartRxData();
 
 	while(true)
@@ -194,7 +193,7 @@ void TTaskSYS::Run(void)
 
  		if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
        	{
-       		this->InterfaceSlaveVIP.ReInit(IfcUart_1);
+       		this->ReInitUart();
        		this->Delay(2);
        		this->StartRxData();
 
@@ -226,12 +225,22 @@ void TTaskSYS::Run(void)
 *  @return
 *  		none.
 */
-void TTaskSYS::InitProcessError(EOsResult result)
+void TTaskSYS::InitProcessError(EOsResult error)
 {
-	// DEBUG
-	this->SetSysState(SysError_ApplicationError);
-	this->ProcessError();
-	// DEBUG
+	switch(error)
+	{
+		case OsResult_ErrorI2c1:
+			this->SetSysState(SysError_I2cErrorChannel1);
+			break;
+
+		case OsResult_ErrorI2c2:
+			this->SetSysState(SysError_I2cErrorChannel2);
+			break;
+
+		default:
+			this->SetSysState(SysError_ApplicationError);
+	}
+
 }
 //=== end InitProcessError =========================================================
 
@@ -244,15 +253,44 @@ void TTaskSYS::InitProcessError(EOsResult result)
 */
 void TTaskSYS::ProcessError()
 {
+	u32 resultBits;
+
+
 	TaskUI.SetState(TASK_UI_EVENT_ERROR);
 
 	while(true)
 	{
 
-		this->Delay(1000);
-		// DEBUG
-		// DiagNotice("ERROR !!!");
-		// DEBUG
+		if(this->EventGroup.WaitOrBits(
+					TASK_SYS_EVENT_UART_RX_CPLT     |
+					TASK_SYS_EVENT_UART_ERROR	    |
+					TASK_SYS_EVENT_RESET,
+					&resultBits,
+					1000  // 1 Sec
+					) == OsResult_Timeout)
+		{
+			continue;
+		}
+
+		if((resultBits & TASK_SYS_EVENT_UART_RX_CPLT) > 0)
+		{
+			this->ProcessRxData();
+		}
+
+		if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
+		{
+			this->ReInitUart();
+			this->Delay(2);
+			this->StartRxData();
+
+			continue;
+		}
+
+		if((resultBits & TASK_SYS_EVENT_RESET) > 0)
+		{
+		   	this->Reset();
+		}
+
 	}
 
 }
@@ -411,8 +449,8 @@ void TTaskSYS::ProcessRxData()
 			break;
 	}
 
-	this->InterfaceSlaveVIP.StartRxData();
-	this->InterfaceSlaveVIP.StartTxData(command, data);
+	this->InterfaceSlaveVIP.StartRxData(&huart1);
+	this->InterfaceSlaveVIP.StartTxData(&huart1, command, data);
 
 	// DEBUG
 	//this->Delay(20);
@@ -511,7 +549,7 @@ void TTaskSYS::Reset()
 void TTaskSYS::StartRxData(void)
 {
 //	this->ClearEvents(TASK_SYS_EVENT_UART_RX_TIMEOUT);
-	this->InterfaceSlaveVIP.StartRxData();
+	this->InterfaceSlaveVIP.StartRxData(&huart1);
 }
 //=== end StartRxData ==============================================================
 
@@ -666,7 +704,7 @@ EOsResult TTaskSYS::Delay_IT(u16 timeDelay)
 
  		if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
        	{
-       		this->InterfaceSlaveVIP.ReInit(IfcUart_1);
+       		this->ReInitUart();
        		this->Delay(2);
        		this->StartRxData();
 
@@ -748,7 +786,7 @@ EOsResult TTaskSYS::WaitDamPosition(u16 waitTime)
 
  		if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
        	{
-       		this->InterfaceSlaveVIP.ReInit(IfcUart_1);
+       		this->ReInitUart();
        		this->Delay(2);
        		this->StartRxData();
 
@@ -804,25 +842,22 @@ void TTaskSYS::SetEventUartRxCpltFromISR(void)
 *
 *  @return ... .
 */
-void TTaskSYS::ReInitUart(EIfcUart ifcUart)
+void TTaskSYS::ReInitUart()
 {
-	if(ifcUart == IfcUart_1)
-	{
-		HAL_UART_DeInit(&huart1);
-		huart1.Instance = USART1;
-		huart1.Init.BaudRate = 9600;
-		huart1.Init.WordLength = UART_WORDLENGTH_8B;
-		huart1.Init.StopBits = UART_STOPBITS_1;
-		huart1.Init.Parity = UART_PARITY_NONE;
-		huart1.Init.Mode = UART_MODE_TX_RX;
-		huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-		huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-		huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-		huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-		huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_TXINVERT_INIT;
-		huart1.AdvancedInit.TxPinLevelInvert = UART_ADVFEATURE_TXINV_ENABLE;
-		HAL_UART_Init(&huart1);
-	}
+	HAL_UART_DeInit(&huart1);
+	huart1.Instance = USART1;
+	huart1.Init.BaudRate = 9600;
+	huart1.Init.WordLength = UART_WORDLENGTH_8B;
+	huart1.Init.StopBits = UART_STOPBITS_1;
+	huart1.Init.Parity = UART_PARITY_NONE;
+	huart1.Init.Mode = UART_MODE_TX_RX;
+	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+	huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+	huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_TXINVERT_INIT;
+	huart1.AdvancedInit.TxPinLevelInvert = UART_ADVFEATURE_TXINV_ENABLE;
+	HAL_UART_Init(&huart1);
 
 }
 //=== end ReInitUart ===============================================================
@@ -911,9 +946,45 @@ EOsResult TTaskSYS::Init(void)
 	this->Delay(10);
 
 	this->SetSysState(SysState_Init);
-	this->InterfaceSlaveVIP.Init(IfcUart_1);
 //	this->InterfaceSlaveVIP.ReInit();
 // 	this->StartRxData();
+
+	// DEBUG
+//	   	while(true)
+//	   	{
+/*	   		this->setDamPosition = DamPosition_LeftOpen;
+
+	   		this->SetDamPosition();
+
+	   		this->Delay(100);
+//	   		this->Delay(100);
+
+//	   		this->setDamPosition = DamPosition_RightOpen;
+//	   		this->SetDamPosition();
+
+	   		TaskHAL.StopFan();
+
+	   	while(true)
+	   	{
+	   		this->Delay(100);
+	   		this->Delay(100);
+	   	} */
+
+
+/*	   		TaskHAL.StartFan(100);
+	   		this->Delay(5000);
+
+	   		TaskHAL.StartFan(50);
+	   		this->Delay(5000);
+
+	   		TaskHAL.StartFan(10);
+	   		this->Delay(5000);
+
+	   		TaskHAL.StopFan();
+	   		this->Delay(5000); */
+
+//	   	}
+	   	// DEBUG
 
    	result = TaskHAL.Init();
    	if(result != OsResult_Ok)
@@ -926,9 +997,7 @@ EOsResult TTaskSYS::Init(void)
    	this->enableTickHook = true;
 
 
-   	// DEBUG
 
-   	// DEBUG
 
 
 	return(OsResult_Ok);

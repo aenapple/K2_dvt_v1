@@ -156,9 +156,7 @@ public:
 	void SetEventUartErrorFromISR(void);
 //	void SetEventUartRxHalfCpltFromISR(void);
 
-	void ReInitUart(EIfcUart ifcUart);
 
-    
   
 protected:
 	////// variables //////
@@ -232,6 +230,7 @@ private:
     EOsResult GetStateHeater(EIfcVipCommand ifcVipCommand, u8* pData);
     void Reset(void);
     void ProcessTick();
+    void ReInitUart(void);
 
     // DEBUG
     void TestChambers(void);

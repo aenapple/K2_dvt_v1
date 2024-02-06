@@ -133,7 +133,7 @@ EOsResult TEeprom::ReadVariable32bits(u32 address, u32* data)
 	{
 		HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_SET);
 		this->Semaphore.Give();
-		return(OsResult_ErrorI2cTransmit);
+		return(OsResult_ErrorI2c1);
 	}
 
 
@@ -148,7 +148,7 @@ EOsResult TEeprom::ReadVariable32bits(u32 address, u32* data)
 	this->Semaphore.Give();
 	if(halResult != HAL_OK)
 	{
-		return(OsResult_ErrorI2cReceive);
+		return(OsResult_ErrorI2c1);
 	}
 
 	memcpy((void*)&tempData, (void*)readBuffer, sizeof(tempData));
@@ -157,7 +157,7 @@ EOsResult TEeprom::ReadVariable32bits(u32 address, u32* data)
 
 	if(tempData != (0xFFFFFFFF - tempNotData))
 	{
-		return(OsResult_ErrorI2cData);
+		return(OsResult_ErrorI2c1);
 	}
 
 
@@ -212,7 +212,7 @@ EOsResult TEeprom::ReadVariable16bits(u32 address, u16* data)
 	{
 		HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_SET);
 		this->Semaphore.Give();
-		return(OsResult_ErrorI2cTransmit);
+		return(OsResult_ErrorI2c1);
 	}
 
 
@@ -227,7 +227,7 @@ EOsResult TEeprom::ReadVariable16bits(u32 address, u16* data)
 	this->Semaphore.Give();
 	if(halResult != HAL_OK)
 	{
-		return(OsResult_ErrorI2cReceive);
+		return(OsResult_ErrorI2c1);
 	}
 
 	memcpy((void*)&tempData, (void*)readBuffer, sizeof(tempData));
@@ -236,7 +236,7 @@ EOsResult TEeprom::ReadVariable16bits(u32 address, u16* data)
 
 	if(tempData != (0xFFFF - tempNotData))
 	{
-		return(OsResult_ErrorI2cData);
+		return(OsResult_ErrorI2c1);
 	}
 
 
@@ -291,7 +291,7 @@ EOsResult TEeprom::ReadVariable8bits(u32 address, u8* data)
 	{
 		HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_SET);
 		this->Semaphore.Give();
-		return(OsResult_ErrorI2cTransmit);
+		return(OsResult_ErrorI2c1);
 	}
 
 	halResult = HAL_I2C_Master_Receive(
@@ -305,7 +305,7 @@ EOsResult TEeprom::ReadVariable8bits(u32 address, u8* data)
 	this->Semaphore.Give();
 	if(halResult != HAL_OK)
 	{
-		return(OsResult_ErrorI2cReceive);
+		return(OsResult_ErrorI2c1);
 	}
 
 	memcpy((void*)&tempData, (void*)readBuffer, sizeof(tempData));
@@ -314,7 +314,7 @@ EOsResult TEeprom::ReadVariable8bits(u32 address, u8* data)
 
 	if(tempData != (0xFF - tempNotData))
 	{
-		return(OsResult_ErrorI2cData);
+		return(OsResult_ErrorI2c1);
 	}
 
 
@@ -370,7 +370,7 @@ EOsResult TEeprom::WriteVariable32bits(u32 address, u32 data)
 	this->Semaphore.Give();
 	if(halResult != HAL_OK)
 	{
-		return(OsResult_ErrorI2cTransmit);
+		return(OsResult_ErrorI2c1);
 	}
 
 
@@ -426,7 +426,7 @@ EOsResult TEeprom::WriteVariable16bits(u32 address, u16 data)
 	this->Semaphore.Give();
 	if(halResult != HAL_OK)
 	{
-		return(OsResult_ErrorI2cTransmit);
+		return(OsResult_ErrorI2c1);
 	}
 
 
@@ -482,7 +482,7 @@ EOsResult TEeprom::WriteVariable8bits(u32 address, u8 data)
 	this->Semaphore.Give();
 	if(halResult != HAL_OK)
 	{
-		return(OsResult_ErrorI2cTransmit);
+		return(OsResult_ErrorI2c1);
 	}
 
 

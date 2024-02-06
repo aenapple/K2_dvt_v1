@@ -697,7 +697,14 @@ EOsResult TBme688::WriteRegister(u8 regAddress, u8 regData)
 	if(resultHal != HAL_OK)
 	{
 //		taskEXIT_CRITICAL();
-		return(OsResult_ErrorI2cTransmit);
+		if(this->hI2c == &hi2c1)
+		{
+			return(OsResult_ErrorI2c1);
+		}
+		else
+		{
+			return(OsResult_ErrorI2c2);
+		}
 	}
 
 //	taskEXIT_CRITICAL();
@@ -727,14 +734,28 @@ EOsResult TBme688::ReadRegister(u8 regAddress, u8* regData)
 	if(resultHal != HAL_OK)
 	{
 //		taskEXIT_CRITICAL();
-		return(OsResult_ErrorI2cTransmit);
+		if(this->hI2c == &hi2c1)
+		{
+			return(OsResult_ErrorI2c1);
+		}
+		else
+		{
+			return(OsResult_ErrorI2c2);
+		}
 	}
 
 	resultHal = HAL_I2C_Master_Receive(this->hI2c, (u16)(this->chipAddress << 1), bufferTransmit, 1, 100);  // timeout - 100 mSec
 	if(resultHal != HAL_OK)
 	{
 //		taskEXIT_CRITICAL();
-		return(OsResult_ErrorI2cReceive);
+		if(this->hI2c == &hi2c1)
+		{
+			return(OsResult_ErrorI2c1);
+		}
+		else
+		{
+			return(OsResult_ErrorI2c2);
+		}
 	}
 
 //	taskEXIT_CRITICAL();

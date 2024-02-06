@@ -980,7 +980,7 @@ uint8_t ch_set_static_range(ch_dev_t *dev_ptr, uint16_t num_samples);
  * measurement cycle.  It does not change the sensor mode.
  *
  */
-uint32_t ch_get_range(ch_dev_t *dev_ptr, ch_range_t range_type);
+// uint32_t ch_get_range(ch_dev_t *dev_ptr, ch_range_t range_type);
 
 /*!
  * \brief Get the measured Time-of-flight from a sensor in the ultrasound periodic timer tick.
@@ -1022,7 +1022,7 @@ uint32_t ch_get_tof_us(ch_dev_t *dev_ptr);
  * The amplitude value is not updated if a measurement cycle resulted in \a CH_NO_TARGET, as returned 
  * by \a ch_get_range().
  */
-uint16_t ch_get_amplitude(ch_dev_t *dev_ptr);
+// uint16_t ch_get_amplitude(ch_dev_t *dev_ptr);
 
 /*!
  * \brief Get the averaged measured amplitude over the sample window.
