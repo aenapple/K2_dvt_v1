@@ -429,7 +429,7 @@ void TTaskSYS::ProcessRxData()
 			break;
 
 		case IfcVipCommand_GetStateLamp:
-			data[IFC_VIP_LAMP_NUMBER_INDEX] = TaskHAL.GetLampState((EHalLamp)pData[IFC_VIP_LAMP_NUMBER_INDEX]);
+			data[IFC_VIP_LAMP_CONTROL_INDEX] = TaskHAL.GetLampState((EHalLamp)pData[IFC_VIP_LAMP_NUMBER_INDEX]);
 			break;
 
 		case IfcVipCommand_SetPosition:
@@ -996,6 +996,23 @@ EOsResult TTaskSYS::Init(void)
    	TaskHAL.SetEvents(TASK_HAL_CMD_START);
    	this->enableTickHook = true;
 
+   	// DEBUG
+/*   	while(true)
+   	{
+   		TaskHAL.StartFan(100);
+   		this->Delay(5000);
+
+   		TaskHAL.StartFan(50);
+   		this->Delay(5000);
+
+   		TaskHAL.StartFan(10);
+   		this->Delay(5000);
+
+   		TaskHAL.StopFan();
+   		this->Delay(5000);
+
+   	} */
+   	// DEBUG
 
 
 

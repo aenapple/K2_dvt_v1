@@ -33,11 +33,10 @@ void HAL_GPIO_EXTI_Rising_Callback(u16 gpioPin)
 	TaskHAL.HandlerCh101Interrupt(gpioPin);
 }
 
-/* void HAL_GPIO_EXTI_Falling_Callback(u16 gpioPin)
+void HAL_GPIO_EXTI_Falling_Callback(u16 gpioPin)
 {
 	TaskHAL.HandlerGpioInterrupt(gpioPin);
-	TaskHAL.HandlerCh101Interrupt(gpioPin);
-} */
+}
 
 
 
@@ -95,14 +94,10 @@ void TTaskHAL::SetEventTickFromISR(void)
 		if(this->counterLampFront < TASK_HAL_AC_PULSE_NUMBERS)
 		{
 			this->SetSysStateLamp(HalLamp_Front, IFC_ITEM_STATE_OFF);
-//			this->halTurnLampFront = HalTurn_Off;
-//			HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
 		}
 		else
 		{
 			this->SetSysStateLamp(HalLamp_Front, IFC_ITEM_STATE_ON);
-//			this->halTurnLampFront = HalTurn_On;
-//			HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_RESET);
 		}
 		this->counterLampFront = 0;
 
@@ -110,12 +105,10 @@ void TTaskHAL::SetEventTickFromISR(void)
 		if(this->counterLampBack < TASK_HAL_AC_PULSE_NUMBERS)
 		{
 			this->SetSysStateLamp(HalLamp_Back, IFC_ITEM_STATE_OFF);
-//			this->halTurnLampBack = HalTurn_Off;
 		}
 		else
 		{
 			this->SetSysStateLamp(HalLamp_Back, IFC_ITEM_STATE_ON);
-//			this->halTurnLampBack = HalTurn_On;
 		}
 		this->counterLampBack = 0;
 
@@ -681,15 +674,15 @@ void TTaskHAL::ControlLamp(EHalLamp halLamp, EHalTurn halTurn)
 *  @return
 *  		none.
 */
-EHalTurn TTaskHAL::GetLampState(EHalLamp halLamp)
+u8 TTaskHAL::GetLampState(EHalLamp halLamp)
 {
 	if(halLamp == HalLamp_Front)
 	{
-		return(this->halTurnLampFront);
+		return(this->stateLampFront);
 	}
 	else  // HalLamp_Back
 	{
-		return(this->halTurnLampBack);
+		return(this->stateLampBack);
 	}
 }
 //=== end GetLampState =============================================================
@@ -843,11 +836,13 @@ void TTaskHAL::SetSysStateLamp(EHalLamp halLamp, u8 stateLamp)
 	{
 		this->IfcSystemState.lampStates = this->IfcSystemState.lampStates & (0xFF - IFC_SYS_STATE_LAMP_FRONT);
 		this->IfcSystemState.lampStates = this->IfcSystemState.lampStates | (stateLamp << IFC_SYS_SHIFT_LAMP_FRONT);
+		this->stateLampFront = stateLamp;
 	}
 	else  // HalLamp_Back
 	{
 		this->IfcSystemState.lampStates = this->IfcSystemState.lampStates & (0xFF - IFC_SYS_STATE_LAMP_BACK);
 		this->IfcSystemState.lampStates = this->IfcSystemState.lampStates | (stateLamp << IFC_SYS_SHIFT_LAMP_BACK);
+		this->stateLampBack = stateLamp;
 	}
 }
 //=== end SetSysStateLamp ==========================================================

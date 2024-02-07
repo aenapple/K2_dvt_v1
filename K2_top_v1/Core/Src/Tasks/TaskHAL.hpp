@@ -92,7 +92,7 @@ public:
 	u16 GetFanRpm(void);
 	TBme688Sensors* GetPointerBme688Sensors(EIfcBme688Sensor ifcBme688Sensor);
 	void ControlLamp(EHalLamp halLamp, EHalTurn halTurn);
-	EHalTurn GetLampState(EHalLamp halLamp);
+	u8 GetLampState(EHalLamp halLamp);
 	EGpioLevel ReadLockLeft(void);
 	EGpioLevel ReadLockRight(void);
 	EGpioLevel ReadDamSensorLeft(void);
@@ -146,14 +146,16 @@ private:
 	TCh101Sensor Ch101SensorRight;
 	TCh101Sensor Ch101SensorTank;
 
-	EHalTurn halTurnLampFront;
 	u8 counterLampFront;
-	EHalTurn halTurnLampBack;
 	u8 counterLampBack;
+	u8 stateLampFront;
+	u8 stateLampBack;
 
 	TFan Fan;
 	u16 rpmFan;
 	u16 timeRpmFanCounter;
+
+
 
 	s8 tCpu2;
 	s8 tCpu3;
