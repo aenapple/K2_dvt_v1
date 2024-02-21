@@ -142,12 +142,12 @@ void TTaskHAL::Run(void)
 //	bool flagBme688_Left;
 //	bool flagBme688_Right;
 //	u64 timeStamp;
-//	float bufferTank[10];
-//	float bufferLeft[10];
-//	float bufferRight[10];
-//	float left;
-//	float right;
-//	float tank;
+	float bufferTank[10];
+	float bufferLeft[10];
+	float bufferRight[10];
+	float left;
+	float right;
+	float tank;
 
 
 	this->Delay(20);
@@ -240,7 +240,7 @@ void TTaskHAL::Run(void)
         {
         	this->UpdateHardwareStates();
 
-/*        	if(this->counterExti3 >= 10)
+        	if(this->counterExti3 >= 10)
         	{
         		left = left / 10;
         		right = right / 10;
@@ -253,7 +253,7 @@ void TTaskHAL::Run(void)
         		this->counterExti1 = 0;
         		this->counterExti2 = 0;
         		this->counterExti3 = 0;
-        	} */
+        	}
         	continue;
         }
 
@@ -264,27 +264,27 @@ void TTaskHAL::Run(void)
         {
         	this->Ch101->GetCh101Sensor(Ch101Sensor_Tank, &this->Ch101SensorTank);
         	this->IfcSystemState.levelTank = (u8)(this->Ch101SensorTank.range / 10);  // mm / 10 = cm
-/*        	bufferTank[this->counterExti1] = this->Ch101SensorTank.range;
+        	bufferTank[this->counterExti1] = this->Ch101SensorTank.range;
         	this->counterExti1++;
-        	tank += this->Ch101SensorTank.range; */
+        	tank += this->Ch101SensorTank.range;
         }
 
 		if((resultBits & TASK_HAL_EVENT_GET_CH101_LEFT) > 0)
 		{
 			this->Ch101->GetCh101Sensor(Ch101Sensor_Left, &this->Ch101SensorLeft);
 			this->IfcSystemState.levelChamberLeft = (u8)(this->Ch101SensorLeft.range / 10);  // mm / 10 = cm
-/*			bufferLeft[this->counterExti2] = this->Ch101SensorLeft.range;
+			bufferLeft[this->counterExti2] = this->Ch101SensorLeft.range;
 			this->counterExti2++;
-			left += this->Ch101SensorLeft.range; */
+			left += this->Ch101SensorLeft.range;
 		}
 
 		if((resultBits & TASK_HAL_EVENT_GET_CH101_RIGHT) > 0)
 		{
 			this->Ch101->GetCh101Sensor(Ch101Sensor_Right, &this->Ch101SensorRight);
 			this->IfcSystemState.levelChamberRight = (u8)(this->Ch101SensorRight.range / 10);  // mm / 10 = cm
-/*			bufferRight[this->counterExti3] = this->Ch101SensorRight.range;
+			bufferRight[this->counterExti3] = this->Ch101SensorRight.range;
 			this->counterExti3++;
-			right += this->Ch101SensorRight.range; */
+			right += this->Ch101SensorRight.range;
 		}
 
 #endif

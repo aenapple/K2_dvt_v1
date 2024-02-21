@@ -225,6 +225,7 @@ void TTaskCHM::TickProcess()
 	if((this->ptcTemperature > this->ptcHighLevel_T) || (!this->flagPtcOn))
 	{
 //		this->PtcFan.Stop(); // .Start(PtcFanPwm_50, PtcFanMaxPwm_50);
+		this->PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
 		this->PtcHeater.TurnOff();
 	}
 

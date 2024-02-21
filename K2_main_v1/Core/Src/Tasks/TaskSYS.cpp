@@ -1663,6 +1663,9 @@ EOsResult TTaskSYS::Init(void)
    	this->Delay(10000);
    	this->TestMainMotor();
 
+//   	HAL_GPIO_WritePin(PTC1_FAN2_GPIO_Port, PTC1_FAN2_Pin, GPIO_PIN_RESET);
+//   	HAL_GPIO_WritePin(PTC2_FAN2_GPIO_Port, PTC2_FAN2_Pin, GPIO_PIN_RESET);
+
    	while(true)
    	{
    		this->Delay(1000);
@@ -1678,7 +1681,7 @@ EOsResult TTaskSYS::Init(void)
 
    	TaskChmLeft.SetPadTemperatureLevels(50, 55);
    	TaskChmLeft.SetPtcTemperatureLevels(50, 55);
-   	TaskChmRight.SetPtcTime(24 * 60 * 60, 1 * 60 * 60);
+   	TaskChmLeft.SetPtcTime(24 * 60 * 60, 1 * 60 * 60);
    	TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 
 

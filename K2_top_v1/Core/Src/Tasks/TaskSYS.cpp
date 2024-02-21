@@ -39,7 +39,7 @@ extern "C" void vApplicationTickHook(void)
 /**********************************************************************************/
 const u8 __attribute__((section (".module_ident"))) TTaskSYS::module_ident[] =
 {
-	'L','L','0','1','-','A','B','E','-','0','1','.','0','0',' ',' ',  // version - 16 bytes
+	'L','L','0','1','-','M','C','A','P','-','0','1','.','0','0',' ',  // version - 16 bytes
 	'C','R','C','_',                                                  // crc32 - 4 bytes
 	'S','I','Z','E',                                                  // firmware size - 4 bytes
 	'L','L','1','-','0','0','0','0','0','0','0','0','0','0','0','0',  // serial number - 16 bytes
