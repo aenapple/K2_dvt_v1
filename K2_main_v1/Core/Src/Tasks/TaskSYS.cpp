@@ -510,6 +510,7 @@ void TTaskSYS::ProcessRxData()
 			break;
 
 		case IfcVipCommand_GetTemperature:
+			data[IFC_VIP_T_SENSOR_INDEX] = TaskHAL.GetTemperature((EIfcVipTemperature)pData[IFC_VIP_NUMBER_OF_ITEM]);
 			break;
 
 //		case IfcVipCommand_SetHeaterParameters:
@@ -1660,7 +1661,7 @@ EOsResult TTaskSYS::Init(void)
    	this->SelfTest();
 
    	// DEBUG
-   	this->Delay(10000);
+/*   	this->Delay(10000);
    	this->TestMainMotor();
 
 //   	HAL_GPIO_WritePin(PTC1_FAN2_GPIO_Port, PTC1_FAN2_Pin, GPIO_PIN_RESET);
@@ -1669,7 +1670,7 @@ EOsResult TTaskSYS::Init(void)
    	while(true)
    	{
    		this->Delay(1000);
-   	}
+   	} */
    	// DEBUG
 
 

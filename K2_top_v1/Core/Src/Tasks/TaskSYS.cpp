@@ -952,7 +952,7 @@ EOsResult TTaskSYS::Init(void)
 	// DEBUG
 //	   	while(true)
 //	   	{
-/*	   		this->setDamPosition = DamPosition_LeftOpen;
+	   		this->setDamPosition = DamPosition_LeftOpen;
 
 	   		this->SetDamPosition();
 
@@ -968,7 +968,7 @@ EOsResult TTaskSYS::Init(void)
 	   	{
 	   		this->Delay(100);
 	   		this->Delay(100);
-	   	} */
+	   	}
 
 
 /*	   		TaskHAL.StartFan(100);
