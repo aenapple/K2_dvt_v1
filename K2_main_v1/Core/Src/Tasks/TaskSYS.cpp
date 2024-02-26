@@ -208,6 +208,7 @@ void TTaskSYS::Run(void)
 					TASK_SYS_EVENT_LID_OPEN     |
 					TASK_SYS_EVENT_TICK_PROCESS |
 					TASK_SYS_EVENT_START_TEST   |
+					TASK_SYS_EVENT_END_GRINDING |
 					TASK_SYS_EVENT_ERROR,
 					&resultBits,
 					1000  // 1 Sec
@@ -231,8 +232,6 @@ void TTaskSYS::Run(void)
        		this->ReInitUart();
        		this->Delay(2);
        		this->StartRxData();
-
-       		continue;
        	}
 
  		if((resultBits & TASK_SYS_EVENT_RESET) > 0)
@@ -258,6 +257,11 @@ void TTaskSYS::Run(void)
  		if((resultBits & TASK_SYS_EVENT_START_TEST) > 0)
  		{
  		   	this->ProcessTest();
+ 		}
+
+ 		if((resultBits & TASK_SYS_EVENT_END_GRINDING) > 0)
+ 		{
+ 		   	this->SetSysState(SysState_Idle);
  		}
 
 
@@ -407,6 +411,26 @@ void TTaskSYS::ProcessTest()
 */
 void TTaskSYS::ProcessLidOpen()
 {
+	EOsResult result;
+	u64 stampSystemCounter;
+
+
+	this->SetSysState(SysState_LidOpen);
+	stampSystemCounter = this->systemCounter;
+	result = this->WaitEvent(TASK_SYS_EVENT_LID_CLOSED);
+	if(result == OsResult_Continue)
+	{
+		this->SetSysState(SysState_Idle);
+		return;
+	}
+
+	////// if(result == OsResult_Ok) //////
+	// DEBUG
+	if(this->systemCounter < (stampSystemCounter + 3000))
+	{
+
+	}
+	// DEBUG
 
 }
 //=== end ProcessLidOpen ===========================================================
@@ -477,18 +501,19 @@ void TTaskSYS::ProcessRxData()
 	switch(command)
 	{
 		case IfcVipCommand_GetState:
-			memcpy((void*)data, (void*)&this->ifcSystemState, sizeof(TIfcSystemState) - 2);
+
 			if(this->sysState < SysError_Start)
 			{
-				data[IFC_VIP_STATE_INDEX] = this->interfaceVipCode[this->sysState];
-				data[IFC_VIP_ERROR_INDEX] = 0;
+				this->ifcSystemState.sysState = this->interfaceVipCode[this->sysState];
+				this->ifcSystemState.error = 0;
 			}
 			else
 			{
-				data[IFC_VIP_STATE_INDEX] = IfcVipState_Error;
-				data[IFC_VIP_ERROR_INDEX] = this->interfaceVipCode[this->sysState];
+				this->ifcSystemState.sysState = IfcVipState_Error;
+				this->ifcSystemState.error = this->interfaceVipCode[this->sysState];
 			}
-			data[IFC_VIP_SUB_STATE_INDEX] = IfcVipSubState_Application;
+			this->ifcSystemState.subSysState = IfcVipSubState_Application;
+			memcpy((void*)data, (void*)&this->ifcSystemState, sizeof(TIfcSystemState) - 2);
 			break;
 
 		case IfcVipCommand_GetBme688_Part1:
@@ -994,6 +1019,21 @@ void TTaskSYS::ProcessTick()
 	TaskChmLeft.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
 	TaskChmRight.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
 
+	if(this->counterHours < TASK_SYS_24_HOURS)
+	{
+		this->counterHours++;
+		if(this->counterHours == TASK_SYS_12_HOURS)
+		{
+			TaskChmRight.SetPadTemperatureLevels(30, 35);
+			TaskChmRight.SetPtcTemperatureLevels(30, 35);
+		}
+	}
+	else
+	{
+		this->counterHours = 0;
+		TaskChmRight.SetPadTemperatureLevels(50, 55);
+		TaskChmRight.SetPtcTemperatureLevels(50, 55);
+	}
 
 //	if(this->bme688SensorLeft.humidity)
 }
@@ -1615,6 +1655,90 @@ void TTaskSYS::TestPadHeaters()
 *
 *  @return ... .
 */
+EOsResult TTaskSYS::WaitEvent(u32 event)
+{
+	u32 resultBits;
+
+
+	while(true)
+	{
+		if(this->EventGroup.WaitOrBits(
+					TASK_SYS_EVENT_UART_RX_CPLT |
+					TASK_SYS_EVENT_UART_ERROR	|
+					TASK_SYS_EVENT_RESET        |
+					TASK_SYS_EVENT_TOP_REMOVED  |
+					TASK_SYS_EVENT_TICK_PROCESS |
+					TASK_SYS_EVENT_START_TEST   |
+					TASK_SYS_EVENT_ERROR        |
+					event,
+					&resultBits,
+					1000  // 1 Sec
+					) == OsResult_Timeout)
+		{
+			continue;
+	    }
+
+	    if((resultBits & TASK_SYS_EVENT_ERROR) > 0)
+	    {
+	    	this->SetEvents(TASK_SYS_EVENT_ERROR);
+	    	return(OsResult_Continue);
+	    }
+
+	    if((resultBits & TASK_SYS_EVENT_UART_RX_CPLT) > 0)
+	    {
+	       	this->ProcessRxData();
+	    }
+
+	 	if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
+	    {
+	    	this->ReInitUart();
+	       	this->Delay(2);
+	       	this->StartRxData();
+
+	    }
+
+	 	if((resultBits & TASK_SYS_EVENT_RESET) > 0)
+	 	{
+	 		this->SetEvents(TASK_SYS_EVENT_RESET);
+	 		return(OsResult_Continue);
+	 	}
+
+	 	if((resultBits & TASK_SYS_EVENT_TOP_REMOVED) > 0)
+	 	{
+	 		this->SetEvents(TASK_SYS_EVENT_TOP_REMOVED);
+	 		return(OsResult_Continue);
+	 	}
+
+	 	if((resultBits & event) > 0)
+	 	{
+	 	   	break;
+	 	}
+
+	 	if((resultBits & TASK_SYS_EVENT_TICK_PROCESS) > 0)
+	 	{
+	 	   	this->ProcessTick();
+	 	}
+
+	 	if((resultBits & TASK_SYS_EVENT_START_TEST) > 0)
+	 	{
+	 		this->SetEvents(TASK_SYS_EVENT_START_TEST);
+	 	   	return(OsResult_Continue);
+	 	}
+
+
+	}  // end while(true)
+
+
+	return(OsResult_Ok);
+}
+//=== end WaitEvent ================================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
 EOsResult TTaskSYS::Init(void)
 {
 	EOsResult result;
@@ -1623,6 +1747,7 @@ EOsResult TTaskSYS::Init(void)
 
 	this->systemCounter = 0;
 	this->counterTimeTickProcess = 0;
+	this->counterHours = 0;
 
 	TaskUI.Init();
 	TaskUI.SetEvents(TASK_UI_CMD_START);
@@ -1649,7 +1774,30 @@ EOsResult TTaskSYS::Init(void)
    	TaskChmRight.SetEvents(TASK_CHM_CMD_START);
    	this->enableTickHook = true;
 
+
    	// DEBUG
+   	TEeprom* pEeprom;
+   	u8 seconds;
+   	u8 minutes;
+   	pEeprom = TaskHAL.GetPointerEeprom();
+   	while(true)
+   	{
+   		result = pEeprom->ReadMinutes(&minutes);
+   		if(result != OsResult_Ok)
+   		{
+   			continue;
+   		}
+
+   		result = pEeprom->ReadHours(&seconds);
+   		if(result != OsResult_Ok)
+   		{
+   			continue;
+   		}
+
+   		this->Delay(2500);
+
+   	}
+
 // 	this->TestChamberMotors();
 // 	this->TestMainMotor();
 // 	this->TestPtcFans();
@@ -1661,9 +1809,9 @@ EOsResult TTaskSYS::Init(void)
    	this->SelfTest();
 
    	// DEBUG
-/*   	this->Delay(10000);
+   	this->Delay(10000);
    	this->TestMainMotor();
-
+/*
 //   	HAL_GPIO_WritePin(PTC1_FAN2_GPIO_Port, PTC1_FAN2_Pin, GPIO_PIN_RESET);
 //   	HAL_GPIO_WritePin(PTC2_FAN2_GPIO_Port, PTC2_FAN2_Pin, GPIO_PIN_RESET);
 
@@ -1677,12 +1825,12 @@ EOsResult TTaskSYS::Init(void)
 
   	TaskChmRight.SetPadTemperatureLevels(50, 55);
    	TaskChmRight.SetPtcTemperatureLevels(50, 55);
-   	TaskChmRight.SetPtcTime(24 * 60 * 60, 1 * 60 * 60);
+   	TaskChmRight.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
    	TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 
    	TaskChmLeft.SetPadTemperatureLevels(50, 55);
    	TaskChmLeft.SetPtcTemperatureLevels(50, 55);
-   	TaskChmLeft.SetPtcTime(24 * 60 * 60, 1 * 60 * 60);
+   	TaskChmLeft.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
    	TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 
 

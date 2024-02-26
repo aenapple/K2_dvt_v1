@@ -161,6 +161,7 @@ void TTaskHAL::Run(void)
 					TASK_HAL_EVENT_GET_BME688_FAN   |
 					TASK_HAL_EVENT_GET_BME688_LEFT  |
 					TASK_HAL_EVENT_GET_BME688_RIGHT |
+					TASK_HAL_CMD_START_GRINDING     |
 					TASK_HAL_CMD_SELF_TEST,
 					&resultBits,
 					100
@@ -217,6 +218,11 @@ void TTaskHAL::Run(void)
         if((resultBits & TASK_HAL_CMD_SELF_TEST) > 0)
         {
         	this->ProcessSelfTest();
+        }
+
+        if((resultBits & TASK_HAL_CMD_START_GRINDING) > 0)
+        {
+            this->Grinding();
         }
 
         
@@ -331,11 +337,11 @@ void TTaskHAL::ProcessSysCommand(void)
 
 		switch(sysCommand.command)
 		{
-			case SysCommand_ControlHeater:
-				this->ControlHeater(sysCommand.parameters);
+			case SysCommand_Grind:
+//				this->ControlHeater(sysCommand.parameters);
 				break;
 
-			case SysCommand_ControlMotor:
+/*			case SysCommand_ControlMotor:
 				this->ControlMotor(sysCommand.parameters);
 				break;
 
@@ -348,7 +354,7 @@ void TTaskHAL::ProcessSysCommand(void)
 				break;
 
 			case SysCommand_SetPosition:
-				break;
+				break; */
 
 
 			default:
@@ -479,6 +485,19 @@ void TTaskHAL::ProcessSelfTest(void)
 	TaskSYS.SetEvents(TASK_SYS_EVENT_OK);
 }
 //=== end ProcessSelfTest ==========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::Grinding(void)
+{
+	EOsResult result;
+
+}
+//=== end Grinding ========================-------==================================
 
 //==================================================================================
 /**
@@ -954,7 +973,7 @@ void TTaskHAL::StartMainFan(u8 pwm)
 	TSysCommand SysCommand;
 
 
-	SysCommand.command = SysCommand_ControlFan;
+//	SysCommand.command = SysCommand_ControlFan;
 	SysCommand.parameters[IFC_VIP_NUMBER_OF_ITEM] = IfcVipFan_Main;
 	SysCommand.parameters[IFC_VIP_FAN_PWM_INDEX] = pwm;
 
@@ -2171,6 +2190,19 @@ TIfcSystemState* TTaskHAL::GetPointerIfcSystemState()
 *  @return
 *  		none.
 */
+TEeprom* TTaskHAL::GetPointerEeprom()
+{
+	return(&this->Eeprom);
+}
+//=== end GetPointerEeprom =========================================================
+
+//==================================================================================
+/**
+*  The function ... .
+*
+*  @return
+*  		none.
+*/
 void TTaskHAL::HandlerGpioInterrupt(u16 gpioPin)
 {
 	if(gpioPin == AC_MAIN_Pin)
@@ -2420,6 +2452,65 @@ EOsResult TTaskHAL::SendCommand(EIfcVipCommand command, u8* pBuffer)
 	return(OsResult_Timeout);
 }
 //=== end SendCommand ==============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return
+*  		none.
+*/
+EOsResult TTaskHAL::Delay_IT(u16 time)
+{
+	u32 resultBits;
+	EOsResult result;
+
+
+	while(true)
+	{
+		if(this->EventGroup.WaitOrBits(
+					TASK_HAL_EVENT_UART_RX_CPLT	    |
+					TASK_HAL_EVENT_UART_ERROR	    |
+					TASK_HAL_EVENT_T_READY          |
+					TASK_HAL_EVENT_GET_BME688_FAN   |
+					TASK_HAL_EVENT_GET_BME688_LEFT  |
+					TASK_HAL_EVENT_GET_BME688_RIGHT |
+					TASK_HAL_CMD_STOP_ALL,
+					&resultBits,
+					100
+					) == OsResult_Timeout)
+		{
+#ifndef	__DEBUG_TOP_CPU_NOT_PRESENT
+/*        	result = this->GetStateTopCpu();
+        	if(result != OsResult_Ok)
+        	{
+        		TaskSYS.SetSysState(SysError_InterfaceVipM);
+        	} */
+#endif
+
+			this->CheckTopRemoved();
+	    	this->CheckLidOpen();
+
+       		continue;
+		}
+
+	if((resultBits & TASK_HAL_EVENT_UART_RX_CPLT) > 0)
+	{
+		this->SetEvents(TASK_HAL_EVENT_UART_RX_CPLT);
+		return(OsResult_Ok);
+	}
+
+	if((resultBits & TASK_HAL_EVENT_UART_ERROR) > 0)
+	{
+		return(OsResult_ErrorUart);
+	}
+
+}
+
+
+	return(OsResult_Timeout);
+}
+//=== end Delay_IT =================================================================
 
 //==================================================================================
 /**

@@ -139,8 +139,8 @@ void TTaskHAL::Run(void)
 {
 	u32 resultBits;
 	EOsResult result;
-//	bool flagBme688_Left;
-//	bool flagBme688_Right;
+	bool flagBme688_Left;
+	bool flagBme688_Right;
 //	u64 timeStamp;
 	float bufferTank[10];
 	float bufferLeft[10];
@@ -223,8 +223,8 @@ void TTaskHAL::Run(void)
 
 
 	this->enableCh101 = true;
-//	flagBme688_Left = false;
-//	flagBme688_Right = false;
+	flagBme688_Left = false;
+	flagBme688_Right = false;
 	while(true)
 	{
         if(this->EventGroup.WaitOrBits(
@@ -305,7 +305,7 @@ void TTaskHAL::Run(void)
         	{
         		this->ProcessDataBme688(&this->Bme688_Left);
 
- /*       		TBme688Sensors* bme688Sensors;
+        		TBme688Sensors* bme688Sensors;
         		bme688Sensors = this->Bme688_Left.GetPointerBme688Sensors();
         		if(bme688Sensors->humidity > 3500)
         		{
@@ -314,7 +314,7 @@ void TTaskHAL::Run(void)
         		else
         		{
         			flagBme688_Left = false;
-        		} */
+        		}
 
         	}
 
@@ -326,7 +326,7 @@ void TTaskHAL::Run(void)
         	{
         		this->ProcessDataBme688(&this->Bme688_Right);
 
-/*        		TBme688Sensors* bme688Sensors;
+        		TBme688Sensors* bme688Sensors;
         		bme688Sensors = this->Bme688_Right.GetPointerBme688Sensors();
         		if(bme688Sensors->humidity > 3500)
         		{
@@ -335,7 +335,7 @@ void TTaskHAL::Run(void)
         		else
         		{
         			flagBme688_Right = false;
-        		} */
+        		}
 
         	}
 
@@ -343,14 +343,14 @@ void TTaskHAL::Run(void)
 
 #endif
 
-/*        if(flagBme688_Left || flagBme688_Right)
+        if(flagBme688_Left || flagBme688_Right)
         {
         	this->Fan.Start(100);
         }
         else
         {
         	this->Fan.Stop();
-        } */
+        }
         
         
         // this->Delay(50);  // mSec

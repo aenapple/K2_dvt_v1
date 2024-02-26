@@ -42,7 +42,13 @@
 // #define TASK_CHM_PTC_LOW_LEVEL_T   40  // 40C
 // #define TASK_CHM_PTC_HIGH_LEVEL_T  45  // 45C
 
-#define TASK_CHM_REPEAT_TIME_MIXING  (10 * 60)  // (120 * 60)  // 120 Minutes
+#define TASK_CHM_REPEAT_TIME_MIXING  (20 * 60)  // (120 * 60)  // 120 Minutes
+
+
+#define TASK_CHM_REPEAT_TIME_MIXING_MODE1  (30 * TASK_SYS_1_MINUTE)  // 30 minutes
+#define TASK_CHM_TIME_MIXING_MODE1         (3 * TASK_SYS_1_HOUR)     // 3 hours
+#define TASK_CHM_REPEAT_TIME_MIXING_MODE2  (5 * TASK_SYS_1_HOUR)     // 5 hours
+
 
 
 /**********************************************************************************/
@@ -59,6 +65,12 @@ typedef enum
 	TaskChmState_Composting = 1,
 	TaskChmState_Collecting = 2,
 } ETaskChmState;
+
+typedef enum
+{
+	MixingMode_1,
+	MixingMode_2,
+} EMixingMode;
 
 
 /**********************************************************************************/
@@ -93,6 +105,7 @@ public:
 	s8 GetPadTemperature(void);
 	void SetPadTemperatureLevels(s8 lowLevel, s8 highLevel);
 	void SetPadTime(u16 repeatTime, u16 workTime);
+	void StartMixingTimeMode1(void);
 
 
 //	void SetEventTickProcessFromISR(void);
@@ -144,6 +157,7 @@ private:
 	u16 padCounterWorkTime;
 	bool flagPadOn;
 	u16 mixingCounterRepeatTime;
+	u16 mixingCounterTimeMode1;
 
 
 	////// constants //////

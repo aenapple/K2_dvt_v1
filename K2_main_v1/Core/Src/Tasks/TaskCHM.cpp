@@ -181,6 +181,16 @@ void TTaskCHM::TickProcess()
 		this->SetEvents(TASK_CHM_EVENT_MIXING);
 	}
 
+	if(this->mixingCounterTimeMode1 > 0)
+	{
+		this->mixingCounterTimeMode1--;
+	}
+	else
+	{
+		this->mixingCounterRepeatTime = TASK_CHM_REPEAT_TIME_MIXING_MODE2;
+		this->SetEvents(TASK_CHM_EVENT_MIXING);
+	}
+
 	if(this->ptcCounterRepeatTime < this->ptcRepeatTime)
 	{
 		this->ptcCounterRepeatTime++;
@@ -611,6 +621,19 @@ void TTaskCHM::SetPadTime(u16 repeatTime, u16 workTime)
 	this->padWorkTime = workTime;
 }
 //=== end SetPadTime ===============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::StartMixingTimeMode1()
+{
+	this->mixingCounterTimeMode1 = TASK_CHM_TIME_MIXING_MODE1;
+	this->mixingCounterRepeatTime = TASK_CHM_REPEAT_TIME_MIXING_MODE1;
+}
+//=== end StartMixingTimeMode1 =====================================================
 
 //==================================================================================
 /**

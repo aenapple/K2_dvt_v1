@@ -949,10 +949,11 @@ EOsResult TTaskSYS::Init(void)
 //	this->InterfaceSlaveVIP.ReInit();
 // 	this->StartRxData();
 
+
 	// DEBUG
 //	   	while(true)
-//	   	{
-	   		this->setDamPosition = DamPosition_LeftOpen;
+	   	{
+	   		this->setDamPosition = DamPosition_RightOpen;
 
 	   		this->SetDamPosition();
 
@@ -962,14 +963,14 @@ EOsResult TTaskSYS::Init(void)
 //	   		this->setDamPosition = DamPosition_RightOpen;
 //	   		this->SetDamPosition();
 
-	   		TaskHAL.StopFan();
+/*	   		TaskHAL.StopFan();
 
-	   	while(true)
+   	`	while(true)
 	   	{
 	   		this->Delay(100);
 	   		this->Delay(100);
 	   	}
-
+*/
 
 /*	   		TaskHAL.StartFan(100);
 	   		this->Delay(5000);
@@ -983,7 +984,7 @@ EOsResult TTaskSYS::Init(void)
 	   		TaskHAL.StopFan();
 	   		this->Delay(5000); */
 
-//	   	}
+	   	}
 	   	// DEBUG
 
    	result = TaskHAL.Init();

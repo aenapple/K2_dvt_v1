@@ -16,6 +16,7 @@ SYS_STATE_TABLE	 (SysState_Init,		IfcVipState_Init,		0),
 SYS_STATE_TABLE	 (SysState_Busy,		IfcVipState_Busy,		0),
 SYS_STATE_TABLE	 (SysState_TopRemoved,	IfcVipState_TopRemoved,	0),
 SYS_STATE_TABLE	 (SysState_LidOpen,		IfcVipState_LidOpen,	0),
+SYS_STATE_TABLE	 (SysState_Grinding,	IfcVipState_Grinding,	0),
 
 
 SYS_STATE_TABLE	 (SysError_Start,	IfcVipState_Error, 0),

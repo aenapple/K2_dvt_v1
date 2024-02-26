@@ -22,6 +22,13 @@
 #define EEPROM_ADR_FORMAT_SING     0x0000                        // 2 bytes - (0xAA55)
 #define EEPROM_ADR_PROCESS_COUNTER (EEPROM_ADR_FORMAT_SING + 2)  // 4bytes
 
+#define EEPROM_RTC_SLAVE_ADDRESS    0xD0  // 1101.0000
+#define EEPROM_RTC_SECONDS_ADDRESS  0x00  // 00-59
+#define EEPROM_RTC_MINUTES_ADDRESS  0x01  // 00-59
+#define EEPROM_RTC_HOURS_ADDRESS    0x02  // 0-23
+#define EEPROM_RTC_DAY_ADDRESS      0x03  // 1-7
+#define EEPROM_RTC_DATE_ADDRESS     0x04  // 1-31
+
 
 /**********************************************************************************/
 //==================================================================================
@@ -40,6 +47,21 @@ public:
 	EOsResult WriteProcessCounter(u32 data);
 	EOsResult ReadProcessCounter(u32* data);
 
+
+	EOsResult WriteSeconds(u8 seconds);
+	EOsResult ReadSeconds(u8* seconds);
+	EOsResult WriteMinutes(u8 minutes);
+	EOsResult ReadMinutes(u8* minutes);
+	EOsResult WriteHours(u8 hours);
+	EOsResult ReadHours(u8* hours);
+	EOsResult WriteDay(u8 day);
+	EOsResult ReadDay(u8* day);
+	EOsResult WriteDate(u8 date);
+	EOsResult ReadDate(u8* date);
+	EOsResult WriteMonth(u8 month);
+	EOsResult ReadMonth(u8* month);
+	EOsResult WriteYear(u8 year);
+	EOsResult ReadYear(u8* year);
 
 
 protected:

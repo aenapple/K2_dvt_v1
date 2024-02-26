@@ -31,14 +31,16 @@
 #define TASK_HAL_EVENT_UART_ERROR         (1<<3)
 #define TASK_HAL_EVENT_SYS_COMMAND        (1<<4)
 
-#define TASK_HAL_EVENT_GET_BME688_FAN    (1<<5)
-#define TASK_HAL_EVENT_GET_BME688_LEFT   (1<<6)
-#define TASK_HAL_EVENT_GET_BME688_RIGHT  (1<<7)
+#define TASK_HAL_CMD_START_GRINDING  (1<<5)
+#define TASK_HAL_CMD_SELF_TEST       (1<<6)
+#define TASK_HAL_CMD_STOP_ALL        (1<<7)
 
-// #define TASK_HAL_EVT_NEW_RPM_READY     (1<<2)
-#define TASK_HAL_EVENT_T_READY     (1<<8)
+#define TASK_HAL_EVENT_GET_BME688_FAN    (1<<8)
+#define TASK_HAL_EVENT_GET_BME688_LEFT   (1<<9)
+#define TASK_HAL_EVENT_GET_BME688_RIGHT  (1<<10)
 
-#define TASK_HAL_CMD_SELF_TEST  (1<<9)
+#define TASK_HAL_EVENT_T_READY     (1<<11)
+
 
 
 #define TASK_HAL_MAX_NUMBER_COMMANDS  10
@@ -103,13 +105,15 @@
 /**********************************************************************************/
 typedef enum
 {
-	SysCommand_ControlHeater,
+	SysCommand_Grind,
+
+/*	SysCommand_ControlHeater,
 	SysCommand_ControlMotor,
 	SysCommand_ControlLamp,
 	SysCommand_ControlFan,
 	SysCommand_SetPosition,
 	SysCommand_AcPowerOn,
-	SysCommand_AcPowerOff,
+	SysCommand_AcPowerOff, */
 
 	SysCommand_Last,
 
@@ -166,6 +170,7 @@ public:
 //	void TurnOnMotorChamber(EMotorChamber motorChamber, EDirMotorChamber dirMotorChamber, u8 pwm);
 //	void TurnOffMotorChamber(EMotorChamber motorChamber);
 	TIfcSystemState* GetPointerIfcSystemState(void);
+	TEeprom* GetPointerEeprom(void);
 
 	void HandlerGpioInterrupt(u16 gpioPin);
 
@@ -212,7 +217,6 @@ public:
 //	TMotorChamber MotorChamberLeft;
 //	TMotorChamber MotorChamberRight;
 
-	TEeprom Eeprom;
 	// DEBUG
 
 
@@ -239,6 +243,7 @@ private:
 	TAdc Adc;
 	TI2c I2c;
 	TGpio Gpio;
+	TEeprom Eeprom;
 	u8 adcIndexConversion;
 	u16 calculationResultAdc1[ADC1_MAX_NUMBER_CHANNEL];
 
@@ -303,6 +308,7 @@ private:
 	void GetSensorBme688(EIfcBme688Sensor ifcBme688Sensor);
 	void ProcessSysCommand(void);
 	void ProcessSelfTest(void);
+	void Grinding(void);
 	EOsResult CheckConnectionTopCpu(void);
 	EOsResult CheckLockTop(void);
 	bool CheckTopPresent(void);
@@ -320,6 +326,7 @@ private:
 	void ProcessAcPhase(void);
 	void ProcessHeater(void);
 	void ReInitUart(void);
+	EOsResult Delay_IT(u16 time);
 
 	EOsResult ControlMotor(u8* parameters);
 	EOsResult ControlHeater(u8* parameters);

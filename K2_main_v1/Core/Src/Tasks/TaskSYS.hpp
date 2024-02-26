@@ -30,6 +30,7 @@
 #define TASK_SYS_EVENT_LID_CLOSED    (1<<9)
 #define TASK_SYS_EVENT_TICK_PROCESS  (1<<10)
 #define TASK_SYS_EVENT_START_TEST    (1<<11)
+#define TASK_SYS_EVENT_END_GRINDING  (1<<12)
 
 
 #define TASK_SYS_EVENT_OK     (1<<14)
@@ -88,6 +89,9 @@
 #define TASK_SYS_10_MINUTES (u32)(10 * TASK_SYS_1_MINUTE)
 #define TASK_SYS_1_HOUR     (u32)(60 * TASK_SYS_1_MINUTE)
 #define TASK_SYS_2_HOURS    (u32)(2 * TASK_SYS_1_HOUR)
+#define TASK_SYS_12_HOURS   (u32)(12 * TASK_SYS_1_HOUR)
+#define TASK_SYS_24_HOURS   (u32)(24 * TASK_SYS_1_HOUR)
+
 
 
 /**********************************************************************************/
@@ -98,6 +102,8 @@ struct TBme688Sensor  // sizeof = 16 bytes
 	u32 pressure;
 	u32 gasResistance;
 };
+
+
 
 /**********************************************************************************/
 //==================================================================================
@@ -190,6 +196,7 @@ private:
     TInterfaceVIP InterfaceSlaveVIP;
 
     u16 counterTimeTickProcess;
+    u32 counterHours;
 
     EIfcVipComponent ifcVipComponent;
 
@@ -231,6 +238,7 @@ private:
     void Reset(void);
     void ProcessTick();
     void ReInitUart(void);
+    EOsResult WaitEvent(u32 event);
 
     // DEBUG
     void TestChambers(void);

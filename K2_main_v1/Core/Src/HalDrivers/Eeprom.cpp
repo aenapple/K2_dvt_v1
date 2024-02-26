@@ -11,6 +11,7 @@
 
 /**********************************************************************************/
 extern I2C_HandleTypeDef hi2c1;
+extern I2C_HandleTypeDef hi2c2;
 
 
 /**********************************************************************************/
@@ -496,12 +497,166 @@ EOsResult TEeprom::WriteVariable8bits(u32 address, u8 data)
 *
 *  @return ... .
 */
-EOsResult TEeprom::Format(void)
+EOsResult TEeprom::Format()
 {
 
 
 	return(OsResult_Ok);
 }
 //=== end Format ===================================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+EOsResult TEeprom::WriteMinutes(u8 minutes)
+{
+	HAL_StatusTypeDef halResult;
+	u8 writeBuffer[2];
+
+
+	writeBuffer[0] = EEPROM_RTC_MINUTES_ADDRESS;
+	writeBuffer[1] = minutes;
+	halResult = HAL_I2C_Master_Transmit(
+					&hi2c2,
+					EEPROM_RTC_SLAVE_ADDRESS,
+					writeBuffer,
+					2,
+					20  // timeout 20 mSec
+					);
+	if(halResult != HAL_OK)
+	{
+		return(OsResult_ErrorI2c2);
+	}
+
+
+	return(OsResult_Ok);
+}
+//=== end WriteMinutes ===================================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+EOsResult TEeprom::ReadMinutes(u8* minutes)
+{
+	HAL_StatusTypeDef halResult;
+	u8 writeBuffer[2];
+	u8 readBuffer[2];
+
+
+	writeBuffer[0] = EEPROM_RTC_MINUTES_ADDRESS;
+	halResult = HAL_I2C_Master_Transmit(
+					&hi2c2,
+					EEPROM_RTC_SLAVE_ADDRESS,
+					writeBuffer,
+					1,
+					20  // timeout 20 mSec
+					);
+	if(halResult != HAL_OK)
+	{
+		return(OsResult_ErrorI2c2);
+	}
+
+	halResult = HAL_I2C_Master_Receive(
+					&hi2c2,
+					EEPROM_RTC_SLAVE_ADDRESS,
+					readBuffer,
+					1,
+					20  // timeout 20 mSec
+					);
+	if(halResult != HAL_OK)
+	{
+		*minutes = 0;
+		return(OsResult_ErrorI2c2);
+	}
+
+	*minutes = readBuffer[0];
+
+
+	return(OsResult_Ok);
+}
+//=== end ReadMinutes ==============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+EOsResult TEeprom::WriteHours(u8 hours)
+{
+	HAL_StatusTypeDef halResult;
+	u8 writeBuffer[2];
+
+
+	writeBuffer[0] = EEPROM_RTC_SECONDS_ADDRESS;  // EEPROM_RTC_HOURS_ADDRESS;
+	writeBuffer[1] = hours;
+	halResult = HAL_I2C_Master_Transmit(
+					&hi2c2,
+					EEPROM_RTC_SLAVE_ADDRESS,
+					writeBuffer,
+					2,
+					20  // timeout 20 mSec
+					);
+	if(halResult != HAL_OK)
+	{
+		return(OsResult_ErrorI2c2);
+	}
+
+
+	return(OsResult_Ok);
+}
+//=== end WriteHours ===============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+EOsResult TEeprom::ReadHours(u8* hours)
+{
+	HAL_StatusTypeDef halResult;
+	u8 writeBuffer[2];
+	u8 readBuffer[2];
+
+
+	writeBuffer[0] = EEPROM_RTC_SECONDS_ADDRESS;  // EEPROM_RTC_HOURS_ADDRESS;
+	halResult = HAL_I2C_Master_Transmit(
+					&hi2c2,
+					EEPROM_RTC_SLAVE_ADDRESS,
+					writeBuffer,
+					1,
+					20  // timeout 20 mSec
+					);
+	if(halResult != HAL_OK)
+	{
+		return(OsResult_ErrorI2c2);
+	}
+
+	halResult = HAL_I2C_Master_Receive(
+					&hi2c2,
+					EEPROM_RTC_SLAVE_ADDRESS,
+					readBuffer,
+					1,
+					20  // timeout 20 mSec
+					);
+	if(halResult != HAL_OK)
+	{
+		*hours = 0;
+		return(OsResult_ErrorI2c2);
+	}
+
+	*hours = readBuffer[0];
+
+
+	return(OsResult_Ok);
+}
+//=== end ReadHours ================================================================
 
 /**********************************************************************************/
