@@ -154,15 +154,16 @@ void TTaskHAL::Run(void)
 	while(true)
 	{
         if(this->EventGroup.WaitOrBits(
-					TASK_HAL_EVENT_UART_RX_CPLT	    |
-					TASK_HAL_EVENT_UART_ERROR	    |
+//					TASK_HAL_EVENT_UART_RX_CPLT	    |
+//					TASK_HAL_EVENT_UART_ERROR	    |
 					TASK_HAL_EVENT_SYS_COMMAND	    |
 					TASK_HAL_EVENT_T_READY          |
 					TASK_HAL_EVENT_GET_BME688_FAN   |
 					TASK_HAL_EVENT_GET_BME688_LEFT  |
 					TASK_HAL_EVENT_GET_BME688_RIGHT |
 					TASK_HAL_CMD_START_GRINDING     |
-					TASK_HAL_CMD_SELF_TEST,
+					TASK_HAL_CMD_SELF_TEST          |
+					TASK_HAL_CMD_AC_POWER_OFF,
 					&resultBits,
 					100
 					) == OsResult_Timeout)
@@ -189,12 +190,6 @@ void TTaskHAL::Run(void)
 //        	TaskCLI.DebugPrintf("Heater");
         }
         
-        if((resultBits & TASK_HAL_EVENT_UART_ERROR) > 0)
-        {
-            this->ReInitUart();
-            this->Delay(2);
-        }
-
         if((resultBits & TASK_HAL_EVENT_SYS_COMMAND) > 0)
         {
             this->ProcessSysCommand();
@@ -223,6 +218,11 @@ void TTaskHAL::Run(void)
         if((resultBits & TASK_HAL_CMD_START_GRINDING) > 0)
         {
             this->Grinding();
+        }
+
+        if((resultBits & TASK_HAL_CMD_AC_POWER_OFF) > 0)
+        {
+            this->AcPowerOff();
         }
 
         
@@ -496,6 +496,34 @@ void TTaskHAL::Grinding(void)
 {
 	EOsResult result;
 
+
+	////// added resistor //////
+	HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
+	this->Delay(100);
+	this->StartMainMotorCW();
+
+
+	this->Delay(200);
+	////// short cut resistor //////
+	HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_SET);
+
+	////// grinding //////
+	result = this->Delay_IT(19600);
+
+	////// added resistor //////
+	HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
+	this->Delay(200);
+	TaskHAL.StopMainMotor();
+
+	this->Delay(200);
+	TaskHAL.BrakeOnMainMotor();
+
+	if(result == OsResult_AcPowerOff)
+	{
+		this->AcPowerOff();
+	}
+
+	TaskSYS.SetEvents(TASK_SYS_EVENT_END_GRINDING);
 }
 //=== end Grinding ========================-------==================================
 
@@ -611,27 +639,43 @@ bool TTaskHAL::CheckTopRemoved()
 {
 	if((this->Gpio.ReadTopRemoved() == GpioLevel_High))
 	{
-		if(!this->flagSentEventTopRemoved)
+		this->Delay(100);
+		if((this->Gpio.ReadTopRemoved() == GpioLevel_High))
 		{
-			this->flagSentEventTopRemoved = true;
-			TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_REMOVED);
+			if(!this->flagSentEventTopRemoved)
+			{
+				this->flagSentEventTopRemoved = true;
+				TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_REMOVED);
+			}
+
+			this->flagSentEventTopPresent = false;
+
+			return(true);
 		}
-
-		this->flagSentEventTopPresent = false;
-
-		return(true);
+		else
+		{
+			return(false);
+		}
 	}
 	else
 	{
-		if(!this->flagSentEventTopPresent)
+		this->Delay(100);
+		if((this->Gpio.ReadTopRemoved() == GpioLevel_Low))
 		{
-			this->flagSentEventTopPresent = true;
-			TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_PRESENT);
+			if(!this->flagSentEventTopPresent)
+			{
+				this->flagSentEventTopPresent = true;
+				TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_PRESENT);
+			}
+
+			this->flagSentEventTopRemoved = false;
+
+			return(false);
 		}
-
-		this->flagSentEventTopRemoved = false;
-
-		return(false);
+		else
+		{
+			return(true);
+		}
 	}
 
 }
@@ -713,27 +757,43 @@ bool TTaskHAL::CheckLidOpen()
 
 	if(this->Gpio.ReadLidOpen() == GpioLevel_High)
 	{
-		if(!this->flagSentEventLidOpen)
+		this->Delay(100);
+		if(this->Gpio.ReadLidOpen() == GpioLevel_High)
 		{
-			this->flagSentEventLidOpen = true;
-			TaskSYS.SetEvents(TASK_SYS_EVENT_LID_OPEN);
+			if(!this->flagSentEventLidOpen)
+			{
+				this->flagSentEventLidOpen = true;
+				TaskSYS.SetEvents(TASK_SYS_EVENT_LID_OPEN);
+			}
+
+			this->flagSentEventLidClosed = false;
+
+			return(true);
 		}
-
-		this->flagSentEventLidClosed = false;
-
-		return(true);
+		else
+		{
+			return(false);
+		}
 	}
 	else
 	{
-		if(!this->flagSentEventLidClosed)
+		this->Delay(100);
+		if(this->Gpio.ReadLidOpen() == GpioLevel_Low)
 		{
-			this->flagSentEventLidClosed = true;
-			TaskSYS.SetEvents(TASK_SYS_EVENT_LID_CLOSED);
+			if(!this->flagSentEventLidClosed)
+			{
+				this->flagSentEventLidClosed = true;
+				TaskSYS.SetEvents(TASK_SYS_EVENT_LID_CLOSED);
+			}
+
+			this->flagSentEventLidOpen = false;
+
+			return(false);
 		}
-
-		this->flagSentEventLidOpen = false;
-
-		return(false);
+		else
+		{
+			return(true);
+		}
 	}
 
 }
@@ -2464,18 +2524,21 @@ EOsResult TTaskHAL::Delay_IT(u16 time)
 {
 	u32 resultBits;
 	EOsResult result;
+	u64 startTime;
 
 
+	startTime = TaskSYS.GetSystemCounter();
 	while(true)
 	{
 		if(this->EventGroup.WaitOrBits(
-					TASK_HAL_EVENT_UART_RX_CPLT	    |
-					TASK_HAL_EVENT_UART_ERROR	    |
+//					TASK_HAL_EVENT_UART_RX_CPLT	    |
+//					TASK_HAL_EVENT_UART_ERROR	    |
 					TASK_HAL_EVENT_T_READY          |
 					TASK_HAL_EVENT_GET_BME688_FAN   |
 					TASK_HAL_EVENT_GET_BME688_LEFT  |
 					TASK_HAL_EVENT_GET_BME688_RIGHT |
-					TASK_HAL_CMD_STOP_ALL,
+					TASK_HAL_CMD_STOP_GRIDING       |
+					TASK_HAL_CMD_AC_POWER_OFF,
 					&resultBits,
 					100
 					) == OsResult_Timeout)
@@ -2488,27 +2551,54 @@ EOsResult TTaskHAL::Delay_IT(u16 time)
         	} */
 #endif
 
+
+			if((u16)(TaskSYS.GetSystemCounter() - startTime) > time)
+			{
+				break;  // ok - end delay
+			}
+
 			this->CheckTopRemoved();
 	    	this->CheckLidOpen();
 
        		continue;
 		}
 
-	if((resultBits & TASK_HAL_EVENT_UART_RX_CPLT) > 0)
-	{
-		this->SetEvents(TASK_HAL_EVENT_UART_RX_CPLT);
-		return(OsResult_Ok);
+		if((resultBits & TASK_HAL_CMD_AC_POWER_OFF) > 0)
+		{
+			return(OsResult_AcPowerOff);
+		}
+
+		if((resultBits & TASK_HAL_CMD_STOP_GRIDING) > 0)
+		{
+			return(OsResult_StopGrinding);
+		}
+
+		if((resultBits & TASK_HAL_EVENT_T_READY) > 0)
+	    {
+			this->CalculatingTSensors();
+        }
+
+		if((resultBits & TASK_HAL_EVENT_GET_BME688_FAN) > 0)
+	    {
+	        this->GetSensorBme688(IfcBme688Sensor_Fan);
+	    }
+
+	    if((resultBits & TASK_HAL_EVENT_GET_BME688_LEFT) > 0)
+	    {
+	        this->GetSensorBme688(IfcBme688Sensor_Left);
+	    }
+
+	    if((resultBits & TASK_HAL_EVENT_GET_BME688_RIGHT) > 0)
+	    {
+	        this->GetSensorBme688(IfcBme688Sensor_Right);
+	    }
+
+
+
 	}
 
-	if((resultBits & TASK_HAL_EVENT_UART_ERROR) > 0)
-	{
-		return(OsResult_ErrorUart);
-	}
 
-}
-
-
-	return(OsResult_Timeout);
+	return(OsResult_Ok);
 }
 //=== end Delay_IT =================================================================
 

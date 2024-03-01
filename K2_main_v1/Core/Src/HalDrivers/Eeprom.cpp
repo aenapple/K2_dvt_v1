@@ -513,6 +513,9 @@ EOsResult TEeprom::Format()
 */
 EOsResult TEeprom::WriteMinutes(u8 minutes)
 {
+#ifdef __DEBUG_RTC_NOT_PRESENT
+	return(OsResult_Ok);
+#else
 	HAL_StatusTypeDef halResult;
 	u8 writeBuffer[2];
 
@@ -533,6 +536,7 @@ EOsResult TEeprom::WriteMinutes(u8 minutes)
 
 
 	return(OsResult_Ok);
+#endif
 }
 //=== end WriteMinutes ===================================================================
 
@@ -544,6 +548,11 @@ EOsResult TEeprom::WriteMinutes(u8 minutes)
 */
 EOsResult TEeprom::ReadMinutes(u8* minutes)
 {
+#ifdef __DEBUG_RTC_NOT_PRESENT
+	*minutes = 30;
+
+	return(OsResult_Ok);
+#else
 	HAL_StatusTypeDef halResult;
 	u8 writeBuffer[2];
 	u8 readBuffer[2];
@@ -579,6 +588,7 @@ EOsResult TEeprom::ReadMinutes(u8* minutes)
 
 
 	return(OsResult_Ok);
+#endif
 }
 //=== end ReadMinutes ==============================================================
 
@@ -590,11 +600,14 @@ EOsResult TEeprom::ReadMinutes(u8* minutes)
 */
 EOsResult TEeprom::WriteHours(u8 hours)
 {
+#ifdef __DEBUG_RTC_NOT_PRESENT
+	return(OsResult_Ok);
+#else
 	HAL_StatusTypeDef halResult;
 	u8 writeBuffer[2];
 
 
-	writeBuffer[0] = EEPROM_RTC_SECONDS_ADDRESS;  // EEPROM_RTC_HOURS_ADDRESS;
+	writeBuffer[0] = EEPROM_RTC_HOURS_ADDRESS;
 	writeBuffer[1] = hours;
 	halResult = HAL_I2C_Master_Transmit(
 					&hi2c2,
@@ -610,6 +623,7 @@ EOsResult TEeprom::WriteHours(u8 hours)
 
 
 	return(OsResult_Ok);
+#endif
 }
 //=== end WriteHours ===============================================================
 
@@ -621,12 +635,17 @@ EOsResult TEeprom::WriteHours(u8 hours)
 */
 EOsResult TEeprom::ReadHours(u8* hours)
 {
+#ifdef __DEBUG_RTC_NOT_PRESENT
+	*hours = 0x10;
+
+	return(OsResult_Ok);
+#else
 	HAL_StatusTypeDef halResult;
 	u8 writeBuffer[2];
 	u8 readBuffer[2];
 
 
-	writeBuffer[0] = EEPROM_RTC_SECONDS_ADDRESS;  // EEPROM_RTC_HOURS_ADDRESS;
+	writeBuffer[0] = EEPROM_RTC_HOURS_ADDRESS;
 	halResult = HAL_I2C_Master_Transmit(
 					&hi2c2,
 					EEPROM_RTC_SLAVE_ADDRESS,
@@ -656,6 +675,7 @@ EOsResult TEeprom::ReadHours(u8* hours)
 
 
 	return(OsResult_Ok);
+#endif
 }
 //=== end ReadHours ================================================================
 

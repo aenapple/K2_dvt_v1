@@ -53,9 +53,9 @@ TIM_HandleTypeDef htim17;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
-/* osThreadId defaultTaskHandle;
+osThreadId defaultTaskHandle;
 uint32_t defaultTaskBuffer[ 64 ];
-osStaticThreadDef_t defaultTaskControlBlock; */
+osStaticThreadDef_t defaultTaskControlBlock;
 /* USER CODE BEGIN PV */
 extern void CreateApplicationTasks(void);
 /* USER CODE END PV */
@@ -71,7 +71,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_TIM16_Init(void);
 static void MX_TIM17_Init(void);
 static void MX_TIM15_Init(void);
-// void StartDefaultTask(void const * argument);
+void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -140,8 +140,8 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  // osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 64, defaultTaskBuffer, &defaultTaskControlBlock);
-  // defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 64, defaultTaskBuffer, &defaultTaskControlBlock);
+  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */

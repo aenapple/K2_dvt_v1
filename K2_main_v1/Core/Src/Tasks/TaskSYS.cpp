@@ -190,13 +190,48 @@ void TTaskSYS::Run(void)
 	}
 
 
-/*	this->InterfaceSlaveVIP.ReInit();
-	this->Delay(2);
-	this->StartRxData(); */
+	resultBits = this->EventGroup.GetBits();
+	if((resultBits & TASK_SYS_EVENT_ERROR) == 0)
+	{
+		TEeprom* pEeprom;
+		u8 hours;
+		u8 minutes;
+
+		pEeprom = TaskHAL.GetPointerEeprom();
+		result = pEeprom->ReadHours(&hours);
+		if(result != OsResult_Ok)
+		{
+			this->InitProcessError(result);
+		}
+
+		result = pEeprom->ReadMinutes(&minutes);
+		if(result != OsResult_Ok)
+		{
+			this->InitProcessError(result);
+		}
+
+		TaskChmLeft.SetConfigCompostProcess(hours);
+		TaskChmRight.SetConfigCompostProcess(hours);
+		this->prevHours = hours;
+
+		this->SetSysState(SysState_Idle);
+
+
+
+
+//  	TaskChmRight.SetPadTemperatureLevels(50, 55);
+		TaskChmRight.SetPtcTemperatureLevels(50, 55);
+		TaskChmRight.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
+		TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+
+// 		TaskChmLeft.SetPadTemperatureLevels(50, 55);
+		TaskChmLeft.SetPtcTemperatureLevels(50, 55);
+		TaskChmLeft.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
+		TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+
+	}
 
 //	DiagNotice("TaskSYS started!");
-
-	this->SetSysState(SysState_Idle);
 
 	while(true)
 	{
@@ -207,7 +242,7 @@ void TTaskSYS::Run(void)
 					TASK_SYS_EVENT_TOP_REMOVED  |
 					TASK_SYS_EVENT_LID_OPEN     |
 					TASK_SYS_EVENT_TICK_PROCESS |
-					TASK_SYS_EVENT_START_TEST   |
+//					TASK_SYS_EVENT_START_TEST   |
 					TASK_SYS_EVENT_END_GRINDING |
 					TASK_SYS_EVENT_ERROR,
 					&resultBits,
@@ -284,6 +319,7 @@ void TTaskSYS::SelfTest()
 
 	this->ClearEvents(TASK_SYS_EVENT_TOP_PRESENT | TASK_SYS_EVENT_LID_CLOSED);
 	TaskHAL.SetEvents(TASK_HAL_CMD_SELF_TEST);
+	this->SetSysState(SysState_SelsfTest);
 	while(true)
 	{
 
@@ -412,11 +448,9 @@ void TTaskSYS::ProcessTest()
 void TTaskSYS::ProcessLidOpen()
 {
 	EOsResult result;
-	u64 stampSystemCounter;
 
 
 	this->SetSysState(SysState_LidOpen);
-	stampSystemCounter = this->systemCounter;
 	result = this->WaitEvent(TASK_SYS_EVENT_LID_CLOSED);
 	if(result == OsResult_Continue)
 	{
@@ -425,12 +459,11 @@ void TTaskSYS::ProcessLidOpen()
 	}
 
 	////// if(result == OsResult_Ok) //////
-	// DEBUG
-	if(this->systemCounter < (stampSystemCounter + 3000))
-	{
+	this->SetSysState(SysState_Grinding);
+	TaskHAL.SetEvents(TASK_HAL_CMD_START_GRINDING);
+	this->WaitEvent(TASK_SYS_EVENT_END_GRINDING);
 
-	}
-	// DEBUG
+	this->SetSysState(SysState_Idle);
 
 }
 //=== end ProcessLidOpen ===========================================================
@@ -491,6 +524,8 @@ void TTaskSYS::ProcessRxData()
 	EIfcVipCommand command;
 	u8 byte;
 	u8 packet[IFC_VIP_MEMORY_PACKET_SIZE];
+	TRtc Rtc;
+	TEeprom* pEeprom;
 
 
 //	this->timeoutInterfaceVIP = TaskSys.GetSystemCounter();
@@ -647,6 +682,30 @@ void TTaskSYS::ProcessRxData()
 
 		case IfcVipCommand_GetStateHeater:
 			this->GetStateHeater(command, pData);
+			break;
+
+		case IfcVipCommand_SetRTC:
+			memcpy((void*)&Rtc, (void*)&pData[IFC_VIP_DATA_START], sizeof(TRtc));
+			pEeprom = TaskHAL.GetPointerEeprom();
+//			pEeprom->WriteSeconds(Rtc.seconds);
+			pEeprom->WriteMinutes(Rtc.minutes);
+			pEeprom->WriteHours(Rtc.hours);
+//			pEeprom->WriteDay(Rtc.day);
+//			pEeprom->WriteDate(Rtc.date);
+//			pEeprom->WriteMonth(Rtc.month);
+//			pEeprom->WriteYear(Rtc.year);
+			break;
+
+		case IfcVipCommand_GetRTC:
+			pEeprom = TaskHAL.GetPointerEeprom();
+//			pEeprom->ReadSeconds(&Rtc.seconds);
+			pEeprom->ReadMinutes(&Rtc.minutes);
+			pEeprom->ReadHours(&Rtc.hours);
+//			pEeprom->ReadDay(&Rtc.day);
+//			pEeprom->ReadDate(&Rtc.date);
+//			pEeprom->ReadMonth(&Rtc.month);
+//			pEeprom->ReadYear(&Rtc.year);
+			memcpy((void*)&data[IFC_VIP_DATA_START], (void*)&Rtc, sizeof(TRtc));
 			break;
 
 
@@ -1019,20 +1078,28 @@ void TTaskSYS::ProcessTick()
 	TaskChmLeft.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
 	TaskChmRight.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
 
-	if(this->counterHours < TASK_SYS_24_HOURS)
+	if(this->counterMinute < TASK_SYS_1_MINUTE)
 	{
-		this->counterHours++;
-		if(this->counterHours == TASK_SYS_12_HOURS)
-		{
-			TaskChmRight.SetPadTemperatureLevels(30, 35);
-			TaskChmRight.SetPtcTemperatureLevels(30, 35);
-		}
+		this->counterMinute++;
 	}
 	else
 	{
-		this->counterHours = 0;
-		TaskChmRight.SetPadTemperatureLevels(50, 55);
-		TaskChmRight.SetPtcTemperatureLevels(50, 55);
+		this->counterMinute = 0;
+
+		EOsResult result;
+		TEeprom* pEeprom;
+		u8 hours;
+
+		pEeprom = TaskHAL.GetPointerEeprom();
+		result = pEeprom->ReadHours(&hours);
+		if(result != OsResult_Ok)
+		{
+			this->SetSysState(SysError_I2cErrorChannel1);
+			return;
+		}
+
+		TaskChmLeft.SetConfigCompostProcess(hours);
+		TaskChmRight.SetConfigCompostProcess(hours);
 	}
 
 //	if(this->bme688SensorLeft.humidity)
@@ -1667,6 +1734,7 @@ EOsResult TTaskSYS::WaitEvent(u32 event)
 					TASK_SYS_EVENT_UART_ERROR	|
 					TASK_SYS_EVENT_RESET        |
 					TASK_SYS_EVENT_TOP_REMOVED  |
+					TASK_SYS_EVENT_LID_OPEN     |
 					TASK_SYS_EVENT_TICK_PROCESS |
 					TASK_SYS_EVENT_START_TEST   |
 					TASK_SYS_EVENT_ERROR        |
@@ -1709,6 +1777,12 @@ EOsResult TTaskSYS::WaitEvent(u32 event)
 	 		return(OsResult_Continue);
 	 	}
 
+	 	if((resultBits & TASK_SYS_EVENT_LID_OPEN) > 0)
+	 	{
+	 		this->SetEvents(TASK_SYS_EVENT_LID_OPEN);
+	 		return(OsResult_Continue);
+	 	}
+
 	 	if((resultBits & event) > 0)
 	 	{
 	 	   	break;
@@ -1745,9 +1819,10 @@ EOsResult TTaskSYS::Init(void)
 //	u32 resultBits;
 
 
+
 	this->systemCounter = 0;
 	this->counterTimeTickProcess = 0;
-	this->counterHours = 0;
+	this->counterMinute = 0;
 
 	TaskUI.Init();
 	TaskUI.SetEvents(TASK_UI_CMD_START);
@@ -1775,29 +1850,6 @@ EOsResult TTaskSYS::Init(void)
    	this->enableTickHook = true;
 
 
-   	// DEBUG
-   	TEeprom* pEeprom;
-   	u8 seconds;
-   	u8 minutes;
-   	pEeprom = TaskHAL.GetPointerEeprom();
-   	while(true)
-   	{
-   		result = pEeprom->ReadMinutes(&minutes);
-   		if(result != OsResult_Ok)
-   		{
-   			continue;
-   		}
-
-   		result = pEeprom->ReadHours(&seconds);
-   		if(result != OsResult_Ok)
-   		{
-   			continue;
-   		}
-
-   		this->Delay(2500);
-
-   	}
-
 // 	this->TestChamberMotors();
 // 	this->TestMainMotor();
 // 	this->TestPtcFans();
@@ -1809,8 +1861,8 @@ EOsResult TTaskSYS::Init(void)
    	this->SelfTest();
 
    	// DEBUG
-   	this->Delay(10000);
-   	this->TestMainMotor();
+//   	this->Delay(10000);
+//   	this->TestMainMotor();
 /*
 //   	HAL_GPIO_WritePin(PTC1_FAN2_GPIO_Port, PTC1_FAN2_Pin, GPIO_PIN_RESET);
 //   	HAL_GPIO_WritePin(PTC2_FAN2_GPIO_Port, PTC2_FAN2_Pin, GPIO_PIN_RESET);
@@ -1820,22 +1872,6 @@ EOsResult TTaskSYS::Init(void)
    		this->Delay(1000);
    	} */
    	// DEBUG
-
-
-
-  	TaskChmRight.SetPadTemperatureLevels(50, 55);
-   	TaskChmRight.SetPtcTemperatureLevels(50, 55);
-   	TaskChmRight.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
-   	TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
-
-   	TaskChmLeft.SetPadTemperatureLevels(50, 55);
-   	TaskChmLeft.SetPtcTemperatureLevels(50, 55);
-   	TaskChmLeft.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
-   	TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
-
-
-
-
 
 
 

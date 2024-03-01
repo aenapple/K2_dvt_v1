@@ -49,6 +49,7 @@
 #define TASK_SYS_ERROR_I2C2         4
 #define TASK_SYS_ERROR_UART         5
 #define TASK_SYS_ERROR_MAIN_AC      6
+#define TASK_SYS_ERROR_PRESENT      7
 
 
 #define TASK_SYS_ADDRESS_APPLICATION  0x800C000
@@ -92,6 +93,8 @@
 #define TASK_SYS_12_HOURS   (u32)(12 * TASK_SYS_1_HOUR)
 #define TASK_SYS_24_HOURS   (u32)(24 * TASK_SYS_1_HOUR)
 
+#define TASK_SYS_REAL_TIME_6AM  0x06
+#define TASK_SYS_REAL_TIME_6PM  0x18
 
 
 /**********************************************************************************/
@@ -103,7 +106,17 @@ struct TBme688Sensor  // sizeof = 16 bytes
 	u32 gasResistance;
 };
 
-
+struct TRtc  // sizeof = 8 bytes, format BCD
+{
+	u8 seconds;
+	u8 minutes;
+	u8 hours;
+	u8 day;
+	u8 date;
+	u8 month;
+	u8 year;
+	u8 reserved1;
+};
 
 /**********************************************************************************/
 //==================================================================================
@@ -196,7 +209,8 @@ private:
     TInterfaceVIP InterfaceSlaveVIP;
 
     u16 counterTimeTickProcess;
-    u32 counterHours;
+    u32 counterMinute;
+    u8 prevHours;
 
     EIfcVipComponent ifcVipComponent;
 

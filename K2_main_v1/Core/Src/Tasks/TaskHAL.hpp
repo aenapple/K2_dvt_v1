@@ -31,15 +31,17 @@
 #define TASK_HAL_EVENT_UART_ERROR         (1<<3)
 #define TASK_HAL_EVENT_SYS_COMMAND        (1<<4)
 
-#define TASK_HAL_CMD_START_GRINDING  (1<<5)
-#define TASK_HAL_CMD_SELF_TEST       (1<<6)
-#define TASK_HAL_CMD_STOP_ALL        (1<<7)
+#define TASK_HAL_CMD_START_GRINDING   (1<<5)
+#define TASK_HAL_CMD_STOP_GRIDING     (1<<6)
+#define TASK_HAL_CMD_AC_POWER_OFF     (1<<7)
+#define TASK_HAL_CMD_SELF_TEST        (1<<8)
 
-#define TASK_HAL_EVENT_GET_BME688_FAN    (1<<8)
-#define TASK_HAL_EVENT_GET_BME688_LEFT   (1<<9)
-#define TASK_HAL_EVENT_GET_BME688_RIGHT  (1<<10)
 
-#define TASK_HAL_EVENT_T_READY     (1<<11)
+#define TASK_HAL_EVENT_GET_BME688_FAN    (1<<9)
+#define TASK_HAL_EVENT_GET_BME688_LEFT   (1<<10)
+#define TASK_HAL_EVENT_GET_BME688_RIGHT  (1<<11)
+
+#define TASK_HAL_EVENT_T_READY     (1<<12)
 
 
 
@@ -325,6 +327,7 @@ private:
 	EOsResult SendCommand(EIfcVipCommand command, u8* pBuffer);
 	void ProcessAcPhase(void);
 	void ProcessHeater(void);
+	void StopAll(void);
 	void ReInitUart(void);
 	EOsResult Delay_IT(u16 time);
 

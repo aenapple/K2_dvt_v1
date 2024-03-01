@@ -307,7 +307,7 @@ void TTaskHAL::Run(void)
 
         		TBme688Sensors* bme688Sensors;
         		bme688Sensors = this->Bme688_Left.GetPointerBme688Sensors();
-        		if(bme688Sensors->humidity > 3500)
+        		if(bme688Sensors->humidity > 8200)
         		{
         			flagBme688_Left = true;
         		}
@@ -328,7 +328,7 @@ void TTaskHAL::Run(void)
 
         		TBme688Sensors* bme688Sensors;
         		bme688Sensors = this->Bme688_Right.GetPointerBme688Sensors();
-        		if(bme688Sensors->humidity > 3500)
+        		if(bme688Sensors->humidity > 8200)
         		{
         			flagBme688_Right = true;
         		}

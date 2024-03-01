@@ -49,6 +49,7 @@
 #define TASK_CHM_TIME_MIXING_MODE1         (3 * TASK_SYS_1_HOUR)     // 3 hours
 #define TASK_CHM_REPEAT_TIME_MIXING_MODE2  (5 * TASK_SYS_1_HOUR)     // 5 hours
 
+#define TASK_CHM_SIZE_TABLE_COMPOST_PROCESS  7
 
 
 /**********************************************************************************/
@@ -72,6 +73,19 @@ typedef enum
 	MixingMode_2,
 } EMixingMode;
 
+typedef enum
+{
+	TimeCompostProcess_00 = 0,  // time 00:00
+	TimeCompostProcess_07 = 1,  // time 07:00
+	TimeCompostProcess_11 = 2,  // time 11:00
+	TimeCompostProcess_14 = 3,  // time 14:00
+	TimeCompostProcess_17 = 4,  // time 17:00
+	TimeCompostProcess_22 = 5,  // time 22:00
+	TimeCompostProcess_23 = 6,  // time 23:00
+
+	TimeCompostProcess_Last = 7
+
+} ETimeCompostProcess;
 
 /**********************************************************************************/
 //==================================================================================
@@ -96,7 +110,8 @@ public:
 	ETaskChmState GetState(void);
 //	void SetState(u32 event);
 
-
+	void SetConfigCompostProcess(u8 hours);
+	void SetTimeCompostProcess(ETimeCompostProcess timeCompostProcess);
 	void SetPtcTemperature(s8 temperature);
 	s8 GetPtcTemperature(void);
 	void SetPtcTemperatureLevels(s8 lowLevel, s8 highLevel);
@@ -106,6 +121,7 @@ public:
 	void SetPadTemperatureLevels(s8 lowLevel, s8 highLevel);
 	void SetPadTime(u16 repeatTime, u16 workTime);
 	void StartMixingTimeMode1(void);
+
 
 
 //	void SetEventTickProcessFromISR(void);
@@ -132,6 +148,8 @@ private:
 	////// variables //////
 	StackType_t xStackBuffer[OS_TASK_CHM_SIZE_STACK];
 	
+	static const u8 tableCompostProcess[TASK_CHM_SIZE_TABLE_COMPOST_PROCESS][3];
+
 //	ETaskChamber taskChamber;
 	ETaskChmState taskChmState;
 
@@ -157,6 +175,7 @@ private:
 	u16 padCounterWorkTime;
 	bool flagPadOn;
 	u16 mixingCounterRepeatTime;
+	u16 mixingRepeatTime;
 	u16 mixingCounterTimeMode1;
 
 

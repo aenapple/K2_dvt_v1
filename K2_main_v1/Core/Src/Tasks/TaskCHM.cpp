@@ -25,6 +25,16 @@ extern TTaskSYS TaskSYS;
 #endif
 
 /**********************************************************************************/
+const u8 TTaskCHM::tableCompostProcess[TASK_CHM_SIZE_TABLE_COMPOST_PROCESS][3] =
+{
+	{ 0x00, 35, (5 * 6) /* x10 */ },
+	{ 0x07, 40, (4 * 6) /* x10 */ },
+	{ 0x11, 45, (2 * 6) /* x10 */ },
+	{ 0x14, 50, 6 /* x10 */ },
+	{ 0x17, 55, 3 /* x10 */ },
+	{ 0x22, 45, (2 * 6) /* x10 */ },
+	{ 0x23, 40, (2 * 6) /* x10 */ },
+};
 
 
 /**********************************************************************************/
@@ -171,7 +181,7 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 void TTaskCHM::TickProcess()
 {
 
-	if(this->mixingCounterRepeatTime < TASK_CHM_REPEAT_TIME_MIXING)
+	if(this->mixingCounterRepeatTime < this->mixingRepeatTime)
 	{
 		this->mixingCounterRepeatTime++;
 	}
@@ -181,7 +191,7 @@ void TTaskCHM::TickProcess()
 		this->SetEvents(TASK_CHM_EVENT_MIXING);
 	}
 
-	if(this->mixingCounterTimeMode1 > 0)
+/*	if(this->mixingCounterTimeMode1 > 0)
 	{
 		this->mixingCounterTimeMode1--;
 	}
@@ -189,7 +199,7 @@ void TTaskCHM::TickProcess()
 	{
 		this->mixingCounterRepeatTime = TASK_CHM_REPEAT_TIME_MIXING_MODE2;
 		this->SetEvents(TASK_CHM_EVENT_MIXING);
-	}
+	} */
 
 	if(this->ptcCounterRepeatTime < this->ptcRepeatTime)
 	{
@@ -528,6 +538,78 @@ EOsResult TTaskCHM::DelaySecond(u16 seconds)
 *
 *  @return ... .
 */
+void TTaskCHM::SetConfigCompostProcess(u8 hours)
+{
+	u8 timeStart;
+	u8 timeStop;
+
+
+
+	if(hours == this->tableCompostProcess[TimeCompostProcess_23][0])
+	{
+		this->SetTimeCompostProcess(TimeCompostProcess_23);
+		return;
+	}
+
+	if(hours == this->tableCompostProcess[TimeCompostProcess_22][0])
+	{
+		this->SetTimeCompostProcess(TimeCompostProcess_22);
+		return;
+	}
+
+
+	for(u16 i = 0; i < TimeCompostProcess_22; i++)
+	{
+		timeStart = this->tableCompostProcess[i][0];
+		timeStop = this->tableCompostProcess[i + 1][0];
+
+		if((hours >= timeStart) && (hours < timeStop))
+		{
+			this->SetTimeCompostProcess((ETimeCompostProcess)i);
+			return;
+		}
+
+	}
+
+}
+//=== end SetConfigCompostProcess ==================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::SetTimeCompostProcess(ETimeCompostProcess timeCompostProcess)
+{
+	u16 newTime;
+
+
+	if(this->padHighLevel_T != this->tableCompostProcess[timeCompostProcess][1])
+	{
+		this->padLowLevel_T = this->tableCompostProcess[timeCompostProcess][1] - 2;
+		this->padHighLevel_T = this->tableCompostProcess[timeCompostProcess][1];
+	}
+
+	newTime = (u16)this->tableCompostProcess[timeCompostProcess][2] * TASK_SYS_10_MINUTES;
+#ifdef __DEBUG_TEST_MIXING_MECHANISM
+	newTime = TASK_SYS_10_MINUTES;
+#endif
+	if(this->mixingRepeatTime != newTime)
+	{
+		this->mixingRepeatTime = newTime;
+		this->mixingCounterRepeatTime = 0;
+	}
+
+}
+//=== end SetTimeCompostProcess ====================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
 void TTaskCHM::SetPtcTemperature(s8 temperature)
 {
 	this->ptcTemperature = temperature;
@@ -693,6 +775,8 @@ EOsResult TTaskCHM::Init(ETaskChamber taskChamber)
 //	this->SetPadTemperature(TASK_CHM_PAD_LOW_LEVEL_T, TASK_CHM_PAD_HIGH_LEVEL_T);
 //	this->SetPtcTemperature(TASK_CHM_PTC_LOW_LEVEL_T, TASK_CHM_PTC_HIGH_LEVEL_T);
 
+	this->mixingRepeatTime = TASK_CHM_REPEAT_TIME_MIXING;
+	this->mixingCounterRepeatTime = 0;
 
 
 	return(OsResult_Ok);
