@@ -640,6 +640,33 @@ TBme688Sensors* TTaskHAL::GetPointerBme688Sensors(EIfcBme688Sensor ifcBme688Sens
 *  @return
 *  		none.
 */
+u16 TTaskHAL::GetBme688SensorStatus(EIfcBme688Sensor ifcBme688Sensor)
+{
+	if(ifcBme688Sensor == IfcBme688Sensor_Fan)
+	{
+		return(this->Bme688_Fan.GetBme688SensorStatus());
+	}
+	else
+	{
+		if(ifcBme688Sensor == IfcBme688Sensor_Left)
+		{
+			return(this->Bme688_Left.GetBme688SensorStatus());
+		}
+		else
+		{
+			return(this->Bme688_Right.GetBme688SensorStatus());
+		}
+	}
+}
+//=== end GetPointerBme688Sensors ==================================================
+
+//==================================================================================
+/**
+*  The function ... .
+*
+*  @return
+*  		none.
+*/
 void TTaskHAL::ControlLamp(EHalLamp halLamp, EHalTurn halTurn)
 {
 	if(halLamp == HalLamp_Front)

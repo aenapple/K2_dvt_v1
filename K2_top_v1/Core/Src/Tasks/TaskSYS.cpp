@@ -340,11 +340,13 @@ void TTaskSYS::ProcessRxData()
 		case IfcVipCommand_GetBme688_Part1:
 			memcpy((void*)&data[IFC_VIP_NUMBER_OF_ITEM + 1],
 					(void*)TaskHAL.GetPointerBme688Sensors((EIfcBme688Sensor)pData[IFC_VIP_NUMBER_OF_ITEM]),
-					sizeof(TBme688Sensors) - sizeof(u16));
+					sizeof(TBme688Sensors) - 4);
 			break;
 
-//		case IfcVipCommand_GetBme688_Part2:
-//			break;
+		case IfcVipCommand_GetBme688_Part2:
+			tempU16 = TaskHAL.GetBme688SensorStatus((EIfcBme688Sensor)pData[IFC_VIP_NUMBER_OF_ITEM]);
+			memcpy((void*)&data[IFC_VIP_NUMBER_OF_ITEM + 1], (void*)&tempU16, sizeof(u16));
+			break;
 
 		case IfcVipCommand_SetFanSpeed:
 			TaskHAL.StartFan(pData[IFC_VIP_FAN_PWM_INDEX]);

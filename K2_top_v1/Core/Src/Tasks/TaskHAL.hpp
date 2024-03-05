@@ -91,6 +91,7 @@ public:
 	u8 GetFanPwm(void);
 	u16 GetFanRpm(void);
 	TBme688Sensors* GetPointerBme688Sensors(EIfcBme688Sensor ifcBme688Sensor);
+	u16 GetBme688SensorStatus(EIfcBme688Sensor ifcBme688Sensor);
 	void ControlLamp(EHalLamp halLamp, EHalTurn halTurn);
 	u8 GetLampState(EHalLamp halLamp);
 	EGpioLevel ReadLockLeft(void);

@@ -11,11 +11,14 @@
 
 /**********************************************************************************/
 #include "OsTask.hpp"
+#include "TaskSYS.hpp"
 
 
 /**********************************************************************************/
 #define EEPROM_DEVICE_ADDRESS   0xA0
 #define EEPROM_16_BITS_ADDRESS  (u32)0xFFFF
+
+#define EEPROM_MAX_SIZE  0x20000  // 128kBytes
 
 #define EEPROM_FORMAT_SING  0xAA55
 
@@ -28,6 +31,12 @@
 #define EEPROM_RTC_HOURS_ADDRESS    0x02  // 0-23
 #define EEPROM_RTC_DAY_ADDRESS      0x03  // 1-7
 #define EEPROM_RTC_DATE_ADDRESS     0x04  // 1-31
+
+#define EEPROM_BETA_TEST_RECORD_SIZE       48    // 48 bytes
+#define EEPROM_BETA_TEST_MAX_RECORDS       (u16)2016  // 2016 records (* 48 bytes = 96768 bytes)
+#define EEPROM_BETA_TEST_INDEX_RECORD_ADR  (EEPROM_ADR_PROCESS_COUNTER + 4)         // 2 byte, 2016 records.
+#define EEPROM_BETA_TEST_TIMESTAMP_ADR     (EEPROM_BETA_TEST_INDEX_RECORD_ADR + 2)  // 8 bytes, RTC - start time
+#define EEPROM_BETA_TEST_FIRST_RECORD_ADR  (EEPROM_BETA_TEST_TIMESTAMP_ADR + 8)     // each record = 48 bytes
 
 
 /**********************************************************************************/
@@ -47,7 +56,16 @@ public:
 	EOsResult WriteProcessCounter(u32 data);
 	EOsResult ReadProcessCounter(u32* data);
 
+	EOsResult WriteTimestamp(TRtc* rtc);
+	EOsResult ReadTimestamp(TRtc* rtc);
+	EOsResult WriteRecord(TBetaTestRecord* record);
+	EOsResult ReadRecord(TBetaTestRecord* record);
 
+	EOsResult WritePacket(u32 address, u8* data);  // always read 8 bytes
+	EOsResult ReadPacket(u32 address, u8* data);   // always read 8 bytes
+
+	EOsResult WriteRtc(TRtc* rtc);
+	EOsResult ReadRtc(TRtc* rtc);
 	EOsResult WriteSeconds(u8 seconds);
 	EOsResult ReadSeconds(u8* seconds);
 	EOsResult WriteMinutes(u8 minutes);
@@ -77,7 +95,7 @@ protected:
 private:
     ////// variables //////
 	TOsSemaphore Semaphore;
-
+	u16 indexRecord;
 
 
     ////// constants //////

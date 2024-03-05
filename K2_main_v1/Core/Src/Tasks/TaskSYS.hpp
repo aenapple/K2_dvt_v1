@@ -86,10 +86,11 @@
 /**********************************************************************************/
 #define TASK_SYS_TIME_TICK_PROCESS  1000  // 1 Sec
 
-#define TASK_SYS_1_MINUTE   (u32)60
-#define TASK_SYS_10_MINUTES (u32)(10 * TASK_SYS_1_MINUTE)
-#define TASK_SYS_1_HOUR     (u32)(60 * TASK_SYS_1_MINUTE)
-#define TASK_SYS_2_HOURS    (u32)(2 * TASK_SYS_1_HOUR)
+#define TASK_SYS_1_MINUTE   60
+#define TASK_SYS_5_MINUTES  (u16)(5 * TASK_SYS_1_MINUTE)
+#define TASK_SYS_10_MINUTES (u16)(10 * TASK_SYS_1_MINUTE)
+#define TASK_SYS_1_HOUR     (u16)(60 * TASK_SYS_1_MINUTE)
+#define TASK_SYS_2_HOURS    (u16)(2 * TASK_SYS_1_HOUR)
 #define TASK_SYS_12_HOURS   (u32)(12 * TASK_SYS_1_HOUR)
 #define TASK_SYS_24_HOURS   (u32)(24 * TASK_SYS_1_HOUR)
 
@@ -98,7 +99,7 @@
 
 
 /**********************************************************************************/
-struct TBme688Sensor  // sizeof = 16 bytes
+struct TBme688Sensor  // sizeof = 12 bytes
 {
 	s16 temperature;
 	u16 humidity;
@@ -118,6 +119,28 @@ struct TRtc  // sizeof = 8 bytes, format BCD
 	u8 reserved1;
 };
 
+struct TimeSystem  // sizeof = 8 bytes
+	{
+		u16 ms;
+		u16 d;
+		u8 h;
+		u8 m;
+		u8 s;
+		u8 reserved;
+	};
+
+struct TBetaTestRecord  // sizeof = 16 bytes
+{
+	TBme688Sensor bme688SensorLeft;
+	TBme688Sensor bme688SensorRight;
+	TBme688Sensor bme688SensorFan;
+	s8 tPadLeft;
+	s8 tPadRight;
+	s8 tPtcLeft;
+	s8 tPtcRight;
+	TimeSystem timestamp;
+};
+
 /**********************************************************************************/
 //==================================================================================
 class TTaskSYS : public TOsTask
@@ -132,15 +155,6 @@ public:
 
 		DateTime():year(0), month(0), day(0), seconds(0)
 		{}
-	};
-
-	struct TimeSystem
-	{
-	    u32 d;
-	    u8 h;
-	    u8 m;
-	    u8 s;
-	    u16 ms;
 	};
 
 	////// variables //////
@@ -209,8 +223,9 @@ private:
     TInterfaceVIP InterfaceSlaveVIP;
 
     u16 counterTimeTickProcess;
-    u32 counterMinute;
+    u16 counterMinute;
     u8 prevHours;
+    u16 counterBetaTestLog;
 
     EIfcVipComponent ifcVipComponent;
 

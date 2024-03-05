@@ -194,40 +194,39 @@ void TTaskSYS::Run(void)
 	if((resultBits & TASK_SYS_EVENT_ERROR) == 0)
 	{
 		TEeprom* pEeprom;
-		u8 hours;
-		u8 minutes;
+		TRtc Rtc;
 
 		pEeprom = TaskHAL.GetPointerEeprom();
-		result = pEeprom->ReadHours(&hours);
+//		result = pEeprom->WriteHours(0x13);
+//		result = pEeprom->ReadHours(&hours);
+		result = pEeprom->ReadRtc(&Rtc);
 		if(result != OsResult_Ok)
 		{
-			this->InitProcessError(result);
+			this->SetSysState(SysError_I2cErrorChannel2);
 		}
-
-		result = pEeprom->ReadMinutes(&minutes);
-		if(result != OsResult_Ok)
+		else
 		{
-			this->InitProcessError(result);
+//			result = pEeprom->WriteMinutes(0x22);
+/*			result = pEeprom->ReadMinutes(&minutes);
+			if(result != OsResult_Ok)
+			{
+				this->InitProcessError(result);
+			} */
+
+			TaskChmLeft.SetConfigCompostProcess(Rtc.hours);
+			TaskChmRight.SetConfigCompostProcess(Rtc.hours);
+			this->prevHours = Rtc.hours;
+
+			this->SetSysState(SysState_Idle);
+
+			TaskChmRight.SetPtcTemperatureLevels(50, 55);
+			TaskChmRight.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
+			TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+
+			TaskChmLeft.SetPtcTemperatureLevels(50, 55);
+			TaskChmLeft.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
+			TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 		}
-
-		TaskChmLeft.SetConfigCompostProcess(hours);
-		TaskChmRight.SetConfigCompostProcess(hours);
-		this->prevHours = hours;
-
-		this->SetSysState(SysState_Idle);
-
-
-
-
-//  	TaskChmRight.SetPadTemperatureLevels(50, 55);
-		TaskChmRight.SetPtcTemperatureLevels(50, 55);
-		TaskChmRight.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
-		TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
-
-// 		TaskChmLeft.SetPadTemperatureLevels(50, 55);
-		TaskChmLeft.SetPtcTemperatureLevels(50, 55);
-		TaskChmLeft.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
-		TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 
 	}
 
@@ -235,6 +234,17 @@ void TTaskSYS::Run(void)
 
 	while(true)
 	{
+		TEeprom* pEeprom;
+		TRtc Rtc;
+
+		pEeprom = TaskHAL.GetPointerEeprom();
+		result = pEeprom->ReadRtc(&Rtc);
+		if(result != OsResult_Ok)
+		{
+			this->SetSysState(SysError_I2cErrorChannel2);
+		}
+
+
 		if(this->EventGroup.WaitOrBits(
 					TASK_SYS_EVENT_UART_RX_CPLT |
 					TASK_SYS_EVENT_UART_ERROR	|
@@ -687,25 +697,25 @@ void TTaskSYS::ProcessRxData()
 		case IfcVipCommand_SetRTC:
 			memcpy((void*)&Rtc, (void*)&pData[IFC_VIP_DATA_START], sizeof(TRtc));
 			pEeprom = TaskHAL.GetPointerEeprom();
-//			pEeprom->WriteSeconds(Rtc.seconds);
-			pEeprom->WriteMinutes(Rtc.minutes);
-			pEeprom->WriteHours(Rtc.hours);
-//			pEeprom->WriteDay(Rtc.day);
-//			pEeprom->WriteDate(Rtc.date);
-//			pEeprom->WriteMonth(Rtc.month);
-//			pEeprom->WriteYear(Rtc.year);
+			result = pEeprom->WriteRtc(&Rtc);
+			if(result != OsResult_Ok)
+			{
+				this->SetSysState(SysError_I2cErrorChannel2);
+			}
 			break;
 
 		case IfcVipCommand_GetRTC:
 			pEeprom = TaskHAL.GetPointerEeprom();
-//			pEeprom->ReadSeconds(&Rtc.seconds);
-			pEeprom->ReadMinutes(&Rtc.minutes);
-			pEeprom->ReadHours(&Rtc.hours);
-//			pEeprom->ReadDay(&Rtc.day);
-//			pEeprom->ReadDate(&Rtc.date);
-//			pEeprom->ReadMonth(&Rtc.month);
-//			pEeprom->ReadYear(&Rtc.year);
-			memcpy((void*)&data[IFC_VIP_DATA_START], (void*)&Rtc, sizeof(TRtc));
+			result = pEeprom->ReadRtc(&Rtc);
+			if(result != OsResult_Ok)
+			{
+				this->SetSysState(SysError_I2cErrorChannel2);
+				memset((void*)&data[IFC_VIP_DATA_START], 0, sizeof(TRtc));
+			}
+			else
+			{
+				memcpy((void*)&data[IFC_VIP_DATA_START], (void*)&Rtc, sizeof(TRtc));
+			}
 			break;
 
 
@@ -939,7 +949,13 @@ EOsResult TTaskSYS::ReadByteFromEeprom(u32 address, u8* data)
 */
 EOsResult TTaskSYS::WritePacketToEeprom(u32 address, u8* data)
 {
-	return(OsResult_Ok);
+	TEeprom* pEeprom;
+
+
+	pEeprom = TaskHAL.GetPointerEeprom();
+
+
+	return(pEeprom->WritePacket(address, data));
 }
 //=== end WritePacketToEeprom ======================================================
 
@@ -952,7 +968,13 @@ EOsResult TTaskSYS::WritePacketToEeprom(u32 address, u8* data)
 */
 EOsResult TTaskSYS::ReadPacketFromEeprom(u32 address, u8* data)
 {
-	return(OsResult_Ok);
+	TEeprom* pEeprom;
+
+
+	pEeprom = TaskHAL.GetPointerEeprom();
+
+
+	return(pEeprom->ReadPacket(address, data));
 }
 //=== end ReadPacketFromEeprom =====================================================
 
@@ -1075,6 +1097,12 @@ void TTaskSYS::Reset()
 */
 void TTaskSYS::ProcessTick()
 {
+	EOsResult result;
+	TEeprom* pEeprom;
+	TRtc Rtc;
+	TBetaTestRecord BetaTestRecord;
+
+
 	TaskChmLeft.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
 	TaskChmRight.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
 
@@ -1086,21 +1114,44 @@ void TTaskSYS::ProcessTick()
 	{
 		this->counterMinute = 0;
 
-		EOsResult result;
-		TEeprom* pEeprom;
-		u8 hours;
-
 		pEeprom = TaskHAL.GetPointerEeprom();
-		result = pEeprom->ReadHours(&hours);
+		result = pEeprom->ReadRtc(&Rtc);
 		if(result != OsResult_Ok)
 		{
-			this->SetSysState(SysError_I2cErrorChannel1);
+			this->SetSysState(SysError_I2cErrorChannel2);
 			return;
 		}
 
-		TaskChmLeft.SetConfigCompostProcess(hours);
-		TaskChmRight.SetConfigCompostProcess(hours);
+		TaskChmLeft.SetConfigCompostProcess(Rtc.hours);
+		TaskChmRight.SetConfigCompostProcess(Rtc.hours);
 	}
+
+	if(this->counterBetaTestLog < TASK_SYS_5_MINUTES)
+	{
+		this->counterBetaTestLog++;
+	}
+	else
+	{
+		BetaTestRecord.bme688SensorFan = this->bme688SensorFan;
+		BetaTestRecord.bme688SensorLeft = this->bme688SensorLeft;
+		BetaTestRecord.bme688SensorRight = this->bme688SensorRight;
+		BetaTestRecord.tPadLeft = TaskHAL.GetTemperaturePadLeft();
+		BetaTestRecord.tPadRight = TaskHAL.GetTemperaturePadRight();
+		BetaTestRecord.tPtcLeft = TaskHAL.GetTemperaturePtcLeft();
+		BetaTestRecord.tPtcRight = TaskHAL.GetTemperaturePtcRight();
+		BetaTestRecord.timestamp = this->GetTimeSystem();
+		BetaTestRecord.timestamp.reserved = 0;
+
+		pEeprom = TaskHAL.GetPointerEeprom();
+		result = pEeprom->WriteRecord(&BetaTestRecord);
+		if((result != OsResult_Ok) && (result != OsResult_EepromFull))
+		{
+			this->SetSysState(SysError_I2cErrorChannel2);
+			return;
+		}
+	}
+
+
 
 //	if(this->bme688SensorLeft.humidity)
 }
@@ -1396,9 +1447,9 @@ void TTaskSYS::ReInitUart()
 *
 *  @return ... .
 */
-TTaskSYS::TimeSystem TTaskSYS::GetTimeSystem(void)
+TimeSystem TTaskSYS::GetTimeSystem(void)
 {
-	TTaskSYS::TimeSystem timeSystem;
+	TimeSystem timeSystem;
 
 
 	timeSystem.ms = this->systemCounter % 1000;

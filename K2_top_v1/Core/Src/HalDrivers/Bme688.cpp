@@ -283,6 +283,18 @@ TBme688Sensors* TBme688::GetPointerBme688Sensors()
 *
 *  @return ... .
 */
+u16 TBme688::GetBme688SensorStatus()
+{
+	return(this->Bme688Sensors.status);
+}
+//=== end GetBme688SensorStatus ====================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
 EOsResult TBme688::GetData(DataBme688* dataBme688[])
 {
 	EOsResult result;

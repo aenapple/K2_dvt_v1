@@ -257,6 +257,7 @@ public:
 	void WriteSensors(TBme688Sensors* Bme688Sensors);
 	EOsResult GetData(DataBme688* dataBme688[]);
 	TBme688Sensors* GetPointerBme688Sensors(void);
+	u16 GetBme688SensorStatus(void);
 
 
 
