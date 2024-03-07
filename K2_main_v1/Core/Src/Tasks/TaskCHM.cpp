@@ -238,7 +238,7 @@ void TTaskCHM::TickProcess()
 	///// Ptc Heater. //////
 	if((this->ptcTemperature < this->ptcLowLevel_T) && this->flagPtcOn)
 	{
-		this->PtcFan.Start(PtcFanPwm_100, PtcFanMaxPwm_66_100);
+		this->PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
 		this->PtcHeater.TurnOn(HeaterPwm_50);
 	}
 

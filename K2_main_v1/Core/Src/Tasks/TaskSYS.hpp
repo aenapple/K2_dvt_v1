@@ -129,7 +129,7 @@ struct TimeSystem  // sizeof = 8 bytes
 		u8 reserved;
 	};
 
-struct TBetaTestRecord  // sizeof = 16 bytes
+struct TBetaTestRecord  // sizeof = 48 bytes
 {
 	TBme688Sensor bme688SensorLeft;
 	TBme688Sensor bme688SensorRight;

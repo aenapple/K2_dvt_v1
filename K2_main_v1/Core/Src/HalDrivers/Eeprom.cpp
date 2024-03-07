@@ -122,6 +122,7 @@ EOsResult TEeprom::WriteTimestamp(TRtc* rtc)
 					sizeof(writeBuffer),
 					50  // timeout 50 mSec
 					);
+	this->Delay(6);
 	HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_SET);
 	this->Semaphore.Give();
 	if(halResult != HAL_OK)
@@ -159,7 +160,6 @@ EOsResult TEeprom::ReadTimestamp(TRtc* rtc)
 		return(OsResult_ResourceBusy);
 	}
 
-	HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_RESET);
 	halResult = HAL_I2C_Master_Transmit(
 					&hi2c1,
 					tempDevAddress,
@@ -169,7 +169,6 @@ EOsResult TEeprom::ReadTimestamp(TRtc* rtc)
 					);
 	if(halResult != HAL_OK)
 	{
-		HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_SET);
 		this->Semaphore.Give();
 		return(OsResult_ErrorI2c1);
 	}
@@ -181,7 +180,6 @@ EOsResult TEeprom::ReadTimestamp(TRtc* rtc)
 					sizeof(TRtc),
 					50  // timeout 50 mSec
 					);
-	HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_SET);
 	this->Semaphore.Give();
 	if(halResult != HAL_OK)
 	{
@@ -205,10 +203,13 @@ EOsResult TEeprom::ReadTimestamp(TRtc* rtc)
 EOsResult TEeprom::WriteRecord(TBetaTestRecord* record)
 {
 	HAL_StatusTypeDef halResult;
+	EOsResult result;
 	u16 tempDataAddress;
 	u16 tempDevAddress;
-	u8 writeBuffer[sizeof(tempDataAddress) + sizeof(TBetaTestRecord)];
+	u8 writeBuffer[sizeof(tempDataAddress) + sizeof(this->indexRecord)];
 	u32 address;
+//	u8 tempBuffer[8];
+	u8* pRecord;
 
 
 	if(this->indexRecord >= EEPROM_BETA_TEST_MAX_RECORDS)
@@ -216,39 +217,21 @@ EOsResult TEeprom::WriteRecord(TBetaTestRecord* record)
 		return(OsResult_EepromFull);
 	}
 
+	pRecord = (u8*)record;
 	address = (u32)this->indexRecord * EEPROM_BETA_TEST_RECORD_SIZE + EEPROM_BETA_TEST_FIRST_RECORD_ADR;
-	if(address > EEPROM_16_BITS_ADDRESS)
+	for(u16 i = 0; i < (sizeof(TBetaTestRecord) / 8); i++)
 	{
-		tempDevAddress = (u16)(EEPROM_DEVICE_ADDRESS | 0x02);
-	}
-	else
-	{
-		tempDevAddress = (u16)EEPROM_DEVICE_ADDRESS;
-	}
+//		memcpy((void*)tempBuffer, (void*)pRecord, 8);
 
-	tempDataAddress = (u16)address;
+		result = this->WritePacket(address, pRecord);
+		if(result != OsResult_Ok)
+		{
+			return(result);
+		}
 
-	memcpy((void*)writeBuffer, (void*)&tempDataAddress, sizeof(tempDataAddress));
-	memcpy((void*)(writeBuffer + sizeof(tempDataAddress)), (void*)record, sizeof(TBetaTestRecord));
+		address = address + 8;
+		pRecord = pRecord + 8;
 
-	if(this->Semaphore.Take(100) == OsResult_Timeout)
-	{
-		return(OsResult_ResourceBusy);
-	}
-
-	HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_RESET);
-	halResult = HAL_I2C_Master_Transmit(
-					&hi2c1,
-					tempDevAddress,
-					writeBuffer,
-					sizeof(writeBuffer),
-					50  // timeout 50 mSec
-					);
-	if(halResult != HAL_OK)
-	{
-		HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_SET);
-		this->Semaphore.Give();
-		return(OsResult_ErrorI2c1);
 	}
 
 	this->indexRecord++;
@@ -257,19 +240,20 @@ EOsResult TEeprom::WriteRecord(TBetaTestRecord* record)
 	memcpy((void*)writeBuffer, (void*)&tempDataAddress, sizeof(tempDataAddress));
 	memcpy((void*)(writeBuffer + sizeof(tempDataAddress)), (void*)&this->indexRecord, sizeof(this->indexRecord));
 
+	HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_RESET);
 	halResult = HAL_I2C_Master_Transmit(
 					&hi2c1,
 					tempDevAddress,
 					writeBuffer,
-					sizeof(writeBuffer),
+					sizeof(tempDataAddress) + sizeof(this->indexRecord),
 					50  // timeout 50 mSec
 					);
+	this->Delay(6);
 	HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_SET);
 	this->Semaphore.Give();
-
 	if(halResult != HAL_OK)
 	{
-		return(OsResult_ErrorI2c1);
+		return(OsResult_StopProcess/*OsResult_ErrorI2c1*/);
 	}
 
 
@@ -363,6 +347,7 @@ EOsResult TEeprom::WritePacket(u32 address, u8* data)
 	u16 tempDevAddress;
 	u32 tempData;
 	u8 writeBuffer[sizeof(tempDataAddress) + 8];
+//	u8 tempBuffer[8];
 
 
 	if(address > EEPROM_16_BITS_ADDRESS)
@@ -377,7 +362,7 @@ EOsResult TEeprom::WritePacket(u32 address, u8* data)
 	tempDataAddress = (u16)address;
 
 	memcpy((void*)writeBuffer, (void*)&tempDataAddress, sizeof(tempDataAddress));
-	memcpy((void*)(writeBuffer + sizeof(tempDataAddress)), (void*)&data, 8);
+	memcpy((void*)(writeBuffer + sizeof(tempDataAddress)), (void*)data, 8);
 
 	if(this->Semaphore.Take(100) == OsResult_Timeout)
 	{
@@ -392,6 +377,7 @@ EOsResult TEeprom::WritePacket(u32 address, u8* data)
 					sizeof(writeBuffer),
 					50  // timeout 50 mSec
 					);
+	this->Delay(6);
 	HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_SET);
 	this->Semaphore.Give();
 	if(halResult != HAL_OK)
@@ -437,7 +423,6 @@ EOsResult TEeprom::ReadPacket(u32 address, u8* data)
 		return(OsResult_ResourceBusy);
 	}
 
-	HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_RESET);
 	halResult = HAL_I2C_Master_Transmit(
 					&hi2c1,
 					tempDevAddress,
@@ -447,7 +432,6 @@ EOsResult TEeprom::ReadPacket(u32 address, u8* data)
 					);
 	if(halResult != HAL_OK)
 	{
-		HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_SET);
 		this->Semaphore.Give();
 		return(OsResult_ErrorI2c1);
 	}
@@ -460,7 +444,6 @@ EOsResult TEeprom::ReadPacket(u32 address, u8* data)
 					sizeof(readBuffer),
 					50  // timeout 20 mSec
 					);
-	HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_SET);
 	this->Semaphore.Give();
 	if(halResult != HAL_OK)
 	{
@@ -647,7 +630,7 @@ EOsResult TEeprom::ReadVariable8bits(u32 address, u8* data)
 	u8 tempData;
 	u8 tempNotData;
 	u8 writeBuffer[sizeof(tempDataAddress)];
-	u8 readBuffer[sizeof(u32) * 2];
+	u8 readBuffer[sizeof(u8) * 2];
 
 
 	if(address > EEPROM_16_BITS_ADDRESS)

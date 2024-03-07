@@ -200,11 +200,7 @@ void TTaskSYS::Run(void)
 //		result = pEeprom->WriteHours(0x13);
 //		result = pEeprom->ReadHours(&hours);
 		result = pEeprom->ReadRtc(&Rtc);
-		if(result != OsResult_Ok)
-		{
-			this->SetSysState(SysError_I2cErrorChannel2);
-		}
-		else
+		if(result == OsResult_Ok)
 		{
 //			result = pEeprom->WriteMinutes(0x22);
 /*			result = pEeprom->ReadMinutes(&minutes);
@@ -213,19 +209,48 @@ void TTaskSYS::Run(void)
 				this->InitProcessError(result);
 			} */
 
-			TaskChmLeft.SetConfigCompostProcess(Rtc.hours);
-			TaskChmRight.SetConfigCompostProcess(Rtc.hours);
-			this->prevHours = Rtc.hours;
+			this->counterBetaTestLog = TASK_SYS_1_MINUTE;  // TASK_SYS_5_MINUTES;
+			result = pEeprom->WriteTimestamp(&Rtc);
+			if(result == OsResult_Ok)
+			{
+				TaskChmLeft.SetConfigCompostProcess(Rtc.hours);
+				TaskChmRight.SetConfigCompostProcess(Rtc.hours);
+				this->prevHours = Rtc.hours;
 
-			this->SetSysState(SysState_Idle);
+				this->SetSysState(SysState_Idle);
 
-			TaskChmRight.SetPtcTemperatureLevels(50, 55);
-			TaskChmRight.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
-			TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 
-			TaskChmLeft.SetPtcTemperatureLevels(50, 55);
-			TaskChmLeft.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
-			TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+				// DEBUG
+				u32 address;
+				u8 data[8];
+
+				address = 0;
+				while(true)
+				{
+					result = pEeprom->ReadPacket(address, data);
+					this->Delay(10);
+					address += 8;
+				}
+				// DEBUG
+
+
+				TaskChmRight.SetPtcTemperatureLevels(50, 55);
+				TaskChmRight.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
+				TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+
+				TaskChmLeft.SetPtcTemperatureLevels(50, 55);
+				TaskChmLeft.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
+				TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+			}
+			else
+			{
+				this->SetSysState(SysError_I2cErrorChannel1);
+			}
+
+		}
+		else
+		{
+			this->SetSysState(SysError_I2cErrorChannel2);
 		}
 
 	}
@@ -234,7 +259,7 @@ void TTaskSYS::Run(void)
 
 	while(true)
 	{
-		TEeprom* pEeprom;
+/*		TEeprom* pEeprom;
 		TRtc Rtc;
 
 		pEeprom = TaskHAL.GetPointerEeprom();
@@ -242,7 +267,7 @@ void TTaskSYS::Run(void)
 		if(result != OsResult_Ok)
 		{
 			this->SetSysState(SysError_I2cErrorChannel2);
-		}
+		} */
 
 
 		if(this->EventGroup.WaitOrBits(
@@ -1106,6 +1131,27 @@ void TTaskSYS::ProcessTick()
 	TaskChmLeft.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
 	TaskChmRight.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
 
+	// DEBUG
+	BetaTestRecord.bme688SensorFan = this->bme688SensorFan;
+	BetaTestRecord.bme688SensorLeft = this->bme688SensorLeft;
+	BetaTestRecord.bme688SensorRight = this->bme688SensorRight;
+	BetaTestRecord.tPadLeft = this->counterMinute;  // TaskHAL.GetTemperaturePadLeft();
+	BetaTestRecord.tPadRight = this->counterMinute + 1;  // TaskHAL.GetTemperaturePadRight();
+	BetaTestRecord.tPtcLeft = this->counterMinute + 2;  // TaskHAL.GetTemperaturePtcLeft();
+	BetaTestRecord.tPtcRight = this->counterMinute + 3;  // TaskHAL.GetTemperaturePtcRight();
+	BetaTestRecord.timestamp = this->GetTimeSystem();
+	BetaTestRecord.timestamp.reserved = 0;
+
+	this->Delay(20);
+	pEeprom = TaskHAL.GetPointerEeprom();
+	result = pEeprom->WriteRecord(&BetaTestRecord);
+	if((result != OsResult_Ok) && (result != OsResult_EepromFull))
+	{
+		this->SetSysState(SysError_I2cErrorChannel1);
+		return;
+	}
+	// DEBUG
+
 	if(this->counterMinute < TASK_SYS_1_MINUTE)
 	{
 		this->counterMinute++;
@@ -1126,9 +1172,9 @@ void TTaskSYS::ProcessTick()
 		TaskChmRight.SetConfigCompostProcess(Rtc.hours);
 	}
 
-	if(this->counterBetaTestLog < TASK_SYS_5_MINUTES)
+	if(this->counterBetaTestLog > 0)
 	{
-		this->counterBetaTestLog++;
+		this->counterBetaTestLog--;
 	}
 	else
 	{
@@ -1142,13 +1188,15 @@ void TTaskSYS::ProcessTick()
 		BetaTestRecord.timestamp = this->GetTimeSystem();
 		BetaTestRecord.timestamp.reserved = 0;
 
-		pEeprom = TaskHAL.GetPointerEeprom();
+/*		pEeprom = TaskHAL.GetPointerEeprom();
 		result = pEeprom->WriteRecord(&BetaTestRecord);
 		if((result != OsResult_Ok) && (result != OsResult_EepromFull))
 		{
-			this->SetSysState(SysError_I2cErrorChannel2);
+			this->SetSysState(SysError_I2cErrorChannel1);
 			return;
-		}
+		} */
+
+		this->counterBetaTestLog = TASK_SYS_1_MINUTE; // TASK_SYS_5_MINUTES;
 	}
 
 
