@@ -106,7 +106,9 @@ EOsResult TEeprom::WriteTimestamp(TRtc* rtc)
 	tempDevAddress = (u16)EEPROM_DEVICE_ADDRESS;
 	tempDataAddress = EEPROM_BETA_TEST_TIMESTAMP_ADR;
 
-	memcpy((void*)writeBuffer, (void*)&tempDataAddress, sizeof(tempDataAddress));
+//	memcpy((void*)writeBuffer, (void*)&tempDataAddress, sizeof(tempDataAddress));
+	writeBuffer[0] = (u8)(tempDataAddress >> 8);
+	writeBuffer[1] = (u8)tempDataAddress;
 	memcpy((void*)(writeBuffer + sizeof(tempDataAddress)), (void*)rtc, sizeof(TRtc));
 
 	if(this->Semaphore.Take(100) == OsResult_Timeout)
@@ -153,7 +155,9 @@ EOsResult TEeprom::ReadTimestamp(TRtc* rtc)
 	tempDevAddress = (u16)EEPROM_DEVICE_ADDRESS;
 	tempDataAddress = EEPROM_BETA_TEST_TIMESTAMP_ADR;
 
-	memcpy((void*)writeBuffer, (void*)&tempDataAddress, sizeof(tempDataAddress));
+//	memcpy((void*)writeBuffer, (void*)&tempDataAddress, sizeof(tempDataAddress));
+	writeBuffer[0] = (u8)(tempDataAddress >> 8);
+	writeBuffer[1] = (u8)tempDataAddress;
 
 	if(this->Semaphore.Take(100) == OsResult_Timeout)
 	{
@@ -204,11 +208,11 @@ EOsResult TEeprom::WriteRecord(TBetaTestRecord* record)
 {
 	HAL_StatusTypeDef halResult;
 	EOsResult result;
-	u16 tempDataAddress;
+//	u16 tempDataAddress;
 	u16 tempDevAddress;
-	u8 writeBuffer[sizeof(tempDataAddress) + sizeof(this->indexRecord)];
+	u8 writeBuffer[2 + sizeof(this->indexRecord)];
 	u32 address;
-//	u8 tempBuffer[8];
+//	u8 readBuffer[8];
 	u8* pRecord;
 
 
@@ -221,8 +225,6 @@ EOsResult TEeprom::WriteRecord(TBetaTestRecord* record)
 	address = (u32)this->indexRecord * EEPROM_BETA_TEST_RECORD_SIZE + EEPROM_BETA_TEST_FIRST_RECORD_ADR;
 	for(u16 i = 0; i < (sizeof(TBetaTestRecord) / 8); i++)
 	{
-//		memcpy((void*)tempBuffer, (void*)pRecord, 8);
-
 		result = this->WritePacket(address, pRecord);
 		if(result != OsResult_Ok)
 		{
@@ -236,24 +238,24 @@ EOsResult TEeprom::WriteRecord(TBetaTestRecord* record)
 
 	this->indexRecord++;
 	tempDevAddress = (u16)EEPROM_DEVICE_ADDRESS;
-	tempDataAddress = EEPROM_BETA_TEST_INDEX_RECORD_ADR;
-	memcpy((void*)writeBuffer, (void*)&tempDataAddress, sizeof(tempDataAddress));
-	memcpy((void*)(writeBuffer + sizeof(tempDataAddress)), (void*)&this->indexRecord, sizeof(this->indexRecord));
+	writeBuffer[0] = (u8)(EEPROM_BETA_TEST_INDEX_RECORD_ADR >> 8);
+	writeBuffer[1] = (u8)EEPROM_BETA_TEST_INDEX_RECORD_ADR;
+	memcpy((void*)(writeBuffer + 2), (void*)&this->indexRecord, sizeof(this->indexRecord));
 
 	HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_RESET);
 	halResult = HAL_I2C_Master_Transmit(
 					&hi2c1,
 					tempDevAddress,
 					writeBuffer,
-					sizeof(tempDataAddress) + sizeof(this->indexRecord),
+					2 + sizeof(this->indexRecord),
 					50  // timeout 50 mSec
 					);
-	this->Delay(6);
+	this->Delay(5);
 	HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_SET);
 	this->Semaphore.Give();
 	if(halResult != HAL_OK)
 	{
-		return(OsResult_StopProcess/*OsResult_ErrorI2c1*/);
+		return(OsResult_ErrorI2c1);
 	}
 
 
@@ -343,11 +345,9 @@ EOsResult TEeprom::ReadRecord(TBetaTestRecord* record)
 EOsResult TEeprom::WritePacket(u32 address, u8* data)
 {
 	HAL_StatusTypeDef halResult;
-	u16 tempDataAddress;
+//	u16 tempDataAddress;
 	u16 tempDevAddress;
-	u32 tempData;
-	u8 writeBuffer[sizeof(tempDataAddress) + 8];
-//	u8 tempBuffer[8];
+	u8 writeBuffer[2 + 8];
 
 
 	if(address > EEPROM_16_BITS_ADDRESS)
@@ -359,10 +359,12 @@ EOsResult TEeprom::WritePacket(u32 address, u8* data)
 		tempDevAddress = (u16)EEPROM_DEVICE_ADDRESS;
 	}
 
-	tempDataAddress = (u16)address;
+//	tempDataAddress = (u16)address;
 
-	memcpy((void*)writeBuffer, (void*)&tempDataAddress, sizeof(tempDataAddress));
-	memcpy((void*)(writeBuffer + sizeof(tempDataAddress)), (void*)data, 8);
+//	memcpy((void*)writeBuffer, (void*)&tempDataAddress, sizeof(tempDataAddress));
+	writeBuffer[0] = (u8)(address >> 8);
+	writeBuffer[1] = (u8)address;
+	memcpy((void*)(writeBuffer + 2), (void*)data, 8);
 
 	if(this->Semaphore.Take(100) == OsResult_Timeout)
 	{
@@ -399,9 +401,9 @@ EOsResult TEeprom::WritePacket(u32 address, u8* data)
 EOsResult TEeprom::ReadPacket(u32 address, u8* data)
 {
 	HAL_StatusTypeDef halResult;
-	u16 tempDataAddress;
+//	u16 tempDataAddress;
 	u16 tempDevAddress;
-	u8 writeBuffer[sizeof(tempDataAddress)];
+	u8 writeBuffer[2];
 	u8 readBuffer[8];
 
 
@@ -414,15 +416,15 @@ EOsResult TEeprom::ReadPacket(u32 address, u8* data)
 		tempDevAddress = (u16)EEPROM_DEVICE_ADDRESS;
 	}
 
-	tempDataAddress = (u16)address;
-
-	memcpy((void*)writeBuffer, (void*)&tempDataAddress, sizeof(tempDataAddress));
+//	tempDataAddress = (u16)address;
 
 	if(this->Semaphore.Take(100) == OsResult_Timeout)
 	{
 		return(OsResult_ResourceBusy);
 	}
 
+	writeBuffer[0] = (u8)(address >> 8);
+	writeBuffer[1] = (u8)address;
 	halResult = HAL_I2C_Master_Transmit(
 					&hi2c1,
 					tempDevAddress,
@@ -435,7 +437,6 @@ EOsResult TEeprom::ReadPacket(u32 address, u8* data)
 		this->Semaphore.Give();
 		return(OsResult_ErrorI2c1);
 	}
-
 
 	halResult = HAL_I2C_Master_Receive(
 					&hi2c1,

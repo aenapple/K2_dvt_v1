@@ -221,7 +221,7 @@ void TTaskSYS::Run(void)
 
 
 				// DEBUG
-				u32 address;
+/*				u32 address;
 				u8 data[8];
 
 				address = 0;
@@ -230,7 +230,7 @@ void TTaskSYS::Run(void)
 					result = pEeprom->ReadPacket(address, data);
 					this->Delay(10);
 					address += 8;
-				}
+				} */
 				// DEBUG
 
 
@@ -1132,24 +1132,48 @@ void TTaskSYS::ProcessTick()
 	TaskChmRight.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
 
 	// DEBUG
-	BetaTestRecord.bme688SensorFan = this->bme688SensorFan;
+/*	BetaTestRecord.bme688SensorFan = this->bme688SensorFan;
 	BetaTestRecord.bme688SensorLeft = this->bme688SensorLeft;
-	BetaTestRecord.bme688SensorRight = this->bme688SensorRight;
-	BetaTestRecord.tPadLeft = this->counterMinute;  // TaskHAL.GetTemperaturePadLeft();
+	BetaTestRecord.bme688SensorRight = this->bme688SensorRight; */
+
+/*	BetaTestRecord.bme688SensorFan.gasResistance = this->counterMinute;
+	BetaTestRecord.bme688SensorFan.humidity = this->counterMinute;
+	BetaTestRecord.bme688SensorFan.pressure = this->counterMinute;
+	BetaTestRecord.bme688SensorFan.temperature = this->counterMinute;
+
+	BetaTestRecord.bme688SensorLeft.gasResistance = this->counterMinute;
+	BetaTestRecord.bme688SensorLeft.humidity = this->counterMinute;
+	BetaTestRecord.bme688SensorLeft.pressure = this->counterMinute;
+	BetaTestRecord.bme688SensorLeft.temperature = this->counterMinute;
+
+	BetaTestRecord.bme688SensorRight.gasResistance = this->counterMinute;
+	BetaTestRecord.bme688SensorRight.humidity = this->counterMinute;
+	BetaTestRecord.bme688SensorRight.pressure = this->counterMinute;
+	BetaTestRecord.bme688SensorRight.temperature = this->counterMinute; */
+
+/*	BetaTestRecord.tPadLeft = this->counterMinute;  // TaskHAL.GetTemperaturePadLeft();
 	BetaTestRecord.tPadRight = this->counterMinute + 1;  // TaskHAL.GetTemperaturePadRight();
 	BetaTestRecord.tPtcLeft = this->counterMinute + 2;  // TaskHAL.GetTemperaturePtcLeft();
 	BetaTestRecord.tPtcRight = this->counterMinute + 3;  // TaskHAL.GetTemperaturePtcRight();
 	BetaTestRecord.timestamp = this->GetTimeSystem();
-	BetaTestRecord.timestamp.reserved = 0;
+	BetaTestRecord.timestamp.reserved = 0; */
 
-	this->Delay(20);
+/*	BetaTestRecord.timestamp.d = this->counterMinute;
+	BetaTestRecord.timestamp.h = this->counterMinute;
+	BetaTestRecord.timestamp.m = this->counterMinute;
+	BetaTestRecord.timestamp.ms = this->counterMinute;
+	BetaTestRecord.timestamp.reserved = this->counterMinute;
+	BetaTestRecord.timestamp.s = this->counterMinute; */
+
+
+/*	this->Delay(20);
 	pEeprom = TaskHAL.GetPointerEeprom();
 	result = pEeprom->WriteRecord(&BetaTestRecord);
 	if((result != OsResult_Ok) && (result != OsResult_EepromFull))
 	{
 		this->SetSysState(SysError_I2cErrorChannel1);
 		return;
-	}
+	} */
 	// DEBUG
 
 	if(this->counterMinute < TASK_SYS_1_MINUTE)
