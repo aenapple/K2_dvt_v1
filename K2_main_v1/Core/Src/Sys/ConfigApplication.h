@@ -18,6 +18,8 @@
 	#define __DEBUG_TEST_MIXING_MECHANISM
 //	#define __DEBUG_RTC_NOT_PRESENT
 
+	#define __DEBUG_BETA_TEST
+
 #endif
 
 

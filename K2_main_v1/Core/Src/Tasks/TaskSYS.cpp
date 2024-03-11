@@ -311,7 +311,8 @@ void TTaskSYS::Run(void)
 
  		if((resultBits & TASK_SYS_EVENT_TOP_REMOVED) > 0)
  		{
- 		   	this->SelfTest();
+ 			this->SetSysState(SysState_TopRemoved);
+ 			this->SelfTest();
  		}
 
  		if((resultBits & TASK_SYS_EVENT_LID_OPEN) > 0)
@@ -350,11 +351,17 @@ void TTaskSYS::Run(void)
 void TTaskSYS::SelfTest()
 {
 	u32 resultBits;
+	ESysState inputSysState;
 
 
 	this->ClearEvents(TASK_SYS_EVENT_TOP_PRESENT | TASK_SYS_EVENT_LID_CLOSED);
 	TaskHAL.SetEvents(TASK_HAL_CMD_SELF_TEST);
-	this->SetSysState(SysState_SelsfTest);
+
+	inputSysState = this->sysState;
+	if(inputSysState != SysState_TopRemoved)
+	{
+		this->SetSysState(SysState_SelsfTest);
+	}
 	while(true)
 	{
 
@@ -376,7 +383,12 @@ void TTaskSYS::SelfTest()
 
 		if((resultBits & TASK_SYS_EVENT_OK) > 0)
 		{
-		   	break;  // Self Test - OK
+			if(inputSysState == SysState_TopRemoved)
+			{
+				this->SetSysState(SysState_Idle);
+			}
+
+			break;  // Self Test - OK
 		}
 
 		if((resultBits & TASK_SYS_EVENT_TOP_REMOVED) > 0)

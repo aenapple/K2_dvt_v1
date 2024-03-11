@@ -48,6 +48,7 @@ public:
 	EGpioLevel ReadPresentChamberLeft(void);
 	EGpioLevel ReadPresentChamberRight(void);
 	void SetLevelTopResetPin(EGpioLevel gpioLevel);
+	EGpioLevel ReadButtonState(void);
 
 
 	void MainMotorOn(void);

@@ -91,7 +91,6 @@ void Error_Handler(void);
 #define FAN_PWM_GPIO_Port GPIOB
 #define FAN_RPM_Pin GPIO_PIN_15
 #define FAN_RPM_GPIO_Port GPIOB
-#define FAN_RPM_EXTI_IRQn EXTI4_15_IRQn
 #define WC_EEPROM_Pin GPIO_PIN_6
 #define WC_EEPROM_GPIO_Port GPIOC
 #define PRESENT_CHM1_Pin GPIO_PIN_8

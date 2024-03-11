@@ -247,13 +247,21 @@ void TTaskHAL::Run(void)
 *
 *  @return void .
 */
-EOsResult TTaskHAL::GetStateTopCpu(void)
+EOsResult TTaskHAL::GetStateTopCpu()
 {
 	EOsResult result;
 	u8* pData;
 
 
 	result = this->SendCommand(IfcVipCommand_GetState, 0);
+
+#ifdef __DEBUG_BETA_TEST
+	if(result == OsResult_Continue)
+	{
+		return(OsResult_Ok);
+	}
+#endif
+
 	// DEBUG
 //	return;
 	// DEBUG
@@ -272,7 +280,7 @@ EOsResult TTaskHAL::GetStateTopCpu(void)
 	pData = this->InterfaceMasterVIP.GetPointerDataRx();
 	memcpy((void*)&this->IfcSystemState, (void*)pData, sizeof(TIfcSystemState));
 
-//	TaskSYS.UpdateTopCpuState(pData);
+	TaskSYS.UpdateTopCpuState(pData);
 
 
 	return(OsResult_Ok);
@@ -294,6 +302,14 @@ void TTaskHAL::GetSensorBme688(EIfcBme688Sensor ifcBme688Sensor)
 
 	buffer[0] = (u8)ifcBme688Sensor;
 	result = this->SendCommand(IfcVipCommand_GetBme688_Part1, buffer);
+
+#ifdef __DEBUG_BETA_TEST
+	if(result == OsResult_Continue)
+	{
+		return;
+	}
+#endif
+
 	if(result != OsResult_Ok)
 	{
 		this->ReInitUart();
@@ -396,6 +412,15 @@ void TTaskHAL::ProcessSelfTest(void)
 	if(this->flagAcMainPresent)
 	{
 		TaskSYS.SetSysState(SysError_MainAcNotPresent);  // Error - AC Main is present
+		return;
+	}
+
+	this->AcPowerOn();
+	this->Delay(300);
+	if(!this->flagAcMainPresent)
+	{
+		this->AcPowerOff();
+		TaskSYS.SetSysState(SysError_MainAcNotPresent);  // Error - AC Main is not present
 		return;
 	}
 
@@ -629,6 +654,59 @@ bool TTaskHAL::CheckTopPresent()
 }
 //=== end CheckTopPresent ==========================================================
 
+#ifdef __DEBUG_BETA_TEST
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+bool TTaskHAL::CheckTopRemoved()
+{
+	if((this->Gpio.ReadTopPresent() == GpioLevel_High))
+	{
+		this->Delay(100);
+		if((this->Gpio.ReadTopPresent() == GpioLevel_High))
+		{
+			if(!this->flagSentEventTopRemoved)
+			{
+				this->flagSentEventTopRemoved = true;
+				TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_REMOVED);
+			}
+
+			this->flagSentEventTopPresent = false;
+
+			return(true);
+		}
+		else
+		{
+			return(false);
+		}
+	}
+	else
+	{
+		this->Delay(100);
+		if((this->Gpio.ReadTopPresent() == GpioLevel_Low))
+		{
+			if(!this->flagSentEventTopPresent)
+			{
+				this->flagSentEventTopPresent = true;
+				TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_PRESENT);
+			}
+
+			this->flagSentEventTopRemoved = false;
+
+			return(false);
+		}
+		else
+		{
+			return(true);
+		}
+	}
+
+}
+//=== end CheckTopRemoved ==========================================================
+#else
 //==================================================================================
 /**
 *  Todo: function description.
@@ -680,6 +758,7 @@ bool TTaskHAL::CheckTopRemoved()
 
 }
 //=== end CheckTopRemoved ==========================================================
+#endif
 
 //==================================================================================
 /**
@@ -717,6 +796,7 @@ bool TTaskHAL::CheckTopRemovedFromISR()
 }
 //=== end CheckTopRemovedFromISR ===================================================
 
+#ifdef __DEBUG_BETA_TEST
 //==================================================================================
 /**
 *  Todo: function description.
@@ -725,36 +805,58 @@ bool TTaskHAL::CheckTopRemovedFromISR()
 */
 bool TTaskHAL::CheckLidOpen()
 {
-	// DEBUG
-/*	if(this->Gpio.ReadPresentTank() == GpioLevel_High)
+	if(this->Gpio.ReadButtonState() == GpioLevel_High)
 	{
-		this->flagPresentTank = false;
+		this->Delay(100);
+		if(this->Gpio.ReadButtonState() == GpioLevel_High)
+		{
+			if(!this->flagSentEventLidOpen)
+			{
+				this->flagSentEventLidOpen = true;
+				TaskSYS.SetEvents(TASK_SYS_EVENT_LID_OPEN);
+			}
+
+			this->flagSentEventLidClosed = false;
+
+			return(true);
+		}
+		else
+		{
+			return(false);
+		}
 	}
 	else
 	{
-		this->flagPresentTank = true;
+		this->Delay(100);
+		if(this->Gpio.ReadButtonState() == GpioLevel_Low)
+		{
+			if(!this->flagSentEventLidClosed)
+			{
+				this->flagSentEventLidClosed = true;
+				TaskSYS.SetEvents(TASK_SYS_EVENT_LID_CLOSED);
+			}
+
+			this->flagSentEventLidOpen = false;
+
+			return(false);
+		}
+		else
+		{
+			return(true);
+		}
 	}
 
-	if(this->Gpio.ReadPresentChamberLeft() == GpioLevel_High)
-	{
-		this->flagPresentChamberLeft = false;
-	}
-	else
-	{
-		this->flagPresentChamberLeft = true;
-	}
-
-	if(this->Gpio.ReadPresentChamberRight() == GpioLevel_High)
-	{
-		this->flagPresentChamberRight = false;
-	}
-	else
-	{
-		this->flagPresentChamberRight = true;
-	} */
-	// DEBUG
-
-
+}
+//=== end CheckLidOpen =============================================================
+#else
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+bool TTaskHAL::CheckLidOpen()
+{
 	if(this->Gpio.ReadLidOpen() == GpioLevel_High)
 	{
 		this->Delay(100);
@@ -798,6 +900,7 @@ bool TTaskHAL::CheckLidOpen()
 
 }
 //=== end CheckLidOpen =============================================================
+#endif
 
 //==================================================================================
 /**
@@ -1004,6 +1107,14 @@ EOsResult TTaskHAL::ControlFan(u8* parameters)
 
 
 	result = this->SendCommand(IfcVipCommand_SetFanSpeed, parameters);
+
+#ifdef __DEBUG_BETA_TEST
+	if(result == OsResult_Continue)
+	{
+		return(OsResult_Ok);
+	}
+#endif
+
 	if(result != OsResult_Ok)
 	{
 		this->ReInitUart();
@@ -2480,6 +2591,11 @@ EOsResult TTaskHAL::SendCommand(EIfcVipCommand command, u8* pBuffer)
 	u32 resultBits;
 	EOsResult result;
 
+
+	if(this->Gpio.ReadTopPresent() == GpioLevel_High)
+	{
+		return(OsResult_Continue);
+	}
 
 	this->InterfaceMasterVIP.StartRxData(&huart2);
 	this->InterfaceMasterVIP.StartTxData(&huart2, command, pBuffer);

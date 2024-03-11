@@ -955,11 +955,11 @@ EOsResult TTaskSYS::Init(void)
 	// DEBUG
 //	   	while(true)
 	   	{
-	   		this->setDamPosition = DamPosition_RightOpen;
+/*	   		this->setDamPosition = DamPosition_RightOpen;
 
 	   		this->SetDamPosition();
 
-	   		this->Delay(100);
+	   		this->Delay(100); */
 //	   		this->Delay(100);
 
 //	   		this->setDamPosition = DamPosition_RightOpen;

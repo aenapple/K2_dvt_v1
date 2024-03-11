@@ -189,6 +189,25 @@ void TGpio::SetLevelTopResetPin(EGpioLevel gpioLevel)
 *
 *  @return void .
 */
+EGpioLevel TGpio::ReadButtonState(void)
+{
+	if(HAL_GPIO_ReadPin(FAN_PWM_GPIO_Port, FAN_PWM_Pin) == GPIO_PIN_RESET)
+	{
+		return(GpioLevel_Low);
+	}
+	else
+	{
+		return(GpioLevel_High);
+	}
+}
+//=== end ReadButtonState ==================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
 void TGpio::MainMotorOn()
 {
 	HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_SET);
