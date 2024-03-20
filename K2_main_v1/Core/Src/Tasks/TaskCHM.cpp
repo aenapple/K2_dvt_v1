@@ -25,15 +25,32 @@ extern TTaskSYS TaskSYS;
 #endif
 
 /**********************************************************************************/
-const u8 TTaskCHM::tableCompostProcess[TASK_CHM_SIZE_TABLE_COMPOST_PROCESS][3] =
+// const u8 TTaskCHM::tableCompostProcess[TASK_CHM_SIZE_TABLE_COMPOST_PROCESS][3] =
+// {
+//	{ 0x00, 35, (5 * 6) /* x10 */ },
+//	{ 0x07, 40, (4 * 6) /* x10 */ },
+//	{ 0x11, 45, (2 * 6) /* x10 */ },
+//	{ 0x14, 50, 6 /* x10 */ },
+//	{ 0x17, 55, 3 /* x10 */ },
+//	{ 0x22, 45, (2 * 6) /* x10 */ },
+//	{ 0x23, 40, (2 * 6) /* x10 */ },
+// };
+
+const u8 TTaskCHM::tableCompostProcess[TASK_CHM_SIZE_TABLE_COMPOST_PROCESS][TASK_CHM_NUM_PARAMETERS_COMPOST_PROCESS] =
 {
-	{ 0x00, 35, (5 * 6) /* x10 */ },
-	{ 0x07, 40, (4 * 6) /* x10 */ },
-	{ 0x11, 45, (2 * 6) /* x10 */ },
-	{ 0x14, 50, 6 /* x10 */ },
-	{ 0x17, 55, 3 /* x10 */ },
-	{ 0x22, 45, (2 * 6) /* x10 */ },
-	{ 0x23, 40, (2 * 6) /* x10 */ },
+	{ CycleStep_0m,		PadHeaterT_55degC,	TypeMixing_5m,		ModePtcHeater_Off,	ModePtcFan_On},
+	{ CycleStep_30m,	PadHeaterT_Na,		TypeMixing_5m,		ModePtcHeater_Na,	ModePtcFan_Na},
+	{ CycleStep_60m,	PadHeaterT_Na,		TypeMixing_5m,		ModePtcHeater_10m,	ModePtcFan_Na},
+	{ CycleStep_80m,	PadHeaterT_Na,		TypeMixing_Na,		ModePtcHeater_10m,	ModePtcFan_Na},
+	{ CycleStep_90m,	PadHeaterT_50degC,	TypeMixing_25s,		ModePtcHeater_Na,	ModePtcFan_Na},
+	{ CycleStep_105m,	PadHeaterT_Na,		TypeMixing_25s,		ModePtcHeater_Na,	ModePtcFan_Na},
+	{ CycleStep_120m,	PadHeaterT_Na,		TypeMixing_5m,		ModePtcHeater_10m,	ModePtcFan_Na},
+	{ CycleStep_150m,	PadHeaterT_45degC,	TypeMixing_Na,		ModePtcHeater_Na,	ModePtcFan_Na},
+	{ CycleStep_165m,	PadHeaterT_Na,		TypeMixing_25s,		ModePtcHeater_Na,	ModePtcFan_Na},
+	{ CycleStep_180m,	PadHeaterT_Na,		TypeMixing_Na,		ModePtcHeater_5m,	ModePtcFan_Na},
+	{ CycleStep_210m,	PadHeaterT_40degC,	TypeMixing_Na,		ModePtcHeater_Na,	ModePtcFan_Na},
+	{ CycleStep_240m,	PadHeaterT_Na,		TypeMixing_5m_5h,	TypeMixing_5m_5h,	ModePtcFan_Na},
+	{ CycleStep_360m,	PadHeaterT_Na,		TypeMixing_Na, 		ModePtcHeater_Na,	ModePtcFan_1h_2h},
 };
 
 
@@ -122,7 +139,7 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 	this->Delay(10);
 
 	this->taskChmState = taskChmState;
-	this->SetEvents(TASK_CHM_EVENT_MIXING);
+//	this->SetEvents(TASK_CHM_EVENT_MIXING);
 	this->ptcCounterRepeatTime = 0;
 	this->ptcCounterWorkTime = this->ptcWorkTime;
 	this->flagPtcOn = true;
@@ -150,6 +167,7 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
         if((resultBits & TASK_CHM_EVENT_MIXING) > 0)
         {
         	this->Mixing();
+        	this->ClearEvents(TASK_CHM_EVENT_MIXING);
         }
 
         if((resultBits & TASK_CHM_EVENT_STOP_PROCESS) > 0)
@@ -249,6 +267,29 @@ void TTaskCHM::TickProcess()
 		this->PtcHeater.TurnOff();
 	}
 
+
+	if(this->counterCycleCompostProcess < TASK_SYS_360_MINUTES)
+	{
+		this->counterCycleCompostProcess++;
+
+		if((this->counterCycleCompostProcess == TASK_SYS_30_MINUTES)
+			|| (this->counterCycleCompostProcess == TASK_SYS_60_MINUTES)
+			|| (this->counterCycleCompostProcess == TASK_SYS_80_MINUTES)
+			|| (this->counterCycleCompostProcess == TASK_SYS_90_MINUTES)
+			|| (this->counterCycleCompostProcess == TASK_SYS_105_MINUTES)
+			|| (this->counterCycleCompostProcess == TASK_SYS_120_MINUTES)
+			|| (this->counterCycleCompostProcess == TASK_SYS_150_MINUTES)
+			|| (this->counterCycleCompostProcess == TASK_SYS_165_MINUTES)
+			|| (this->counterCycleCompostProcess == TASK_SYS_180_MINUTES)
+			|| (this->counterCycleCompostProcess == TASK_SYS_210_MINUTES)
+			|| (this->counterCycleCompostProcess == TASK_SYS_240_MINUTES)
+			|| (this->counterCycleCompostProcess == TASK_SYS_360_MINUTES)
+			)
+		{
+			this->SetStepCompostProcess(this->counterCycleCompostProcess);
+		}
+
+	}
 
 	// todo:
 	// close loop Humidity
@@ -532,6 +573,87 @@ EOsResult TTaskCHM::DelaySecond(u16 seconds)
 }
 //=== end DelaySecond ==============================================================
 
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::StartCycleCompostProcess(void)
+{
+	this->SetStepCompostProcess(CycleStep_0m);
+}
+//=== end StartCycleCompostProcess =================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::SetStepCompostProcess(ECycleStep cycleStep)
+{
+	switch(cycleStep)
+	{
+//		case CycleStep_0m:
+//			break;
+
+		case CycleStep_30m:
+			break;
+
+		case CycleStep_60m:
+			break;
+
+		case CycleStep_80m:
+			break;
+
+		case CycleStep_90m:
+			break;
+
+		case CycleStep_105m:
+			break;
+
+		case CycleStep_120m:
+			break;
+
+		case CycleStep_150m:
+			break;
+
+		case CycleStep_165m:
+			break;
+
+		case CycleStep_180m:
+			break;
+
+		case CycleStep_210m:
+			break;
+
+		case CycleStep_240m:
+			break;
+
+		case CycleStep_360m:
+			break;
+
+		default: // case CycleStep_0m
+			this->counterCycleCompostProcess = TASK_SYS_0_MINUTES;
+	}
+
+}
+//=== end SetStepCompostProcess ====================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::SetStepCompostProcess(u16 cycleStep)
+{
+
+}
+//=== end SetStepCompostProcess ====================================================
+
 //==================================================================================
 /**
 *  Todo: function description..
@@ -777,6 +899,8 @@ EOsResult TTaskCHM::Init(ETaskChamber taskChamber)
 
 	this->mixingRepeatTime = TASK_CHM_REPEAT_TIME_MIXING;
 	this->mixingCounterRepeatTime = 0;
+
+	this->counterCycleCompostProcess = TASK_SYS_360_MINUTES;
 
 
 	return(OsResult_Ok);

@@ -118,6 +118,17 @@ void TTaskHAL::SetEventTickFromISR(void)
 		this->SetEventsFromISR(TASK_HAL_EVENT_GET_BME688_RIGHT);
 		this->counterGetBme688 = 0;
 	}
+
+	if(this->counterGetCpuState > 0)
+	{
+		this->counterGetCpuState--;
+	}
+	else
+	{
+		this->counterGetCpuState = TASK_HAL_TIME_GET_CPU_STATE;
+		this->SetEventsFromISR(TASK_HAL_EVENT_GET_CPU_STATE);
+	}
+
 #endif
 
 }
@@ -132,8 +143,8 @@ void TTaskHAL::SetEventTickFromISR(void)
 void TTaskHAL::Run(void)
 {
 	u32 resultBits;
-//	EOsResult result;
-	u8 counterGetBme688;
+	EOsResult result;
+//	u8 counterGetBme688;
 
 
 	this->Delay(20);
@@ -150,7 +161,7 @@ void TTaskHAL::Run(void)
 	this->Delay(200);
 	this->ReInitUart();
 
-	counterGetBme688 = 0;
+//	counterGetBme688 = 0;
 	while(true)
 	{
         if(this->EventGroup.WaitOrBits(
@@ -161,6 +172,7 @@ void TTaskHAL::Run(void)
 					TASK_HAL_EVENT_GET_BME688_FAN   |
 					TASK_HAL_EVENT_GET_BME688_LEFT  |
 					TASK_HAL_EVENT_GET_BME688_RIGHT |
+					TASK_HAL_EVENT_GET_CPU_STATE    |
 					TASK_HAL_CMD_START_GRINDING     |
 					TASK_HAL_CMD_SELF_TEST          |
 					TASK_HAL_CMD_AC_POWER_OFF,
@@ -168,17 +180,8 @@ void TTaskHAL::Run(void)
 					100
 					) == OsResult_Timeout)
         {
-#ifndef	__DEBUG_TOP_CPU_NOT_PRESENT
-/*        	result = this->GetStateTopCpu();
-        	if(result != OsResult_Ok)
-        	{
-        		TaskSYS.SetSysState(SysError_InterfaceVipM);
-        	} */
-#endif
-
             this->CheckTopRemoved();
             this->CheckLidOpen();
-
 
         	continue;
         }
@@ -208,6 +211,15 @@ void TTaskHAL::Run(void)
         if((resultBits & TASK_HAL_EVENT_GET_BME688_RIGHT) > 0)
         {
             this->GetSensorBme688(IfcBme688Sensor_Right);
+        }
+
+        if((resultBits & TASK_HAL_EVENT_GET_CPU_STATE) > 0)
+        {
+        	result = this->GetStateTopCpu();
+        	if(result != OsResult_Ok)
+        	{
+        		TaskSYS.SetSysState(SysError_InterfaceVipM);
+        	}
         }
 
         if((resultBits & TASK_HAL_CMD_SELF_TEST) > 0)
@@ -268,7 +280,7 @@ EOsResult TTaskHAL::GetStateTopCpu()
 	if(result != OsResult_Ok)
 	{
 		this->ReInitUart();
-		this->Delay(10);
+		this->Delay(20);
 
 		result = this->SendCommand(IfcVipCommand_GetState, 0);
 		if(result != OsResult_Ok)
@@ -298,6 +310,7 @@ void TTaskHAL::GetSensorBme688(EIfcBme688Sensor ifcBme688Sensor)
 	EOsResult result;
 	u8* pData;
 	u8 buffer[IFC_VIP_UART_SIZE_DATA];
+	TBme688Sensor bme688Sensor;
 
 
 	buffer[0] = (u8)ifcBme688Sensor;
@@ -313,7 +326,7 @@ void TTaskHAL::GetSensorBme688(EIfcBme688Sensor ifcBme688Sensor)
 	if(result != OsResult_Ok)
 	{
 		this->ReInitUart();
-		this->Delay(10);
+		this->Delay(20);
 
 		result = this->SendCommand(IfcVipCommand_GetBme688_Part1, buffer);
 		if(result != OsResult_Ok)
@@ -326,7 +339,11 @@ void TTaskHAL::GetSensorBme688(EIfcBme688Sensor ifcBme688Sensor)
 
 	pData = this->InterfaceMasterVIP.GetPointerDataRx();
 
-	TaskSYS.UpdateSensorBme688(ifcBme688Sensor, pData + IFC_VIP_BME688_TEMPERATURE);
+	memcpy((void*)&bme688Sensor, (void*)(pData + IFC_VIP_BME688_TEMPERATURE), sizeof(TBme688Sensor));
+	if(bme688Sensor.gasResistance > 1000)
+	{
+		TaskSYS.UpdateSensorBme688(ifcBme688Sensor, pData + IFC_VIP_BME688_TEMPERATURE);
+	}
 
 }
 //=== end GetSensorBme688 ==========================================================
@@ -424,14 +441,23 @@ void TTaskHAL::ProcessSelfTest(void)
 		return;
 	}
 
-	if(this->CheckTopRemoved())
-	{
-		return;
-	}
+	// DEBUG
+//	this->Gpio.SetLevelTopResetPin(GpioLevel_Low);  // Clear Reset Top CPU
+	// DEBUG
 
-	if(this->CheckLidOpen())
+	while(true)
 	{
-		return;
+		if(this->CheckTopRemoved())
+		{
+			continue;
+		}
+
+		if(this->CheckLidOpen())
+		{
+			continue;
+		}
+
+		break;  // if 'Top Present' and 'Lid Closed'
 	}
 
 
@@ -460,7 +486,7 @@ void TTaskHAL::ProcessSelfTest(void)
 
 	this->Delay(100);
 	this->Gpio.SetLevelTopResetPin(GpioLevel_Low);  // Clear Reset Top CPU
-	this->Delay(200);
+	this->Delay(1000);
 
 	////// check connection with Top CPU and wait state 'IfcVipState_Idle' //////
 	result = this->CheckConnectionTopCpu();
@@ -570,21 +596,25 @@ EOsResult TTaskHAL::CheckConnectionTopCpu()
 		result = this->GetStateTopCpu();
 		if(result != OsResult_Ok)
 		{
-			return(result);
+			this->ReInitUart();
+			this->Delay(1000);
 		}
-
-		if(this->IfcSystemState.sysState == IfcVipState_Idle)
+		else
 		{
-			break;
+			if(this->IfcSystemState.sysState == IfcVipState_Idle)
+			{
+				break;
+			}
+
+			this->Delay(100);
 		}
 
 		counterTime++;
-		if(counterTime == 5)  // timeout 500 mSec
+		if(counterTime == 5)  // timeout 500 mSec or 5 Sec
 		{
 			return(OsResult_Timeout);
 		}
 
-		this->Delay(100);
 	}
 
 
@@ -692,6 +722,7 @@ bool TTaskHAL::CheckTopRemoved()
 			{
 				this->flagSentEventTopPresent = true;
 				TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_PRESENT);
+				this->ReInitUart();
 			}
 
 			this->flagSentEventTopRemoved = false;
@@ -1118,7 +1149,7 @@ EOsResult TTaskHAL::ControlFan(u8* parameters)
 	if(result != OsResult_Ok)
 	{
 		this->ReInitUart();
-		this->Delay(10);
+		this->Delay(20);
 
 		result = this->SendCommand(IfcVipCommand_SetFanSpeed, parameters);
 		if(result != OsResult_Ok)
@@ -2592,10 +2623,16 @@ EOsResult TTaskHAL::SendCommand(EIfcVipCommand command, u8* pBuffer)
 	EOsResult result;
 
 
+#ifdef __DEBUG_BETA_TEST
 	if(this->Gpio.ReadTopPresent() == GpioLevel_High)
 	{
-		return(OsResult_Continue);
+		this->Delay(20);
+		if(this->Gpio.ReadTopPresent() == GpioLevel_High)
+		{
+			return(OsResult_Continue);
+		}
 	}
+#endif
 
 	this->InterfaceMasterVIP.StartRxData(&huart2);
 	this->InterfaceMasterVIP.StartTxData(&huart2, command, pBuffer);
@@ -2614,7 +2651,6 @@ EOsResult TTaskHAL::SendCommand(EIfcVipCommand command, u8* pBuffer)
 
 	if((resultBits & TASK_HAL_EVENT_UART_RX_CPLT) > 0)
 	{
-		this->SetEvents(TASK_HAL_EVENT_UART_RX_CPLT);
 		return(OsResult_Ok);
 	}
 
@@ -2653,7 +2689,7 @@ EOsResult TTaskHAL::Delay_IT(u16 time)
 					TASK_HAL_EVENT_GET_BME688_FAN   |
 					TASK_HAL_EVENT_GET_BME688_LEFT  |
 					TASK_HAL_EVENT_GET_BME688_RIGHT |
-					TASK_HAL_CMD_STOP_GRIDING       |
+					TASK_HAL_CMD_STOP_GRINDING      |
 					TASK_HAL_CMD_AC_POWER_OFF,
 					&resultBits,
 					100
@@ -2684,7 +2720,7 @@ EOsResult TTaskHAL::Delay_IT(u16 time)
 			return(OsResult_AcPowerOff);
 		}
 
-		if((resultBits & TASK_HAL_CMD_STOP_GRIDING) > 0)
+		if((resultBits & TASK_HAL_CMD_STOP_GRINDING) > 0)
 		{
 			return(OsResult_StopGrinding);
 		}
@@ -2777,7 +2813,7 @@ EOsResult TTaskHAL::Init(void)
 	
 	this->counterPwmHeater = 0;
 	this->counterGetBme688 = 0;
-
+	this->counterGetCpuState = TASK_HAL_TIME_GET_CPU_STATE;
 
 	this->acPhase = false;
 	this->flagAcMainPresent = false;

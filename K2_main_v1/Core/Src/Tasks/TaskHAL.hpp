@@ -32,7 +32,7 @@
 #define TASK_HAL_EVENT_SYS_COMMAND        (1<<4)
 
 #define TASK_HAL_CMD_START_GRINDING   (1<<5)
-#define TASK_HAL_CMD_STOP_GRIDING     (1<<6)
+#define TASK_HAL_CMD_STOP_GRINDING    (1<<6)
 #define TASK_HAL_CMD_AC_POWER_OFF     (1<<7)
 #define TASK_HAL_CMD_SELF_TEST        (1<<8)
 
@@ -40,8 +40,9 @@
 #define TASK_HAL_EVENT_GET_BME688_FAN    (1<<9)
 #define TASK_HAL_EVENT_GET_BME688_LEFT   (1<<10)
 #define TASK_HAL_EVENT_GET_BME688_RIGHT  (1<<11)
+#define TASK_HAL_EVENT_GET_CPU_STATE     (1<<12)
 
-#define TASK_HAL_EVENT_T_READY     (1<<12)
+#define TASK_HAL_EVENT_T_READY     (1<<13)
 
 
 
@@ -59,12 +60,15 @@
 
 #define TASK_HAL_AC_MAX_PWM_HEATER  10
 
-#define TASK_HAL_AC_TIME_MEASUREMENT  100        // 0.1 Sec
+#define TASK_HAL_AC_TIME_MEASUREMENT  (100 - 1)  // 0.1 Sec
 #define TASK_HAL_AC_PULSE_NUMBERS     (12 - 1)   // 60*2 times per 1 Sec
 
-#define TASK_HAL_TIME_GET_BME688_FAN    1000  // 1 Sec
-#define TASK_HAL_TIME_GET_BME688_LEFT   2000  // 2 Sec
-#define TASK_HAL_TIME_GET_BME688_RIGHT  3000  // 3 Sec
+#define TASK_HAL_TIME_GET_BME688_FAN    3000  // 3 Sec
+#define TASK_HAL_TIME_GET_BME688_LEFT   6000  // 6 Sec
+#define TASK_HAL_TIME_GET_BME688_RIGHT  (9000 - 1)  // 9 Sec
+
+#define TASK_HAL_TIME_GET_CPU_STATE  (1000 - 1)  // 1 Sec
+
 
 /**********************************************************************************/
 ///// VREF = 2.5V - Pad Heater temperature sensor (10K) //////
@@ -261,6 +265,7 @@ private:
 	u8 counterPwmHeater;
 
 	u16 counterGetBme688;
+	u16 counterGetCpuState;
 
 	u16 counterTimeAcMeasurement;
 	bool acPhase;

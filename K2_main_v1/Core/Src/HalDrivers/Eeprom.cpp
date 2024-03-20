@@ -34,8 +34,6 @@ EOsResult TEeprom::Init()
 
 	this->Semaphore.Give();
 
-	this->indexRecord = 0;
-
 
 	return(OsResult_Ok);
 }
@@ -131,6 +129,8 @@ EOsResult TEeprom::WriteTimestamp(TRtc* rtc)
 	{
 		return(OsResult_ErrorI2c1);
 	}
+
+	this->indexRecord = 0;
 
 
 	return(OsResult_Ok);

@@ -59,8 +59,15 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH
 
+  .module_ident 0x8000200:
+  {
+    . = ALIGN(4);
+    KEEP(*(.module_ident)) /* version and ... */
+    . = ALIGN(4);
+  } >FLASH
+
   /* The program code and other data into "FLASH" Rom type memory */
-  .text :
+  .text 0x8000300:
   {
     . = ALIGN(4);
     *(.text)           /* .text sections (code) */

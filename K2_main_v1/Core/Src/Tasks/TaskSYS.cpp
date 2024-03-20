@@ -42,7 +42,7 @@ const u8 __attribute__((section (".module_ident"))) TTaskSYS::module_ident[] =
 	'L','L','0','1','-','A','B','E','-','0','1','.','0','0',' ',' ',  // version - 16 bytes
 	'C','R','C','_',                                                  // crc32 - 4 bytes
 	'S','I','Z','E',                                                  // firmware size - 4 bytes
-	'L','L','1','-','0','0','0','0','0','0','0','0','0','0','0','0',  // serial number - 16 bytes
+	'L','L','0','1','-','0','0','0','0','0','0','0','0','0','0','1',  // serial number - 16 bytes
 };
 
 #define SYS_STATE_TABLE(enumState, interfaceVipCode, errorCode) \
@@ -197,19 +197,16 @@ void TTaskSYS::Run(void)
 		TRtc Rtc;
 
 		pEeprom = TaskHAL.GetPointerEeprom();
-//		result = pEeprom->WriteHours(0x13);
-//		result = pEeprom->ReadHours(&hours);
 		result = pEeprom->ReadRtc(&Rtc);
 		if(result == OsResult_Ok)
 		{
-//			result = pEeprom->WriteMinutes(0x22);
-/*			result = pEeprom->ReadMinutes(&minutes);
-			if(result != OsResult_Ok)
-			{
-				this->InitProcessError(result);
-			} */
+			this->counterBetaTestLog = TASK_SYS_5_MINUTES;
 
-			this->counterBetaTestLog = TASK_SYS_1_MINUTE;  // TASK_SYS_5_MINUTES;
+			if(__HAL_RCC_GET_FLAG(RCC_FLAG_SFTRST) == RESET)
+			{
+				result = pEeprom->WriteTimestamp(&Rtc);
+			}
+
 			result = pEeprom->WriteTimestamp(&Rtc);
 			if(result == OsResult_Ok)
 			{
@@ -218,20 +215,6 @@ void TTaskSYS::Run(void)
 				this->prevHours = Rtc.hours;
 
 				this->SetSysState(SysState_Idle);
-
-
-				// DEBUG
-/*				u32 address;
-				u8 data[8];
-
-				address = 0;
-				while(true)
-				{
-					result = pEeprom->ReadPacket(address, data);
-					this->Delay(10);
-					address += 8;
-				} */
-				// DEBUG
 
 
 				TaskChmRight.SetPtcTemperatureLevels(50, 55);
@@ -278,7 +261,7 @@ void TTaskSYS::Run(void)
 					TASK_SYS_EVENT_LID_OPEN     |
 					TASK_SYS_EVENT_TICK_PROCESS |
 //					TASK_SYS_EVENT_START_TEST   |
-					TASK_SYS_EVENT_END_GRINDING |
+//					TASK_SYS_EVENT_END_GRINDING |
 					TASK_SYS_EVENT_ERROR,
 					&resultBits,
 					1000  // 1 Sec
@@ -330,10 +313,10 @@ void TTaskSYS::Run(void)
  		   	this->ProcessTest();
  		}
 
- 		if((resultBits & TASK_SYS_EVENT_END_GRINDING) > 0)
+/* 		if((resultBits & TASK_SYS_EVENT_END_GRINDING) > 0)
  		{
  		   	this->SetSysState(SysState_Idle);
- 		}
+ 		} */
 
 
 	}  // end while(true)
@@ -398,7 +381,7 @@ void TTaskSYS::SelfTest()
 
 		if((resultBits & TASK_SYS_EVENT_TOP_PRESENT) > 0)
 		{
-			TaskHAL.SetEvents(TASK_HAL_CMD_SELF_TEST);
+//			TaskHAL.SetEvents(TASK_HAL_CMD_SELF_TEST);
 			this->SetSysState(SysState_SelsfTest);
 		}
 
@@ -409,7 +392,7 @@ void TTaskSYS::SelfTest()
 
 		if((resultBits & TASK_SYS_EVENT_LID_CLOSED) > 0)
 		{
-			TaskHAL.SetEvents(TASK_HAL_CMD_SELF_TEST);
+//			TaskHAL.SetEvents(TASK_HAL_CMD_SELF_TEST);
 			this->SetSysState(SysState_SelsfTest);
 		}
 
@@ -498,17 +481,44 @@ void TTaskSYS::ProcessLidOpen()
 
 
 	this->SetSysState(SysState_LidOpen);
+	this->ClearEvents(TASK_SYS_EVENT_LID_CLOSED);
 	result = this->WaitEvent(TASK_SYS_EVENT_LID_CLOSED);
 	if(result == OsResult_Continue)
 	{
 		this->SetSysState(SysState_Idle);
+
 		return;
 	}
 
 	////// if(result == OsResult_Ok) //////
 	this->SetSysState(SysState_Grinding);
+	this->ClearEvents(TASK_SYS_EVENT_END_GRINDING);
 	TaskHAL.SetEvents(TASK_HAL_CMD_START_GRINDING);
-	this->WaitEvent(TASK_SYS_EVENT_END_GRINDING);
+	result = this->WaitEvent(TASK_SYS_EVENT_END_GRINDING);
+	if(result != OsResult_Ok)
+	{
+		TaskHAL.SetEvents(TASK_HAL_CMD_STOP_GRINDING);
+	}
+	if(result == OsResult_Continue)
+	{
+		return;
+	}
+
+	TaskChmLeft.StartCycleCompostProcess();
+	TaskChmRight.StartCycleCompostProcess();
+
+	if(result == OsResult_LidOpen)
+	{
+		TaskHAL.SetEvents(TASK_HAL_CMD_STOP_GRINDING);
+		this->SetSysState(SysState_LidOpen);
+		this->WaitEvent(TASK_SYS_EVENT_LID_CLOSED);
+		this->SetSysState(SysState_Idle);
+
+		return;
+	}
+
+//	TaskChmLeft.SetEvents(TASK_CHM_EVENT_MIXING);
+//	TaskChmRight.SetEvents(TASK_CHM_EVENT_MIXING);
 
 	this->SetSysState(SysState_Idle);
 
@@ -540,6 +550,15 @@ void TTaskSYS::InitProcessError(EOsResult result)
 */
 void TTaskSYS::ProcessError()
 {
+#ifdef __DEBUG_BETA_TEST
+/*	if(this->sysState == SysError_InterfaceVipM)
+	{
+		this->SetSysState(SysState_TopRemoved);
+		this->SelfTest();
+		return;
+	} */
+#endif
+
 	TaskUI.SetState(TASK_UI_EVENT_ERROR);
 
 	while(true)
@@ -548,7 +567,24 @@ void TTaskSYS::ProcessError()
 		this->Delay(1000);
 		// DEBUG
 		// DiagNotice("ERROR !!!");
+/*		if(HAL_GPIO_ReadPin(TOP_PRESENT_GPIO_Port, TOP_PRESENT_Pin) == GPIO_PIN_RESET)
+		{
+			this->Delay(100);
+			{
+				if(HAL_GPIO_ReadPin(TOP_PRESENT_GPIO_Port, TOP_PRESENT_Pin) == GPIO_PIN_RESET)
+				{
+					// this->SetSysState(SysState_TopRemoved);
+					// this->SelfTest();
+					HAL_NVIC_SystemReset();
+					return;
+				}
+			}
+
+			// HAL_NVIC_SystemReset();
+		} */
 		// DEBUG
+
+
 	}
 
 }
@@ -1224,15 +1260,15 @@ void TTaskSYS::ProcessTick()
 		BetaTestRecord.timestamp = this->GetTimeSystem();
 		BetaTestRecord.timestamp.reserved = 0;
 
-/*		pEeprom = TaskHAL.GetPointerEeprom();
+		pEeprom = TaskHAL.GetPointerEeprom();
 		result = pEeprom->WriteRecord(&BetaTestRecord);
 		if((result != OsResult_Ok) && (result != OsResult_EepromFull))
 		{
 			this->SetSysState(SysError_I2cErrorChannel1);
 			return;
-		} */
+		}
 
-		this->counterBetaTestLog = TASK_SYS_1_MINUTE; // TASK_SYS_5_MINUTES;
+		this->counterBetaTestLog = TASK_SYS_5_MINUTES;
 	}
 
 
@@ -1914,8 +1950,8 @@ EOsResult TTaskSYS::WaitEvent(u32 event)
 
 	 	if((resultBits & TASK_SYS_EVENT_LID_OPEN) > 0)
 	 	{
-	 		this->SetEvents(TASK_SYS_EVENT_LID_OPEN);
-	 		return(OsResult_Continue);
+//	 		this->SetEvents(TASK_SYS_EVENT_LID_OPEN);
+	 		return(OsResult_LidOpen);
 	 	}
 
 	 	if((resultBits & event) > 0)
@@ -1992,6 +2028,19 @@ EOsResult TTaskSYS::Init(void)
 //  this->TestPadHeaters();
 // 	this->TestChambers();
    	// DEBUG
+
+ /*  	TaskHAL.AcPowerOn();
+   	TaskChmRight.SetPtcTemperatureLevels(50, 55);
+   					TaskChmRight.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
+   					TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+
+   					TaskChmLeft.SetPtcTemperatureLevels(50, 55);
+   					TaskChmLeft.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
+   					TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+   	while(true)
+   	{
+   		this->Delay(10000);
+   	} */
 
    	this->SelfTest();
 

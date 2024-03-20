@@ -178,6 +178,25 @@ void TTaskSYS::Run(void)
 					1000  // 1 Sec
 					) == OsResult_Timeout)
         {
+/*			u8 data[IFC_VIP_UART_SIZE_DATA];
+			TBme688Sensors Bme688Sensors;
+
+
+			memcpy((void*)&Bme688Sensors, (void*)TaskHAL.GetPointerBme688Sensors(IfcBme688Sensor_Fan), sizeof(TBme688Sensors));
+			memcpy((void*)&data[IFC_VIP_NUMBER_OF_ITEM + 1],
+								(void*)TaskHAL.GetPointerBme688Sensors(IfcBme688Sensor_Fan),
+								sizeof(TBme688Sensors) - 4);
+
+			memcpy((void*)&Bme688Sensors, (void*)TaskHAL.GetPointerBme688Sensors(IfcBme688Sensor_Left), sizeof(TBme688Sensors));
+			memcpy((void*)&data[IFC_VIP_NUMBER_OF_ITEM + 1],
+								(void*)TaskHAL.GetPointerBme688Sensors(IfcBme688Sensor_Left),
+								sizeof(TBme688Sensors) - 4);
+
+			memcpy((void*)&Bme688Sensors, (void*)TaskHAL.GetPointerBme688Sensors(IfcBme688Sensor_Right), sizeof(TBme688Sensors));
+			memcpy((void*)&data[IFC_VIP_NUMBER_OF_ITEM + 1],
+								(void*)TaskHAL.GetPointerBme688Sensors(IfcBme688Sensor_Right),
+								sizeof(TBme688Sensors) - 4); */
+
 			continue;
         }
 

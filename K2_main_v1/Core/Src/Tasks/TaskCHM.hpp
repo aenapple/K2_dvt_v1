@@ -49,7 +49,13 @@
 #define TASK_CHM_TIME_MIXING_MODE1         (3 * TASK_SYS_1_HOUR)     // 3 hours
 #define TASK_CHM_REPEAT_TIME_MIXING_MODE2  (5 * TASK_SYS_1_HOUR)     // 5 hours
 
-#define TASK_CHM_SIZE_TABLE_COMPOST_PROCESS  7
+#define TASK_CHM_SIZE_TABLE_COMPOST_PROCESS       13
+#define TASK_CHM_NUM_PARAMETERS_COMPOST_PROCESS   5
+#define TASK_CHM_INDEX_TIME_COMPOST_PROCESS     0
+#define TASK_CHM_INDEX_PAD_H_COMPOST_PROCESS    1
+#define TASK_CHM_INDEX_MIXING_COMPOST_PROCESS   2
+#define TASK_CHM_INDEX_PTC_H_COMPOST_PROCESS    3
+#define TASK_CHM_INDEX_PTC_F_COMPOST_PROCESS    4
 
 
 /**********************************************************************************/
@@ -59,6 +65,58 @@ typedef enum
 	TaskChamber_Right,
 } ETaskChamber;
 
+typedef enum
+{
+	TypeMixing_Na,
+	TypeMixing_Off,
+	TypeMixing_25s,
+	TypeMixing_5m,
+	TypeMixing_5m_5h,
+} ETypeMixing;
+
+typedef enum
+{
+	ModePtcHeater_Na,
+	ModePtcHeater_Off,
+	ModePtcHeater_10m,
+	ModePtcHeater_5m,
+	ModePtcHeater_5m_5h,
+} EModePtcHeater;
+
+typedef enum
+{
+	ModePtcFan_Na,
+	ModePtcFan_Off,
+	ModePtcFan_On,    // 66% power
+	ModePtcFan_1h_2h,
+} EModePtcFan;
+
+typedef enum
+{
+	PadHeaterT_Na,
+	PadHeaterT_55degC,
+	PadHeaterT_50degC,
+	PadHeaterT_45degC,
+	PadHeaterT_40degC,
+} EPadHeaterT;
+
+typedef enum
+{
+	CycleStep_0m,
+	CycleStep_30m,
+	CycleStep_60m,
+	CycleStep_80m,
+	CycleStep_90m,
+	CycleStep_105m,
+	CycleStep_120m,
+	CycleStep_150m,
+	CycleStep_165m,
+	CycleStep_180m,
+	CycleStep_210m,
+	CycleStep_240m,
+	CycleStep_360m,
+
+} ECycleStep;
 
 typedef enum
 {
@@ -110,6 +168,7 @@ public:
 	ETaskChmState GetState(void);
 //	void SetState(u32 event);
 
+	void StartCycleCompostProcess(void);
 	void SetConfigCompostProcess(u8 hours);
 	void SetTimeCompostProcess(ETimeCompostProcess timeCompostProcess);
 	void SetPtcTemperature(s8 temperature);
@@ -121,6 +180,7 @@ public:
 	void SetPadTemperatureLevels(s8 lowLevel, s8 highLevel);
 	void SetPadTime(u16 repeatTime, u16 workTime);
 	void StartMixingTimeMode1(void);
+
 
 
 
@@ -148,7 +208,7 @@ private:
 	////// variables //////
 	StackType_t xStackBuffer[OS_TASK_CHM_SIZE_STACK];
 	
-	static const u8 tableCompostProcess[TASK_CHM_SIZE_TABLE_COMPOST_PROCESS][3];
+	static const u8 tableCompostProcess[TASK_CHM_SIZE_TABLE_COMPOST_PROCESS][TASK_CHM_NUM_PARAMETERS_COMPOST_PROCESS];
 
 //	ETaskChamber taskChamber;
 	ETaskChmState taskChmState;
@@ -178,6 +238,9 @@ private:
 	u16 mixingRepeatTime;
 	u16 mixingCounterTimeMode1;
 
+	u16 counterCycleCompostProcess;
+
+
 
 	////// constants //////
 
@@ -191,6 +254,8 @@ private:
 	EOsResult StartMotorBackward(u8 pwm);
 	EOsResult StopMotor(void);
 	EOsResult DelaySecond(u16 seconds);
+	void SetStepCompostProcess(ECycleStep cycleStep);
+	void SetStepCompostProcess(u16 cycleTime);
 
 
 	void Run(void);

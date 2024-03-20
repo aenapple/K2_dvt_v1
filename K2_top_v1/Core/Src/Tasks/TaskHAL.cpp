@@ -1038,6 +1038,18 @@ EOsResult TTaskHAL::Init(void)
 	this->SetSysStateDamMotor(IFC_ITEM_STATE_NO_STATE);
 
 
+/*	TBme688Sensors Bme688Sensors;
+	Bme688Sensors.temperature = 0x0101; // dataBme688[i].temperature;
+	Bme688Sensors.pressure = 0x0202; // dataBme688[i].pressure;
+	Bme688Sensors.humidity = 0x0303; //(u16)dataBme688[i].humidity / 10;
+	Bme688Sensors.gasResistance = 0x0404; // dataBme688[i].gas_resistance;
+	Bme688Sensors.status = 0x0505;
+
+	this->Bme688_Fan.WriteSensors(&Bme688Sensors);
+	this->Bme688_Left.WriteSensors(&Bme688Sensors);
+	this->Bme688_Right.WriteSensors(&Bme688Sensors); */
+
+
 #ifdef __SENSORS_BME688_ENABLED
 
 	u32 samplingTime;
