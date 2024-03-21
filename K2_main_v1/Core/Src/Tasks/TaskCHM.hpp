@@ -127,8 +127,9 @@ typedef enum
 
 typedef enum
 {
-	MixingMode_1,
-	MixingMode_2,
+	MixingMode_5m,  //
+	MixingMode_25s,
+	MixingMode_5m_5h,
 } EMixingMode;
 
 typedef enum
@@ -226,6 +227,11 @@ private:
 	u32 ptcWorkTime;
 	u32 ptcCounterWorkTime;
 	bool flagPtcOn;
+	EModePtcHeater modePtcHeater;
+	u16 ptcFanCounterWorkTime;
+	u16 ptcFanCounterRepeatTime;
+	EModePtcFan modePtcFan;
+
 	s8 padLowLevel_T;
 	s8 padHighLevel_T;
 	s8 padTemperature;
@@ -234,11 +240,13 @@ private:
 	u16 padWorkTime;
 	u16 padCounterWorkTime;
 	bool flagPadOn;
+
 	u16 mixingCounterRepeatTime;
 	u16 mixingRepeatTime;
 	u16 mixingCounterTimeMode1;
-
 	u16 counterCycleCompostProcess;
+	EMixingMode mixingMode;
+
 
 
 
@@ -255,7 +263,7 @@ private:
 	EOsResult StopMotor(void);
 	EOsResult DelaySecond(u16 seconds);
 	void SetStepCompostProcess(ECycleStep cycleStep);
-	void SetStepCompostProcess(u16 cycleTime);
+	void SetStepCompostProcess(u16 timeStep);
 
 
 	void Run(void);

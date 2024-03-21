@@ -133,16 +133,30 @@ void TTaskCHM::Run(void)
 void TTaskCHM::Process(ETaskChmState taskChmState)
 {
 	u32 resultBits;
-	EOsResult result;
+//	EOsResult result;
 
 
 	this->Delay(10);
 
 	this->taskChmState = taskChmState;
 //	this->SetEvents(TASK_CHM_EVENT_MIXING);
-	this->ptcCounterRepeatTime = 0;
-	this->ptcCounterWorkTime = this->ptcWorkTime;
-	this->flagPtcOn = true;
+//	this->ptcCounterRepeatTime = 0;
+//	this->ptcCounterWorkTime = this->ptcWorkTime;
+//	this->flagPtcOn = true;
+
+	this->SetPtcTemperatureLevels(50, 55);
+	this->SetPadTemperatureLevels(38, 40);
+
+	this->mixingMode = MixingMode_5m_5h;
+	this->mixingCounterRepeatTime = TASK_SYS_5_HOURS;
+	this->SetEvents(TASK_CHM_EVENT_MIXING);
+
+	this->modePtcFan = ModePtcFan_1h_2h;
+	this->PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
+	this->ptcFanCounterRepeatTime = TASK_SYS_2_HOURS;
+	this->ptcFanCounterWorkTime = TASK_SYS_1_HOUR;
+
+	this->ClearEvents(TASK_CHM_EVENT_TICK_PROCESS);
 	while(true)
 	{
 		if(this->EventGroup.WaitOrBits(
@@ -199,36 +213,35 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 void TTaskCHM::TickProcess()
 {
 
-	if(this->mixingCounterRepeatTime < this->mixingRepeatTime)
+	////// Mixing counter. //////
+	if(this->mixingMode == MixingMode_5m_5h)
 	{
-		this->mixingCounterRepeatTime++;
-	}
-	else
-	{
-		this->mixingCounterRepeatTime = 0;
-		this->SetEvents(TASK_CHM_EVENT_MIXING);
+		if(this->mixingCounterRepeatTime > 0)
+		{
+			this->mixingCounterRepeatTime--;
+		}
+		else
+		{
+			this->mixingCounterRepeatTime = TASK_SYS_5_HOURS;
+			this->SetEvents(TASK_CHM_EVENT_MIXING);
+		}
 	}
 
-/*	if(this->mixingCounterTimeMode1 > 0)
+	////// PTC Heater counter. //////
+/*	if(this->modePtcHeater == ModePtcHeater_5m_5h)
 	{
-		this->mixingCounterTimeMode1--;
-	}
-	else
-	{
-		this->mixingCounterRepeatTime = TASK_CHM_REPEAT_TIME_MIXING_MODE2;
-		this->SetEvents(TASK_CHM_EVENT_MIXING);
+		if(this->ptcCounterRepeatTime < this->ptcRepeatTime)
+		{
+			this->ptcCounterRepeatTime++;
+		}
+		else
+		{
+			this->ptcCounterRepeatTime = 0;
+			this->ptcCounterWorkTime = this->ptcWorkTime;
+			this->flagPtcOn = true;
+		}
 	} */
 
-	if(this->ptcCounterRepeatTime < this->ptcRepeatTime)
-	{
-		this->ptcCounterRepeatTime++;
-	}
-	else
-	{
-		this->ptcCounterRepeatTime = 0;
-		this->ptcCounterWorkTime = this->ptcWorkTime;
-		this->flagPtcOn = true;
-	}
 
 	if(this->flagPtcOn)
 	{
@@ -239,6 +252,41 @@ void TTaskCHM::TickProcess()
 		else
 		{
 			this->flagPtcOn = false;
+		}
+	}
+
+	///// Ptc Heater. //////
+	if((this->ptcTemperature < this->ptcLowLevel_T) && this->flagPtcOn)
+	{
+		this->PtcHeater.TurnOn(HeaterPwm_50);
+	}
+
+	if((this->ptcTemperature > this->ptcHighLevel_T) || (!this->flagPtcOn))
+	{
+		this->PtcHeater.TurnOff();
+	}
+
+	////// PTC Fan counter. //////
+	if(this->modePtcFan == ModePtcFan_1h_2h)
+	{
+		if(this->ptcFanCounterRepeatTime > 0)
+		{
+			this->ptcFanCounterRepeatTime--;
+		}
+		else
+		{
+			this->PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
+			this->ptcFanCounterRepeatTime = 0;
+			this->ptcFanCounterWorkTime = TASK_SYS_1_HOUR;
+		}
+
+		if(this->ptcFanCounterWorkTime > 0)
+		{
+			this->ptcFanCounterRepeatTime--;
+		}
+		else
+		{
+			this->PtcFan.Stop();
 		}
 	}
 
@@ -253,19 +301,7 @@ void TTaskCHM::TickProcess()
 		this->PadHeater.TurnOff();
 	}
 
-	///// Ptc Heater. //////
-	if((this->ptcTemperature < this->ptcLowLevel_T) && this->flagPtcOn)
-	{
-		this->PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
-		this->PtcHeater.TurnOn(HeaterPwm_50);
-	}
 
-	if((this->ptcTemperature > this->ptcHighLevel_T) || (!this->flagPtcOn))
-	{
-//		this->PtcFan.Stop(); // .Start(PtcFanPwm_50, PtcFanMaxPwm_50);
-		this->PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
-		this->PtcHeater.TurnOff();
-	}
 
 
 	if(this->counterCycleCompostProcess < TASK_SYS_360_MINUTES)
@@ -369,11 +405,27 @@ void TTaskCHM::TickProcess()
 void TTaskCHM::Mixing()
 {
 	EOsResult result;
+	u16 timeCw;
+	u16 timeCcw;
 
+
+	if(this->mixingMode == MixingMode_25s)
+	{
+		timeCw = 15;   // 15 seconds
+		timeCcw = 10;  // 10 seconds
+	}
+	else
+	{
+		timeCw = 120;  // 2 minutes
+		timeCcw = 30;  // 30 seconds
+		this->modePtcHeater = ModePtcHeater_5m;
+		this->ptcCounterWorkTime = TASK_SYS_5_MINUTES;
+		this->flagPtcOn = true;
+	}
 
 	this->MotorChamber.StartForward();
 
-	result = this->DelaySecond(120);  // 2 minutes
+	result = this->DelaySecond(timeCw);
 	this->MotorChamber.Stop();
 	if(result == OsResult_StopProcess)
 	{
@@ -383,9 +435,14 @@ void TTaskCHM::Mixing()
 	this->Delay(100);
 	this->MotorChamber.StartBackward();
 
-	result = this->DelaySecond(30);  // 30 Seconds
+	result = this->DelaySecond(timeCcw);
 	this->MotorChamber.Stop();
 	if(result == OsResult_StopProcess)
+	{
+		return;
+	}
+
+	if(this->mixingMode == MixingMode_25s)
 	{
 		return;
 	}
@@ -393,7 +450,7 @@ void TTaskCHM::Mixing()
 	this->Delay(100);
 	this->MotorChamber.StartForward();
 
-	result = this->DelaySecond(120);  // 2 minutes
+	result = this->DelaySecond(timeCw);
 	this->MotorChamber.Stop();
 	if(result == OsResult_StopProcess)
 	{
@@ -403,7 +460,7 @@ void TTaskCHM::Mixing()
 	this->Delay(100);
 	this->MotorChamber.StartBackward();
 
-	this->DelaySecond(30);  // 30 Seconds
+	this->DelaySecond(timeCcw);
 	this->MotorChamber.Stop();
 
 }
@@ -582,7 +639,7 @@ EOsResult TTaskCHM::DelaySecond(u16 seconds)
 */
 void TTaskCHM::StartCycleCompostProcess(void)
 {
-	this->SetStepCompostProcess(CycleStep_0m);
+	this->SetStepCompostProcess(TASK_SYS_0_MINUTES);
 }
 //=== end StartCycleCompostProcess =================================================
 
@@ -648,8 +705,93 @@ void TTaskCHM::SetStepCompostProcess(ECycleStep cycleStep)
 *
 *  @return ... .
 */
-void TTaskCHM::SetStepCompostProcess(u16 cycleStep)
+void TTaskCHM::SetStepCompostProcess(u16 timeStep)
 {
+
+	switch(timeStep)
+		{
+	//		case TASK_SYS_0_MINUTES:
+	//			break;
+
+			case TASK_SYS_30_MINUTES:
+				this->mixingMode = MixingMode_5m;
+				this->SetEvents(TASK_CHM_EVENT_MIXING);
+				break;
+
+			case TASK_SYS_60_MINUTES:
+				this->modePtcHeater = ModePtcHeater_10m;
+				this->ptcCounterWorkTime = TASK_SYS_10_MINUTES;
+				this->flagPtcOn = true;
+				this->mixingMode = MixingMode_5m;
+				this->SetEvents(TASK_CHM_EVENT_MIXING);
+				break;
+
+			case TASK_SYS_80_MINUTES:
+				this->modePtcHeater = ModePtcHeater_10m;
+				this->ptcCounterWorkTime = TASK_SYS_10_MINUTES;
+				this->flagPtcOn = true;
+				break;
+
+			case TASK_SYS_90_MINUTES:
+				this->SetPadTemperatureLevels(48, 50);
+				this->mixingMode = MixingMode_25s;
+				this->SetEvents(TASK_CHM_EVENT_MIXING);
+				break;
+
+			case TASK_SYS_105_MINUTES:
+				this->mixingMode = MixingMode_25s;
+				this->SetEvents(TASK_CHM_EVENT_MIXING);
+				break;
+
+			case TASK_SYS_120_MINUTES:
+				this->modePtcHeater = ModePtcHeater_10m;
+				this->ptcCounterWorkTime = TASK_SYS_10_MINUTES;
+				this->flagPtcOn = true;
+				this->mixingMode = MixingMode_5m;
+				this->SetEvents(TASK_CHM_EVENT_MIXING);
+				break;
+
+			case TASK_SYS_150_MINUTES:
+				this->SetPadTemperatureLevels(43, 45);
+				break;
+
+			case TASK_SYS_165_MINUTES:
+				this->mixingMode = MixingMode_25s;
+				this->SetEvents(TASK_CHM_EVENT_MIXING);
+				break;
+
+			case TASK_SYS_180_MINUTES:
+				this->modePtcHeater = ModePtcHeater_5m;
+				this->ptcCounterWorkTime = TASK_SYS_5_MINUTES;
+				this->flagPtcOn = true;
+				break;
+
+			case TASK_SYS_210_MINUTES:
+				this->SetPadTemperatureLevels(38, 40);
+				break;
+
+			case TASK_SYS_240_MINUTES:
+				this->mixingMode = MixingMode_5m_5h;
+				this->mixingCounterRepeatTime = TASK_SYS_5_HOURS;
+				this->SetEvents(TASK_CHM_EVENT_MIXING);
+				break;
+
+			case TASK_SYS_360_MINUTES:
+				this->modePtcFan = ModePtcFan_1h_2h;
+				this->PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
+				this->ptcFanCounterRepeatTime = TASK_SYS_2_HOURS;
+				this->ptcFanCounterWorkTime = TASK_SYS_1_HOUR;
+				break;
+
+			default: // case TASK_SYS_0_MINUTES
+				this->counterCycleCompostProcess = TASK_SYS_0_MINUTES;
+				this->PtcHeater.TurnOff();
+				this->modePtcFan = ModePtcFan_On;
+				this->PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
+				this->SetPadTemperatureLevels(53, 55);
+				this->mixingMode = MixingMode_5m;
+				this->SetEvents(TASK_CHM_EVENT_MIXING);
+		}
 
 }
 //=== end SetStepCompostProcess ====================================================
@@ -897,8 +1039,10 @@ EOsResult TTaskCHM::Init(ETaskChamber taskChamber)
 //	this->SetPadTemperature(TASK_CHM_PAD_LOW_LEVEL_T, TASK_CHM_PAD_HIGH_LEVEL_T);
 //	this->SetPtcTemperature(TASK_CHM_PTC_LOW_LEVEL_T, TASK_CHM_PTC_HIGH_LEVEL_T);
 
-	this->mixingRepeatTime = TASK_CHM_REPEAT_TIME_MIXING;
-	this->mixingCounterRepeatTime = 0;
+//	this->mixingRepeatTime = TASK_CHM_REPEAT_TIME_MIXING;
+//	this->mixingCounterRepeatTime = TASK_SYS_5_HOURS;
+
+	this->mixingMode = MixingMode_5m;
 
 	this->counterCycleCompostProcess = TASK_SYS_360_MINUTES;
 

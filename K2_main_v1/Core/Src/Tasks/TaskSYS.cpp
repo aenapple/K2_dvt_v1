@@ -202,27 +202,27 @@ void TTaskSYS::Run(void)
 		{
 			this->counterBetaTestLog = TASK_SYS_5_MINUTES;
 
-			if(__HAL_RCC_GET_FLAG(RCC_FLAG_SFTRST) == RESET)
+/*			if(__HAL_RCC_GET_FLAG(RCC_FLAG_SFTRST) == RESET)
 			{
 				result = pEeprom->WriteTimestamp(&Rtc);
-			}
+			} */
 
 			result = pEeprom->WriteTimestamp(&Rtc);
 			if(result == OsResult_Ok)
 			{
-				TaskChmLeft.SetConfigCompostProcess(Rtc.hours);
-				TaskChmRight.SetConfigCompostProcess(Rtc.hours);
+//				TaskChmLeft.SetConfigCompostProcess(Rtc.hours);
+//				TaskChmRight.SetConfigCompostProcess(Rtc.hours);
 				this->prevHours = Rtc.hours;
 
 				this->SetSysState(SysState_Idle);
 
 
-				TaskChmRight.SetPtcTemperatureLevels(50, 55);
-				TaskChmRight.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
+//				TaskChmRight.SetPtcTemperatureLevels(50, 55);
+//				TaskChmRight.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
 				TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 
-				TaskChmLeft.SetPtcTemperatureLevels(50, 55);
-				TaskChmLeft.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
+//				TaskChmLeft.SetPtcTemperatureLevels(50, 55);
+//				TaskChmLeft.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
 				TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 			}
 			else
@@ -1224,7 +1224,7 @@ void TTaskSYS::ProcessTick()
 	} */
 	// DEBUG
 
-	if(this->counterMinute < TASK_SYS_1_MINUTE)
+/*	if(this->counterMinute < TASK_SYS_1_MINUTE)
 	{
 		this->counterMinute++;
 	}
@@ -1242,7 +1242,7 @@ void TTaskSYS::ProcessTick()
 
 		TaskChmLeft.SetConfigCompostProcess(Rtc.hours);
 		TaskChmRight.SetConfigCompostProcess(Rtc.hours);
-	}
+	} */
 
 	if(this->counterBetaTestLog > 0)
 	{
