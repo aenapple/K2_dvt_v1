@@ -59,6 +59,20 @@
 
 
 /**********************************************************************************/
+
+#define TASK_CHM_LOW_HUMIDITY	8
+#define TASK_CHM_MED_HUMIDITY	8.5
+#define TASK_CHM_HIGH_HUMIDITY	10
+
+#define TASK_CHM_LOW_TEMP		57
+#define TASK_CHM_MED_TEMP 		58.5
+#define TASK_CHM_HIGH_TEMP 		60
+
+
+#define TASK_CHM_MIX_LONG 		120
+#define TASK_CHM_MIX_SHORT		20
+
+/**********************************************************************************/
 typedef enum
 {
 	TaskChamber_Left,
@@ -146,6 +160,28 @@ typedef enum
 
 } ETimeCompostProcess;
 
+
+typedef enum
+{
+	MixingPhase_0,
+	MixingPhase_1,
+	MixingPhase_2,
+	MixingPhase_3,
+	MixingPhase_4,
+
+} EMixingPhase;
+
+typedef enum
+{
+	DutyCycleMode_0,
+	DutyCycleMode_1,
+	DutyCycleMode_2,
+	DutyCycleMode_3,
+	DutyCycleMode_4,
+
+} EDutyCycleMode;
+
+
 /**********************************************************************************/
 //==================================================================================
 class TTaskCHM : public TOsTask
@@ -219,14 +255,28 @@ private:
 //	THeater PadHeater;
 //	TMotorChamber MotorChamber;
 
+
+	u16 lowHumidity;
+	u16 medHumidity;
+	u16 highHumidity;
+
+    s16 bmeLowTemp;
+    s16 bmeMedTemp;
+    s16 bmeHighTemp;
+
+
 	s8 ptcLowLevel_T;
 	s8 ptcHighLevel_T;
+
 	s8 ptcTemperature;
+	s8 ptcPwm;
+
 	u32 ptcRepeatTime;
 	u32 ptcCounterRepeatTime;
 	u32 ptcWorkTime;
 	u32 ptcCounterWorkTime;
 	bool flagPtcOn;
+
 	EModePtcHeater modePtcHeater;
 	u16 ptcFanCounterWorkTime;
 	u16 ptcFanCounterRepeatTime;
@@ -241,10 +291,18 @@ private:
 	u16 padCounterWorkTime;
 	bool flagPadOn;
 
+
+	u16 timeCw;
+	u16 timeCcw;
+
 	u16 mixingCounterRepeatTime;
+	u16 mixingCounterWorkTime;
+
 	u16 mixingRepeatTime;
 	u16 mixingCounterTimeMode1;
 	u16 counterCycleCompostProcess;
+	EMixingPhase mixingPhase;
+
 	EMixingMode mixingMode;
 
 
@@ -256,14 +314,18 @@ private:
 	////// functions //////
 	void Process(ETaskChmState taskChmState);
 	void TickProcess(void);
-	void Mixing(void);
+	void Mixing(EMixingPhase mixingPhase);
 	void StopProcess(void);
 	EOsResult StartMotorForward(u8 pwm);
 	EOsResult StartMotorBackward(u8 pwm);
 	EOsResult StopMotor(void);
 	EOsResult DelaySecond(u16 seconds);
 	void SetStepCompostProcess(ECycleStep cycleStep);
+
+	// Logic Checking in here
 	void SetStepCompostProcess(u16 timeStep);
+
+
 
 
 	void Run(void);
