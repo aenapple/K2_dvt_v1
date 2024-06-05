@@ -11,12 +11,12 @@
 #define __TaskHAL_H
 
 /**********************************************************************************/
+#include <HeaterPadRight.hpp>
 #include "OsTask.hpp"
 #include "Adc.hpp"
 #include "I2c.hpp"
 #include "Gpio.hpp"
 #include "Interfaces/InterfaceVIP.hpp"
-#include "Heater.hpp"
 #include "MotorMain.hpp"
 // #include "PtcFan.hpp"
 // #include "MotorChamber.hpp"
@@ -35,15 +35,22 @@
 #define TASK_HAL_CMD_STOP_GRINDING    (1<<6)
 #define TASK_HAL_CMD_AC_POWER_OFF     (1<<7)
 #define TASK_HAL_CMD_SELF_TEST        (1<<8)
+#define TASK_HAL_CMD_SELF_TEST_TOP    (1<<9)
+
+#define TASK_HAL_CMD_START_MOTOR_CW   (1<<10)
+#define TASK_HAL_CMD_START_MOTOR_CCW  (1<<11)
+#define TASK_HAL_CMD_STOP_MOTOR       (1<<12)
 
 
-#define TASK_HAL_EVENT_GET_BME688_FAN    (1<<9)
-#define TASK_HAL_EVENT_GET_BME688_LEFT   (1<<10)
-#define TASK_HAL_EVENT_GET_BME688_RIGHT  (1<<11)
-#define TASK_HAL_EVENT_GET_CPU_STATE     (1<<12)
+#define TASK_HAL_EVENT_GET_BME688_FAN    (1<<13)
+#define TASK_HAL_EVENT_GET_BME688_LEFT   (1<<14)
+#define TASK_HAL_EVENT_GET_BME688_RIGHT  (1<<15)
+#define TASK_HAL_EVENT_GET_CPU_STATE     (1<<16)
 
-#define TASK_HAL_EVENT_T_READY     (1<<13)
+#define TASK_HAL_EVENT_T_READY     (1<<17)
 
+#define TASK_HAL_CMD_SET_LEFT_OPEN   (1<<18)
+#define TASK_HAL_CMD_SET_RIGHT_OPEN  (1<<19)
 
 
 #define TASK_HAL_MAX_NUMBER_COMMANDS  10
@@ -112,12 +119,15 @@
 typedef enum
 {
 	SysCommand_Grind,
+	SysCommand_ControlFan,
+	SysCommand_SetPosition,
+	SysCommand_ControlLamp,
 
 /*	SysCommand_ControlHeater,
 	SysCommand_ControlMotor,
-	SysCommand_ControlLamp,
-	SysCommand_ControlFan,
-	SysCommand_SetPosition,
+	,
+
+
 	SysCommand_AcPowerOn,
 	SysCommand_AcPowerOff, */
 
@@ -147,6 +157,14 @@ struct TBme688Sensors  // sizeof = 16bytes.
 	u32 gasResistance;
 	u16 status;
 };
+
+enum EHalDamPosition
+{
+	HalDamPosition_NoState= 0x00,
+	HalDamPosition_LeftOpen= 0x01,
+	HalDamPosition_RightOpen = 0x02,
+};
+
 
 /**********************************************************************************/
 //==================================================================================
@@ -184,6 +202,9 @@ public:
 	void SetEventUart2_RxCpltFromISR(void);
 	void SetEventUart2_ErrorFromISR(void);
 
+
+	u8 GetPwmFanMain(void);
+	u8 GetRpmFanMain(void);
 
 	s8 GetTemperatureCpu2(void);
 	s8 GetTemperatureCpu3(void);
@@ -253,6 +274,9 @@ private:
 	u8 adcIndexConversion;
 	u16 calculationResultAdc1[ADC1_MAX_NUMBER_CHANNEL];
 
+	u8 pwmFanMain;
+	u16 rpmFanMain;
+
 	s8 tCpu2;
 	s8 tCpu3;
 //	s8 tPtcLeft;
@@ -315,6 +339,8 @@ private:
 	void GetSensorBme688(EIfcBme688Sensor ifcBme688Sensor);
 	void ProcessSysCommand(void);
 	void ProcessSelfTest(void);
+	void ProcessTestTop(void);
+	void ProcessSetPosition(u8 position);
 	void Grinding(void);
 	EOsResult CheckConnectionTopCpu(void);
 	EOsResult CheckLockTop(void);
@@ -340,6 +366,7 @@ private:
 	EOsResult ControlHeater(u8* parameters);
 	EOsResult ControlLamp(u8* parameters);
 	EOsResult ControlFan(u8* parameters);
+	EOsResult ControlSetPosition(u8* parameters);
 	u8 SetSysStateSensor(u16 typeSensor);
 
 

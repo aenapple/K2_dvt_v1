@@ -57,9 +57,7 @@ void TTaskUI::Run(void)
         if(this->EventGroup.WaitOrBits(
         			TASK_UI_EVENT_ERROR	|
 					TASK_UI_EVENT_INIT	|
-					TASK_UI_NO_STATE    |
-					TASK_UI_EVENT_IDLE  |
-					TASK_UI_EVENT_TOP_REMOVED,
+					TASK_UI_EVENT_IDLE,
 					&resultBits,
 					1000
 					) == OsResult_Timeout)
@@ -71,11 +69,7 @@ void TTaskUI::Run(void)
 
         this->ClearEvents(TASK_UI_EVENT_NEW_SET_STATE);
       
-        if((resultBits & TASK_UI_NO_STATE) > 0)
-        {
-           	this->LedAllOff();
-        }
-
+      
         if((resultBits & TASK_UI_EVENT_ERROR) > 0)
         {
        		this->FlashError();
@@ -92,12 +86,6 @@ void TTaskUI::Run(void)
         	this->FlashIdle();
         }
 
-
-
-        if((resultBits & TASK_UI_EVENT_TOP_REMOVED) > 0)
-        {
-        	this->FlashTopRemoved();
-        }
         
         
 
@@ -164,16 +152,20 @@ void TTaskUI::FlashError(void)
 */
 void TTaskUI::FlashIdle(void)
 {
+	u16 numberFlashes;
+
+
+	numberFlashes = this->GetErrorNumberFlashes();
 	while(true)
 	{
 		this->LedAllOff();
-		if(this->EventGroup.WaitAndBits(TASK_UI_EVENT_NEW_SET_STATE, 2000) == OsResult_Ok)
+		if(this->EventGroup.WaitAndBits(TASK_UI_EVENT_NEW_SET_STATE, 200) == OsResult_Ok)
 		{
 			return;
 		}
 
 		this->LedRedOn();
-		if(this->EventGroup.WaitAndBits(TASK_UI_EVENT_NEW_SET_STATE, 100) == OsResult_Ok)
+		if(this->EventGroup.WaitAndBits(TASK_UI_EVENT_NEW_SET_STATE, 200) == OsResult_Ok)
 		{
 			this->LedAllOff();
 			return;
@@ -190,37 +182,9 @@ void TTaskUI::FlashIdle(void)
 *
 *  @return ... .
 */
-void TTaskUI::FlashTopRemoved(void)
-{
-	while(true)
-	{
-		this->LedAllOff();
-		if(this->EventGroup.WaitAndBits(TASK_UI_EVENT_NEW_SET_STATE, 200) == OsResult_Ok)
-		{
-			return;
-		}
-
-		this->LedRedOn();
-		if(this->EventGroup.WaitAndBits(TASK_UI_EVENT_NEW_SET_STATE, 200) == OsResult_Ok)
-		{
-			this->LedAllOff();
-			return;
-		}
-
-	}
-
-}
-//=== end FlashTopRemoved ==========================================================
-
-//==================================================================================
-/**
-*  Todo: function description..
-*
-*  @return ... .
-*/
 void TTaskUI::LedRedOn(void)
 {
-	HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
 }
 //=== end LedRedOn =================================================================
 
@@ -232,7 +196,7 @@ void TTaskUI::LedRedOn(void)
 */
 void TTaskUI::LedAllOff(void)
 {
-	HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_RESET);
 }
 //=== end LedAllOff ================================================================
 

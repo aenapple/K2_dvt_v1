@@ -15,6 +15,7 @@
 #include "Interfaces/InterfaceVIP.hpp"
 
 
+
 /**********************************************************************************/
 //#define TASK_SYS_OK                (1<<0)
 
@@ -32,9 +33,11 @@
 #define TASK_SYS_EVENT_START_TEST    (1<<11)
 #define TASK_SYS_EVENT_END_GRINDING  (1<<12)
 
+#define TASK_SYS_CMD_SET_LEFT_OPEN   (1<<13)
+#define TASK_SYS_CMD_SET_RIGHT_OPEN  (1<<14)
 
-#define TASK_SYS_EVENT_OK     (1<<14)
-#define TASK_SYS_EVENT_ERROR  (1<<15)
+#define TASK_SYS_EVENT_OK     (1<<15)
+#define TASK_SYS_EVENT_ERROR  (1<<16)
 
 
 
@@ -191,7 +194,7 @@ public:
 	u8 GetErrorCode(void);
 	void SetSysState(ESysState sysState);
 	ESysState GetSysState(void);
-	void UpdateTopCpuState(u8* pBufferState);
+	void UpdateTopCpuState(TIfcSystemState* IfcSystemState);
 	void UpdateSensorBme688(EIfcBme688Sensor ifcBme688Sensor, u8* pBufferState);
 
 
@@ -244,8 +247,7 @@ private:
 
     EIfcVipComponent ifcVipComponent;
 
-
-	////// constants //////
+    ////// constants //////
     static const u8 errorCode[];
     static const u8 interfaceVipCode[];
     static const u8 module_ident[];
@@ -255,6 +257,7 @@ private:
     void SelfTest(void);
     void ProcessLidOpen(void);
     void ProcessTest(void);
+    void ProcessSetPosition(u8 position);
     void ProcessError(void);
     void InitProcessError(EOsResult result);
     void ProcessRxData(void);
@@ -273,19 +276,20 @@ private:
     EOsResult ReadByteFromEeprom(u32 address, u8* data);
     EOsResult WritePacketToEeprom(u32 address, u8* data);
     EOsResult ReadPacketFromEeprom(u32 address, u8* data);
-    EOsResult ControlLamp(EIfcVipCommand ifcVipCommand, u8* pData);
+    EOsResult ControlLamp(u8* pData);
     EOsResult GetStateLamp(EIfcVipCommand ifcVipCommand, u8* pData);
-    EOsResult ControlMotor(EIfcVipCommand ifcVipCommand, u8* pData);
-    EOsResult GetStateMotor(EIfcVipCommand ifcVipCommand, u8* pData);
-    EOsResult ControlHeater(EIfcVipCommand ifcVipCommand, u8* pData);
-    EOsResult GetStateHeater(EIfcVipCommand ifcVipCommand, u8* pData);
+    EOsResult ControlFan(u8* pData);
+    EOsResult GetStateFan(u8* pData);
+    EOsResult ControlMotor(u8* pData);
+    EOsResult GetStateMotor(u8* pData);
+    EOsResult ControlHeater(u8* pData);
+    EOsResult GetStateHeater(u8* pData);
     void Reset(void);
     void ProcessTick();
     void ReInitUart(void);
     EOsResult WaitEvent(u32 event);
 
     // DEBUG
-    void TestChambers(void);
     void TestChamberMotors(void);
     void TestMainMotor(void);
     void TestPtcFans(void);
