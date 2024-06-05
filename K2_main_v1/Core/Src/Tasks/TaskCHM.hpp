@@ -11,10 +11,11 @@
 #define __TaskCHM_H
 
 /**********************************************************************************/
+#include <HalMotChambers.hpp>
 #include "../Sys/OsTask.hpp"
-#include "Heater.hpp"
-#include "PtcFan.hpp"
-#include "MotorChamber.hpp"
+#include "HalDcFans.hpp"
+#include "HalHeaters.hpp"
+#include "HalMotChambers.hpp"
 
 
 /**********************************************************************************/
@@ -205,10 +206,7 @@ class TTaskCHM : public TOsTask
 public:
 	////// variables //////
 	// DEBUG
-	TPtcFan PtcFan;
-	THeater PtcHeater;
-	THeater PadHeater;
-	TMotorChamber MotorChamber;
+//	TMotorChamber MotorChamber;
 	// DEBUG
 
 
@@ -220,6 +218,13 @@ public:
 	EOsResult Init(void) { return(OsResult_Ok); }
 	ETaskChmState GetState(void);
 //	void SetState(u32 event);
+
+	EHeaterPwm GetPwmHeaterPtc(void);
+	void PulseOnHeaterPtc(void);
+	void PulseOffHeaterPtc(void);
+	EHeaterPwm GetPwmHeaterPad(void);
+	void PulseOnHeaterPad(void);
+	void PulseOffHeaterPad(void);
 
 	void StartCycleCompostProcess(void);
 	void SetConfigCompostProcess(u8 hours);
@@ -263,13 +268,12 @@ private:
 	
 	static const u8 tableCompostProcess[TASK_CHM_SIZE_TABLE_COMPOST_PROCESS][TASK_CHM_NUM_PARAMETERS_COMPOST_PROCESS];
 
-//	ETaskChamber taskChamber;
+	ETaskChamber taskChamber;
 	ETaskChmState taskChmState;
 
-//	TPtcFan PtcFan;
-//	THeater PtcHeater;
-//	THeater PadHeater;
-//	TMotorChamber MotorChamber;
+	THalDcFans* HalDcFans;
+	THalHeaters* HalHeaters;
+	THalMotChambers* HalMotChambers;
 
 
 
@@ -353,9 +357,15 @@ private:
 	void TickProcess(void);
 	void Mixing(EMixingPhase mixingPhase);
 	void StopProcess(void);
-	EOsResult StartMotorForward(u8 pwm);
-	EOsResult StartMotorBackward(u8 pwm);
-	EOsResult StopMotor(void);
+	void StartFanPtc(u8 pwm);
+	void StopFanPtc(void);
+	void StartHeaterPtc(u8 pwm);
+	void StopHeaterPtc(void);
+	void StartHeaterPad(u8 pwm);
+	void StopHeaterPad(void);
+	void StartForwardMotorChamber(void);
+	void StartBackwardMotorChamber(void);
+	void StopMotorChamber(void);
 	EOsResult DelaySecond(u16 seconds);
 	void SetStepCompostProcess(ECycleStep cycleStep);
 

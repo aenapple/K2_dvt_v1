@@ -151,8 +151,9 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 	this->SetEvents(TASK_CHM_EVENT_MIXING);
 
 	this->modePtcFan = ModePtcFan_1h_2h;
-	this->PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
+	// this->PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
 
+	this->StartFanPtc(50);
 	this->ptcFanCounterRepeatTime = TASK_SYS_2_HOURS;
 	this->ptcFanCounterWorkTime = TASK_SYS_1_HOUR;
 
@@ -281,49 +282,49 @@ void TTaskCHM::TickProcess()
 //	}
 
 	///// Ptc Heater. //////
-//	if((this->ptcTemperature < this->ptcLowLevel_T) && this->flagPtcOn)
-//	{
-//		this->PtcHeater.TurnOn(HeaterPwm_50);
-//	}
-//
-//	if((this->ptcTemperature > this->ptcHighLevel_T) || (!this->flagPtcOn))
-//	{
-//		this->PtcHeater.TurnOff();
-//	}
+	if((this->ptcTemperature < this->ptcLowLevel_T) && this->flagPtcOn)
+	{
+		this->StartHeaterPtc(50);
+	}
 
-//	////// PTC Fan counter. //////
-//	if(this->modePtcFan == ModePtcFan_1h_2h)
-//	{
-//		if(this->ptcFanCounterRepeatTime > 0)
-//		{
-//			this->ptcFanCounterRepeatTime--;
-//		}
-//		else
-//		{
-//			this->PtcFan.Start(PtcFanPwm_66, PtcFanMaxPwm_66_100);
-//			this->ptcFanCounterRepeatTime = 0;
-//			this->ptcFanCounterWorkTime = TASK_SYS_1_HOUR;
-//		}
-//
-//		if(this->ptcFanCounterWorkTime > 0)
-//		{
-//			this->ptcFanCounterRepeatTime--;
-//		}
-//		else
-//		{
-//			this->PtcFan.Stop();
-//		}
-//	}
+	if((this->ptcTemperature > this->ptcHighLevel_T) || (!this->flagPtcOn))
+	{
+		this->StopHeaterPtc();
+	}
+
+	////// PTC Fan counter. //////
+	if(this->modePtcFan == ModePtcFan_1h_2h)
+	{
+		if(this->ptcFanCounterRepeatTime > 0)
+		{
+			this->ptcFanCounterRepeatTime--;
+		}
+		else
+		{
+			this->StartFanPtc(50);
+			this->ptcFanCounterRepeatTime = 0;
+			this->ptcFanCounterWorkTime = TASK_SYS_1_HOUR;
+		}
+
+		if(this->ptcFanCounterWorkTime > 0)
+		{
+			this->ptcFanCounterRepeatTime--;
+		}
+		else
+		{
+			this->StopFanPtc();
+		}
+	}
 
 	///// Pad Heater. //////
 	if(this->padTemperature < this->padLowLevel_T)
 	{
-		this->PadHeater.TurnOn(HeaterPwm_100);
+		this->StartHeaterPad(100);
 	}
 
 	if(this->padTemperature > this->padHighLevel_T)
 	{
-		this->PadHeater.TurnOff();
+		this->StopHeaterPad();
 	}
 
 
@@ -449,6 +450,54 @@ void TTaskCHM::Mixing(EMixingPhase mixingPhase)
 
 			}
 	}
+	// else
+	// {
+	// 	timeCw = 120;  // 2 minutes
+	// 	timeCcw = 30;  // 30 seconds
+	// 	this->modePtcHeater = ModePtcHeater_5m;
+	// 	this->ptcCounterWorkTime = TASK_SYS_5_MINUTES;
+	// 	this->flagPtcOn = true;
+	// }
+
+	// this->StartForwardMotorChamber();
+
+	// result = this->DelaySecond(timeCw);
+	// this->StopMotorChamber();
+	// if(result == OsResult_StopProcess)
+	// {
+	// 	return;
+	// }
+
+	// this->Delay(100);
+	// this->StartBackwardMotorChamber();
+
+	// result = this->DelaySecond(timeCcw);
+	// this->StopMotorChamber();
+	// if(result == OsResult_StopProcess)
+	// {
+	// 	return;
+	// }
+
+	// if(this->mixingMode == MixingMode_25s)
+	// {
+	// 	return;
+	// }
+
+	// this->Delay(100);
+	// this->StartForwardMotorChamber();
+
+	// result = this->DelaySecond(timeCw);
+	// this->StopMotorChamber();
+	// if(result == OsResult_StopProcess)
+	// {
+	// 	return;
+	// }
+
+	// this->Delay(100);
+	// this->StartBackwardMotorChamber();
+
+	// this->DelaySecond(timeCcw);
+	// this->StopMotorChamber();
 
 }
 //=== end Mixing ===================================================================
@@ -459,51 +508,18 @@ void TTaskCHM::Mixing(EMixingPhase mixingPhase)
 *
 *  @return ... .
 */
-EOsResult TTaskCHM::StartMotorForward(u8 pwm)
+void TTaskCHM::StartFanPtc(u8 pwm)
 {
-	this->MotorChamber.StartForward();
-
-
-	return(OsResult_Ok);
-}
-//=== end StartMotorForward ========================================================
-
-//==================================================================================
-/**
-*  Todo: function description..
-*
-*  @return ... .
-*/
-/* EOsResult TTaskCHM::StartMotorForward(u8 pwm)
-{
-	if(this->taskChmIndex == TaskChmIndex_Left)
+	if(this->taskChamber == TaskChamber_Left)
 	{
-		TaskHAL.TurnOnMotorChamber(MotorChamber_Left, DirMotorChamber_Forward, pwm);
+		this->HalDcFans->StartFanPtcLeft(pwm);
 	}
 	else
 	{
-		TaskHAL.TurnOnMotorChamber(MotorChamber_Right, DirMotorChamber_Forward, pwm);
+		this->HalDcFans->StartFanPtcRight(pwm);
 	}
-
-
-	return(OsResult_Ok);
-} */
-//=== end StartMotorForward ========================================================
-
-//==================================================================================
-/**
-*  Todo: function description..
-*
-*  @return ... .
-*/
-EOsResult TTaskCHM::StartMotorBackward(u8 pwm)
-{
-	this->MotorChamber.StartBackward();
-
-
-	return(OsResult_Ok);
 }
-//=== end StartMotorBackward =======================================================
+//=== end StartFanPtc ==============================================================
 
 //==================================================================================
 
@@ -513,8 +529,270 @@ EOsResult TTaskCHM::StopMotor()
 
 
 	return(OsResult_Ok);
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::StopFanPtc()
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalDcFans->StopFanPtcLeft();
+	}
+	else
+	{
+		this->HalDcFans->StopFanPtcRight();
+	}
 }
-//=== end StopMotor ================================================================
+//=== end StopFanPtc ===============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::StartHeaterPtc(u8 pwm)
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalHeaters->StartHeaterPtcLeft(pwm);
+	}
+	else
+	{
+		this->HalHeaters->StartHeaterPtcRight(pwm);
+	}
+}
+//=== end StartHeaterPtc ===========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::StopHeaterPtc()
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalHeaters->StopHeaterPtcLeft();
+	}
+	else
+	{
+		this->HalHeaters->StopHeaterPtcRight();
+	}
+}
+//=== end StopHeaterPtc ============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::StartHeaterPad(u8 pwm)
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalHeaters->StartHeaterPadLeft(pwm);
+	}
+	else
+	{
+		this->HalHeaters->StartHeaterPadRight(pwm);
+	}
+}
+//=== end StartHeaterPad ===========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::StopHeaterPad()
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalHeaters->StopHeaterPadLeft();
+	}
+	else
+	{
+		this->HalHeaters->StopHeaterPadRight();
+	}
+}
+//=== end StopHeaterPad ============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+EHeaterPwm TTaskCHM::GetPwmHeaterPtc(void)
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalHeaters->GetPwmHeaterPtcLeft();
+	}
+	else
+	{
+		this->HalHeaters->GetPwmHeaterPtcRight();
+	}
+}
+//=== end GetPwmHeaterPtc ==========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::PulseOnHeaterPtc(void)
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalHeaters->PulseOnHeaterPtcLeft();
+	}
+	else
+	{
+		this->HalHeaters->PulseOnHeaterPtcRight();
+	}
+}
+//=== end PulseOnHeaterPtc =========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::PulseOffHeaterPtc(void)
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalHeaters->PulseOffHeaterPtcLeft();
+	}
+	else
+	{
+		this->HalHeaters->PulseOffHeaterPtcRight();
+	}
+}
+//=== end PulseOffHeaterPtc ========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+EHeaterPwm TTaskCHM::GetPwmHeaterPad(void)
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalHeaters->GetPwmHeaterPadLeft();
+	}
+	else
+	{
+		this->HalHeaters->GetPwmHeaterPadRight();
+	}
+}
+//=== end GetPwmHeaterPad ==========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::PulseOnHeaterPad(void)
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalHeaters->PulseOnHeaterPadLeft();
+	}
+	else
+	{
+		this->HalHeaters->PulseOnHeaterPadRight();
+	}
+}
+//=== end PulseOnHeaterPad =========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::PulseOffHeaterPad(void)
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalHeaters->PulseOffHeaterPadLeft();
+	}
+	else
+	{
+		this->HalHeaters->PulseOffHeaterPadRight();
+	}
+}
+//=== end PulseOffHeaterPad ========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::StartForwardMotorChamber()
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalMotChambers->StartForwardMotorLeft();
+	}
+	else
+	{
+		this->HalMotChambers->StartForwardMotorRight();
+	}
+}
+//=== end StartForwardMotorChamber =================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::StartBackwardMotorChamber()
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalMotChambers->StartBackwardMotorLeft();
+	}
+	else
+	{
+		this->HalMotChambers->StartBackwardMotorRight();
+	}
+}
+//=== end StartBackwardMotorChamber ================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::StopMotorChamber()
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalMotChambers->StopMotorLeft();
+	}
+	else
+	{
+		this->HalMotChambers->StopMotorRight();
+	}
+}
+//=== end StopMotorChamber =========================================================
 
 //==================================================================================
 /**
@@ -524,10 +802,10 @@ EOsResult TTaskCHM::StopMotor()
 */
 void TTaskCHM::StopProcess()
 {
-	this->MotorChamber.Stop();
-	this->PtcHeater.TurnOff();
-	this->PadHeater.TurnOff();
-	this->PtcFan.Stop();
+	this->StopMotorChamber();
+	this->StopHeaterPtc();
+	this->StopHeaterPad();
+	this->StopFanPtc();
 }
 //=== end StopProcess ==============================================================
 
@@ -1032,7 +1310,7 @@ ETaskChmState TTaskCHM::GetState(void)
 EOsResult TTaskCHM::Init(ETaskChamber taskChamber)
 {
 
-//	this->taskChamber = taskChamber;
+	this->taskChamber = taskChamber;
 	this->taskChmState = TaskChmState_Idle;
 
 	if(taskChamber == TaskChamber_Left)
@@ -1061,6 +1339,14 @@ EOsResult TTaskCHM::Init(ETaskChamber taskChamber)
 		this->timeCcw = TASK_CHM_MIX_LONG;
 
 	}
+	static THalDcFans& halF = THalDcFans::GetInstance();
+	this->HalDcFans= &halF;
+
+	static THalHeaters& halH = THalHeaters::GetInstance();
+	this->HalHeaters= &halH;
+
+	static THalMotChambers& halMC = THalMotChambers::GetInstance();
+	this->HalMotChambers= &halMC;
 
 //	this->SetPadTemperature(TASK_CHM_PAD_LOW_LEVEL_T, TASK_CHM_PAD_HIGH_LEVEL_T);
 //	this->SetPtcTemperature(TASK_CHM_PTC_LOW_LEVEL_T, TASK_CHM_PTC_HIGH_LEVEL_T);

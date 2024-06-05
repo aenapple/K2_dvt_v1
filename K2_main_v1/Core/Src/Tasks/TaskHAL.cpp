@@ -175,17 +175,37 @@ void TTaskHAL::Run(void)
 					TASK_HAL_EVENT_GET_CPU_STATE    |
 					TASK_HAL_CMD_START_GRINDING     |
 					TASK_HAL_CMD_SELF_TEST          |
-					TASK_HAL_CMD_AC_POWER_OFF,
+					TASK_HAL_CMD_AC_POWER_OFF       |
+					TASK_HAL_CMD_START_MOTOR_CW     |
+					TASK_HAL_CMD_START_MOTOR_CCW    |
+					TASK_HAL_CMD_STOP_MOTOR         |
+					TASK_HAL_CMD_SELF_TEST_TOP      |
+					TASK_HAL_CMD_SET_LEFT_OPEN      |
+					TASK_HAL_CMD_SET_RIGHT_OPEN,
 					&resultBits,
 					100
 					) == OsResult_Timeout)
         {
             this->CheckTopRemoved();
-            this->CheckLidOpen();
+//            this->CheckLidOpen();
 
         	continue;
         }
       
+        if((resultBits & TASK_HAL_CMD_SELF_TEST_TOP) > 0)
+        {
+            this->ProcessTestTop();
+        }
+
+        if((resultBits & TASK_HAL_CMD_SET_LEFT_OPEN) > 0)
+        {
+            this->ProcessSetPosition(1);
+        }
+
+        if((resultBits & TASK_HAL_CMD_SET_RIGHT_OPEN) > 0)
+        {
+            this->ProcessSetPosition(2);
+        }
 
         if((resultBits & TASK_HAL_EVENT_T_READY) > 0)
         {
@@ -196,6 +216,21 @@ void TTaskHAL::Run(void)
         if((resultBits & TASK_HAL_EVENT_SYS_COMMAND) > 0)
         {
             this->ProcessSysCommand();
+        }
+
+        if((resultBits & TASK_HAL_CMD_START_MOTOR_CW) > 0)
+        {
+            this->StartMainMotorCW();
+        }
+
+        if((resultBits & TASK_HAL_CMD_START_MOTOR_CCW) > 0)
+        {
+            this->StartMainMotorCCW();
+        }
+
+        if((resultBits & TASK_HAL_CMD_STOP_MOTOR) > 0)
+        {
+            this->StopMainMotor();
         }
 
         if((resultBits & TASK_HAL_EVENT_GET_BME688_FAN) > 0)
@@ -265,6 +300,11 @@ EOsResult TTaskHAL::GetStateTopCpu()
 	u8* pData;
 
 
+
+#ifdef __DEBUG_TOP_CPU_NOT_PRESENT
+	return(OsResult_Ok);
+#endif
+
 	result = this->SendCommand(IfcVipCommand_GetState, 0);
 
 #ifdef __DEBUG_BETA_TEST
@@ -290,9 +330,9 @@ EOsResult TTaskHAL::GetStateTopCpu()
 	}
 
 	pData = this->InterfaceMasterVIP.GetPointerDataRx();
-	memcpy((void*)&this->IfcSystemState, (void*)pData, sizeof(TIfcSystemState));
+	memcpy((void*)&this->IfcSystemState, (void*)pData, sizeof(TIfcSystemState) - 2);
 
-	TaskSYS.UpdateTopCpuState(pData);
+	TaskSYS.UpdateTopCpuState(&this->IfcSystemState);
 
 
 	return(OsResult_Ok);
@@ -374,10 +414,10 @@ void TTaskHAL::ProcessSysCommand(void)
 //				this->ControlHeater(sysCommand.parameters);
 				break;
 
-/*			case SysCommand_ControlMotor:
-				this->ControlMotor(sysCommand.parameters);
-				break;
-
+//			case SysCommand_ControlMotor:
+//				this->ControlMotor(sysCommand.parameters);
+//				break;
+//
 			case SysCommand_ControlLamp:
 				this->ControlLamp(sysCommand.parameters);
 				break;
@@ -387,7 +427,8 @@ void TTaskHAL::ProcessSysCommand(void)
 				break;
 
 			case SysCommand_SetPosition:
-				break; */
+				this->ControlSetPosition(sysCommand.parameters);
+				break;
 
 
 			default:
@@ -419,6 +460,143 @@ void TTaskHAL::ProcessSysCommand(void)
 *
 *  @return void .
 */
+void TTaskHAL::ProcessTestTop(void)
+{
+	EOsResult result;
+	u8 parameters[IFC_VIP_UART_SIZE_DATA];
+
+
+	parameters[0] = 0;  // Self Test
+	result = this->SendCommand(IfcVipCommand_StartTest, parameters);
+	if(result != OsResult_Ok)
+	{
+		this->ReInitUart();
+		this->Delay(20);
+
+		result = this->SendCommand(IfcVipCommand_StartTest, parameters);
+		if(result != OsResult_Ok)
+		{
+			TaskSYS.SetSysState(SysError_InterfaceVipM);
+			return;
+		}
+	}
+
+
+	while(true)
+	{
+		this->Delay(1000);
+
+		result = this->GetStateTopCpu();
+		if(result != OsResult_Ok)
+		{
+			TaskSYS.SetSysState(SysError_InterfaceVipM);
+			return;
+		}
+
+		if(this->IfcSystemState.sysState == IfcVipState_Idle)
+		{
+			break;  // Ok
+		}
+		else
+		{
+			if(this->IfcSystemState.sysState == IfcVipState_SelfTest)
+			{
+				continue;
+			}
+			else
+			{
+				if(this->IfcSystemState.sysState == IfcVipState_Error)
+				{
+					TaskSYS.SetSysState(SysError_ApplicationError);
+					return;
+				}
+			}
+		}
+
+
+	}
+
+
+	TaskSYS.SetEvents(TASK_SYS_EVENT_OK);
+
+}
+//=== end ProcessTestTop ===========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+void TTaskHAL::ProcessSetPosition(u8 position)
+{
+	EOsResult result;
+	u8 parameters[IFC_VIP_UART_SIZE_DATA];
+
+
+	parameters[0] = position;
+	parameters[1] = position;
+	result = this->SendCommand(IfcVipCommand_SetPosition, parameters);
+	if(result != OsResult_Ok)
+	{
+		this->ReInitUart();
+		this->Delay(20);
+
+		result = this->SendCommand(IfcVipCommand_SetPosition, parameters);
+		if(result != OsResult_Ok)
+		{
+			TaskSYS.SetSysState(SysError_InterfaceVipM);
+			return;
+		}
+	}
+
+
+	while(true)
+	{
+		this->Delay(1000);
+
+		result = this->GetStateTopCpu();
+		if(result != OsResult_Ok)
+		{
+			TaskSYS.SetSysState(SysError_InterfaceVipM);
+			return;
+		}
+
+		if(this->IfcSystemState.sysState == IfcVipState_Idle)
+		{
+			break;  // Ok
+		}
+		else
+		{
+			if(this->IfcSystemState.sysState == IfcVipState_Busy)
+			{
+				continue;
+			}
+			else
+			{
+				if(this->IfcSystemState.sysState == IfcVipState_Error)
+				{
+					TaskSYS.SetSysState(SysError_ApplicationError);
+					return;
+				}
+			}
+		}
+
+
+	}
+
+
+	TaskSYS.SetEvents(TASK_SYS_EVENT_OK);
+
+}
+//=== end ProcessTestTop ===========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
 void TTaskHAL::ProcessSelfTest(void)
 {
 	EOsResult result;
@@ -432,14 +610,14 @@ void TTaskHAL::ProcessSelfTest(void)
 		return;
 	}
 
-	this->AcPowerOn();
+/*	this->AcPowerOn();
 	this->Delay(300);
 	if(!this->flagAcMainPresent)
 	{
 		this->AcPowerOff();
 		TaskSYS.SetSysState(SysError_MainAcNotPresent);  // Error - AC Main is not present
 		return;
-	}
+	} */
 
 	// DEBUG
 //	this->Gpio.SetLevelTopResetPin(GpioLevel_Low);  // Clear Reset Top CPU
@@ -464,7 +642,6 @@ void TTaskHAL::ProcessSelfTest(void)
 	// todo:
 	// check present chamber left
 	// check present chamber right
-	// check present tank
 
 
 	this->AcPowerOn();
@@ -1120,6 +1297,30 @@ EOsResult TTaskHAL::ControlHeater(u8* parameters)
 */
 EOsResult TTaskHAL::ControlLamp(u8* parameters)
 {
+	EOsResult result;
+
+
+	result = this->SendCommand(IfcVipCommand_ControlLamp, parameters);
+
+	#ifdef __DEBUG_BETA_TEST
+		if(result == OsResult_Continue)
+		{
+			return(OsResult_Ok);
+		}
+	#endif
+
+	if(result != OsResult_Ok)
+	{
+		this->ReInitUart();
+		this->Delay(20);
+
+		result = this->SendCommand(IfcVipCommand_ControlLamp, parameters);
+		if(result != OsResult_Ok)
+		{
+			TaskSYS.SetSysState(SysError_InterfaceVipM);
+			return(result);
+		}
+	}
 
 
 	return(OsResult_Ok);
@@ -1137,7 +1338,7 @@ EOsResult TTaskHAL::ControlFan(u8* parameters)
 	EOsResult result;
 
 
-	result = this->SendCommand(IfcVipCommand_SetFanSpeed, parameters);
+	result = this->SendCommand(IfcVipCommand_ControlFan, parameters);
 
 #ifdef __DEBUG_BETA_TEST
 	if(result == OsResult_Continue)
@@ -1151,7 +1352,7 @@ EOsResult TTaskHAL::ControlFan(u8* parameters)
 		this->ReInitUart();
 		this->Delay(20);
 
-		result = this->SendCommand(IfcVipCommand_SetFanSpeed, parameters);
+		result = this->SendCommand(IfcVipCommand_ControlFan, parameters);
 		if(result != OsResult_Ok)
 		{
 			TaskSYS.SetSysState(SysError_InterfaceVipM);
@@ -1163,6 +1364,44 @@ EOsResult TTaskHAL::ControlFan(u8* parameters)
 	return(OsResult_Ok);
 }
 //=== end ControlFan ===============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+EOsResult TTaskHAL::ControlSetPosition(u8* parameters)
+{
+	EOsResult result;
+
+
+	result = this->SendCommand(IfcVipCommand_SetPosition, parameters);
+
+#ifdef __DEBUG_BETA_TEST
+	if(result == OsResult_Continue)
+	{
+		return(OsResult_Ok);
+	}
+#endif
+
+	if(result != OsResult_Ok)
+	{
+		this->ReInitUart();
+		this->Delay(20);
+
+		result = this->SendCommand(IfcVipCommand_SetPosition, parameters);
+		if(result != OsResult_Ok)
+		{
+			TaskSYS.SetSysState(SysError_InterfaceVipM);
+			return(result);
+		}
+	}
+
+
+	return(OsResult_Ok);
+}
+//=== end ControlSetPosition =======================================================
 
 //==================================================================================
 /**
@@ -1252,9 +1491,17 @@ void TTaskHAL::StartMainMotorCW()
 {
 	if(this->flagAcMainPresent)
 	{
+		// added resistor
+		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
+
 		HAL_GPIO_WritePin(SW_STATOR2_GPIO_Port, SW_STATOR2_Pin, GPIO_PIN_RESET);
 		this->Delay(100);
 		this->flagStartMainMotor = true;
+		HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_SET);
+
+		this->Delay(200);
+		// short cut resistor
+		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_SET);
 	}
 }
 //=== end StartMainMotorCW =========================================================
@@ -1269,9 +1516,17 @@ void TTaskHAL::StartMainMotorCCW()
 {
 	if(this->flagAcMainPresent)
 	{
+		// added resistor
+		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
+
 		HAL_GPIO_WritePin(SW_STATOR2_GPIO_Port, SW_STATOR2_Pin, GPIO_PIN_SET);
 		this->Delay(100);
 		this->flagStartMainMotor = true;
+		HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_SET);
+
+		this->Delay(200);
+		// short cut resistor
+		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_SET);
 	}
 }
 //=== end StartMainMotorCCW ========================================================
@@ -1284,7 +1539,15 @@ void TTaskHAL::StartMainMotorCCW()
 */
 void TTaskHAL::StopMainMotor()
 {
+	// added resistor
+	HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
+	this->Delay(200);
+
 	this->flagStartMainMotor = false;
+	HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_RESET);
+
+	this->Delay(200);
+	TaskHAL.BrakeOnMainMotor();
 }
 //=== end StopMainMotor ============================================================
 
@@ -2126,6 +2389,32 @@ s8 TTaskHAL::GetTemperature(EIfcVipTemperature ifcVipTemperature)
 *  @return
 *  		none.
 */
+u8 TTaskHAL::GetRpmFanMain(void)
+{
+	return(this->rpmFanMain);
+}
+//=== end GetRpmFanMain ============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return
+*  		none.
+*/
+u8 TTaskHAL::GetPwmFanMain(void)
+{
+	return(this->pwmFanMain);
+}
+//=== end GetPwmFanMain ============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return
+*  		none.
+*/
 s8 TTaskHAL::GetTemperatureCpu2(void)
 {
 	return(this->tCpu2);
@@ -2421,11 +2710,11 @@ void TTaskHAL::HandlerGpioInterrupt(u16 gpioPin)
 
 		if(this->flagStartMainMotor)
 		{
-			HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_SET);
+//			HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_SET);
 		}
 		else
 		{
-			HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_RESET);
+//			HAL_GPIO_WritePin(MOTOR_ON_GPIO_Port, MOTOR_ON_Pin, GPIO_PIN_RESET);
 		}
 
 	}
@@ -2457,7 +2746,7 @@ void TTaskHAL::ProcessAcPhase(void)
 		this->counterPwmHeater = 0;
 	}
 
-	TaskChmLeft.PtcFan.IncrementCounterPwm();
+/*	TaskChmLeft.PtcFan.IncrementCounterPwm();
 	if(TaskChmLeft.PtcFan.GetCounterPwm() >= TaskChmLeft.PtcFan.GetMaxPwm())
 	{
 		TaskChmLeft.PtcFan.ClearCounterPwm();
@@ -2467,7 +2756,7 @@ void TTaskHAL::ProcessAcPhase(void)
 	if(TaskChmRight.PtcFan.GetCounterPwm() >= TaskChmRight.PtcFan.GetMaxPwm())
 	{
 		TaskChmRight.PtcFan.ClearCounterPwm();
-	}
+	} */
 
 }
 //=== end ProcessAcPhase ===========================================================
@@ -2481,62 +2770,42 @@ void TTaskHAL::ProcessAcPhase(void)
 void TTaskHAL::ProcessHeater()
 {
 	////// Pad Heaters //////
-	if(TaskChmLeft.PadHeater.GetPwm() > this->counterPwmHeater)
+	if(TaskChmLeft.GetPwmHeaterPad() > this->counterPwmHeater)
 	{
-		TaskChmLeft.PadHeater.PulseOn();
+		TaskChmLeft.PulseOnHeaterPad();
 	}
 	else
 	{
-		TaskChmLeft.PadHeater.PulseOff();
+		TaskChmLeft.PulseOffHeaterPad();
 	}
 
-	if(TaskChmRight.PadHeater.GetPwm() > this->counterPwmHeater)
+	if(TaskChmRight.GetPwmHeaterPad() > this->counterPwmHeater)
 	{
-		TaskChmRight.PadHeater.PulseOn();
+		TaskChmRight.PulseOnHeaterPad();
 	}
 	else
 	{
-		TaskChmRight.PadHeater.PulseOff();
+		TaskChmRight.PulseOffHeaterPad();
 	}
 
 	////// PTC Heaters //////
-	if(TaskChmLeft.PtcHeater.GetPwm() > this->counterPwmHeater)
+	if(TaskChmLeft.GetPwmHeaterPtc() > this->counterPwmHeater)
 	{
-		TaskChmLeft.PtcHeater.PulseOn();
+		TaskChmLeft.PulseOnHeaterPtc();
 	}
 	else
 	{
-		TaskChmLeft.PtcHeater.PulseOff();
+		TaskChmLeft.PulseOffHeaterPtc();
 	}
 
-	if(TaskChmRight.PtcHeater.GetPwm() > this->counterPwmHeater)
+	if(TaskChmRight.GetPwmHeaterPtc() > this->counterPwmHeater)
 	{
-		TaskChmRight.PtcHeater.PulseOn();
+		TaskChmRight.PulseOnHeaterPtc();
 	}
 	else
 	{
-		TaskChmRight.PtcHeater.PulseOff();
+		TaskChmRight.PulseOffHeaterPtc();
 	}
-
-	////// PTC Fans //////
-	if(TaskChmLeft.PtcFan.GetPwm() > TaskChmLeft.PtcFan.GetCounterPwm())
-	{
-		TaskChmLeft.PtcFan.PulseOn();
-	}
-	else
-	{
-		TaskChmLeft.PtcFan.PulseOff();
-	}
-
-	if(TaskChmRight.PtcFan.GetPwm() > TaskChmRight.PtcFan.GetCounterPwm())
-	{
-		TaskChmRight.PtcFan.PulseOn();
-	}
-	else
-	{
-		TaskChmRight.PtcFan.PulseOff();
-	}
-
 
 }
 //=== end ProcessHeater ============================================================
@@ -2622,6 +2891,11 @@ EOsResult TTaskHAL::SendCommand(EIfcVipCommand command, u8* pBuffer)
 	u32 resultBits;
 	EOsResult result;
 
+
+	if((this->Gpio.ReadTopRemoved() == GpioLevel_High))
+	{
+		return(OsResult_Ok);
+	}
 
 #ifdef __DEBUG_BETA_TEST
 	if(this->Gpio.ReadTopPresent() == GpioLevel_High)
@@ -2820,14 +3094,6 @@ EOsResult TTaskHAL::Init(void)
 	this->flagAcMotorPresent = false;
 	this->flagStartMainMotor = false;
 
-
-//	this->PtcHeaterLeft.Init(Heater_PtcHeaterLeft);
-//	this->PtcHeaterRight.Init(Heater_PtcHeaterRight);
-//	this->PadHeaterLeft.Init(Heater_PadHeaterLeft);
-//	this->PadHeaterRight.Init(Heater_PadHeaterRight);
-
-//	this->PtcFanLeft.Init(PtcFan_Left);
-//	this->PtcFanRight.Init(PtcFan_Right);
 
 //	this->MotorChamberLeft.Init(MotorChamber_Left);
 //	this->MotorChamberRight.Init(MotorChamber_Right);

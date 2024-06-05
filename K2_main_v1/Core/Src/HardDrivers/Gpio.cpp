@@ -191,11 +191,11 @@ void TGpio::SetLevelTopResetPin(EGpioLevel gpioLevel)
 */
 EGpioLevel TGpio::ReadButtonState(void)
 {
-	if(HAL_GPIO_ReadPin(FAN_PWM_GPIO_Port, FAN_PWM_Pin) == GPIO_PIN_RESET)
+/*	if(HAL_GPIO_ReadPin(FAN_PWM_GPIO_Port, FAN_PWM_Pin) == GPIO_PIN_RESET)
 	{
 		return(GpioLevel_Low);
 	}
-	else
+	else */
 	{
 		return(GpioLevel_High);
 	}
