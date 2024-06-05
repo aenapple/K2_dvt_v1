@@ -68,6 +68,9 @@
 #define TASK_CHM_MED_TEMP 		58.5
 #define TASK_CHM_HIGH_TEMP 		60
 
+#define TASK_CHM_MAX_GAS		10.2
+#define TASK_CHM_MIN_GAS		4.0
+
 
 #define TASK_CHM_MIX_LONG 		120
 #define TASK_CHM_MIX_SHORT		20
@@ -141,13 +144,6 @@ typedef enum
 
 typedef enum
 {
-	MixingMode_5m,  //
-	MixingMode_25s,
-	MixingMode_5m_5h,
-} EMixingMode;
-
-typedef enum
-{
 	TimeCompostProcess_00 = 0,  // time 00:00
 	TimeCompostProcess_07 = 1,  // time 07:00
 	TimeCompostProcess_11 = 2,  // time 11:00
@@ -161,6 +157,8 @@ typedef enum
 } ETimeCompostProcess;
 
 
+
+//////////////////////// Dynamic Algorithm //////////////////////////
 typedef enum
 {
 	MixingPhase_0,
@@ -177,9 +175,27 @@ typedef enum
 	DutyCycleMode_1,
 	DutyCycleMode_2,
 	DutyCycleMode_3,
-	DutyCycleMode_4,
+	DutyCycleMode_99,
 
 } EDutyCycleMode;
+
+//typedef enum
+//{
+//	PTCHeaterPWM_0,
+//	PTCHeaterPWM_10,
+//	PTCHeaterPWM_20,
+//	PTCHeaterPWM_30,
+//	PTCHeaterPWM_40,
+//	PTCHeaterPWM_50,
+//	PTCHeaterPWM_60,
+//	PTCHeaterPWM_70,
+//	PTCHeaterPWM_80,
+//	PTCHeaterPWM_90,
+//	PTCHeaterPWM_100,
+//
+//} EPTCHeaterPWM;
+
+
 
 
 /**********************************************************************************/
@@ -256,26 +272,18 @@ private:
 //	TMotorChamber MotorChamber;
 
 
-	u16 lowHumidity;
-	u16 medHumidity;
-	u16 highHumidity;
-
-    s16 bmeLowTemp;
-    s16 bmeMedTemp;
-    s16 bmeHighTemp;
-
 
 	s8 ptcLowLevel_T;
 	s8 ptcHighLevel_T;
 
 	s8 ptcTemperature;
-	s8 ptcPwm;
 
-	u32 ptcRepeatTime;
-	u32 ptcCounterRepeatTime;
-	u32 ptcWorkTime;
-	u32 ptcCounterWorkTime;
-	bool flagPtcOn;
+
+//	u32 ptcRepeatTime;
+//	u32 ptcCounterRepeatTime;
+//	u32 ptcWorkTime;
+//	u32 ptcCounterWorkTime;
+
 
 	EModePtcHeater modePtcHeater;
 	u16 ptcFanCounterWorkTime;
@@ -292,20 +300,49 @@ private:
 	bool flagPadOn;
 
 
-	u16 timeCw;
-	u16 timeCcw;
 
-	u16 mixingCounterRepeatTime;
-	u16 mixingCounterWorkTime;
 
 	u16 mixingRepeatTime;
 	u16 mixingCounterTimeMode1;
 	u16 counterCycleCompostProcess;
+
+
+
+	////// Dynamic Algorithm variables ///////
+	EDutyCycleMode dutyCycle;
+
+
+	s8 ptcHeaterPwm;
+	s8 ptcFanPwm;
+	s8 filterFanPwm;
+	s8 exhaustFanPwm;
+
+	u16 highHumidity;
+	u16 medHumidity;
+	u16 lowHumidity;
+
+	u16 avgHumidity;
+	u16 maxRelativeHumidity;
+
+
+	u32 maxGas;
+	u32 minGas;
+
+    s16 bmeLowTemp;
+    s16 bmeMedTemp;
+    s16 bmeHighTemp;
+
+    u32 ptcCounterWorkTime;
+    u32 ptcIntervalTime;
+    bool ptcDutyCycleOnFlag;
+
+
+	u16 timeCw;
+	u16 timeCcw;
+
+	u16 mixCounterWorkTime;
+	u16 mixIntervalTime;
 	EMixingPhase mixingPhase;
-
-	EMixingMode mixingMode;
-
-
 
 
 	////// constants //////
@@ -322,8 +359,12 @@ private:
 	EOsResult DelaySecond(u16 seconds);
 	void SetStepCompostProcess(ECycleStep cycleStep);
 
-	// Logic Checking in here
-	void SetStepCompostProcess(u16 timeStep);
+	// Dynamic Algorithm Logic
+	void bmeControlParams();
+	void SetStepCompostProcess();
+	void SetStepDutyCycles();
+
+	void ActuatorPWMCheck();
 
 
 
