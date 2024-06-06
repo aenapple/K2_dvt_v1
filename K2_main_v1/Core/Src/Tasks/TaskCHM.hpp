@@ -16,6 +16,8 @@
 #include "HalDcFans.hpp"
 #include "HalHeaters.hpp"
 #include "HalMotChambers.hpp"
+#include "Interfaces/InterfaceVIP.hpp"
+#include "TaskSYS.hpp"
 
 
 /**********************************************************************************/
@@ -274,6 +276,7 @@ private:
 	THalDcFans* HalDcFans;
 	THalHeaters* HalHeaters;
 	THalMotChambers* HalMotChambers;
+	TInterfaceVIP InterfaceMasterVIP;
 
 
 
@@ -313,10 +316,12 @@ private:
 
 
 	////// Dynamic Algorithm variables ///////
-	EDutyCycleMode dutyCycle;
+	u16 samplingCounter;
 
 
 	s8 ptcHeaterPwm;
+	s8 padHeaterPwm;
+
 	s8 ptcFanPwm;
 	s8 filterFanPwm;
 	s8 exhaustFanPwm;
@@ -327,7 +332,7 @@ private:
 
 	u16 avgHumidity;
 	u16 maxRelativeHumidity;
-
+	u16 humiditySampleCounter;
 
 	u32 maxGas;
 	u32 minGas;
@@ -335,6 +340,11 @@ private:
     s16 bmeLowTemp;
     s16 bmeMedTemp;
     s16 bmeHighTemp;
+
+    TBme688Sensor bmeSensorChamber;
+    TBme688Sensor bmeSensorFan;
+
+
 
     u32 ptcCounterWorkTime;
     u32 ptcIntervalTime;
@@ -346,7 +356,9 @@ private:
 
 	u16 mixCounterWorkTime;
 	u16 mixIntervalTime;
+
 	EMixingPhase mixingPhase;
+	EDutyCycleMode dutyCycle;
 
 
 	////// constants //////
@@ -370,13 +382,22 @@ private:
 	void SetStepCompostProcess(ECycleStep cycleStep);
 
 	// Dynamic Algorithm Logic
-	void bmeControlParams();
+
+	void GetSensorBme688(EIfcBme688Sensor ifcBme688Sensor);
+	void GetSensorBme688();
+
+
+	void BmeControlParams(u16 temperature, u16 rHumidity);
 	void SetStepCompostProcess();
 	void SetStepDutyCycles();
 
 	void ActuatorPWMCheck();
+	void Mixing();
 
 
+
+	void AverageHumidity();
+	void MaxHumidityDifference();
 
 
 	void Run(void);
