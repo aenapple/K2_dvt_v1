@@ -36,7 +36,7 @@ extern TTaskSYS TaskSYS;
 //	{ 0x23, 40, (2 * 6) /* x10 */ },
 // };
 
-const u8 TTaskCHM::tableCompostProcess[TASK_CHM_SIZE_TABLE_COMPOST_PROCESS][TASK_CHM_NUM_PARAMETERS_COMPOST_PROCESS] =
+/*const u8 TTaskCHM::tableCompostProcess[TASK_CHM_SIZE_TABLE_COMPOST_PROCESS][TASK_CHM_NUM_PARAMETERS_COMPOST_PROCESS] =
 {
 	{ CycleStep_0m,		PadHeaterT_55degC,	TypeMixing_5m,		ModePtcHeater_Off,	ModePtcFan_On},
 	{ CycleStep_30m,	PadHeaterT_Na,		TypeMixing_5m,		ModePtcHeater_Na,	ModePtcFan_Na},
@@ -52,39 +52,15 @@ const u8 TTaskCHM::tableCompostProcess[TASK_CHM_SIZE_TABLE_COMPOST_PROCESS][TASK
 	{ CycleStep_240m,	PadHeaterT_Na,		TypeMixing_5m_5h,	TypeMixing_5m_5h,	ModePtcFan_Na},
 	{ CycleStep_360m,	PadHeaterT_Na,		TypeMixing_Na, 		ModePtcHeater_Na,	ModePtcFan_1h_2h},
 };
+*/
+void TTaskCHM::MaxHumidityDifference()
+{
 
-void TTaskCHM::MaxHumidityDifference(){
+	this->absoluteDifferenceHumidity = this->maxHumidity - this->minHumidity;
 
-
-
-
-//	def GetMaxHumidityVariation(humidity_collection_time, curr_humidity):
-/*
- *     global maxHumidityDiff
-    global curr_min_humidity
-    global curr_max_humidity
-
-    if humidity_collection_time > 0:
-        humidity_collection_time = humidity_collection_time - increment
-
-
-
-
-        match mix_phase:
-            case 0:
-                curr_min_humidity = min(curr_min_humidity, curr_humidity)
-            case _:
-                curr_max_humidity = max(curr_max_humidity, curr_humidity)
-    else:
-        maxHumidityDiff  = curr_max_humidity - curr_min_humidity
-        curr_min_humidity = 100
-        curr_max_humidity = 0
-        humidity_collection_time = mixing_interval + mixing_counter
-
-
-    return humidity_collection_time
- *
- */
+	this->maxHumidity = 0;
+	this->minHumidity = 100;
+	this->humiditySampleCounter = this->mixIntervalTime + this->mixCounterWorkTime;
 }
 
 
@@ -95,7 +71,7 @@ void TTaskCHM::BmeControlParams(u16 temperature, u16 rHumidity)
 	if (this->avgHumidity == 0)
 			rHumidity = this->avgHumidity;
 		else
-			rHumidity = this->maxRelativeHumidity;
+			rHumidity = this->absoluteDifferenceHumidity;
 
 
 		if (temperature <= this->bmeLowTemp){
@@ -428,6 +404,9 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 	this->medHumidity  = TASK_CHM_MED_HUMIDITY;
 	this->highHumidity = TASK_CHM_HIGH_HUMIDITY;
 
+	this->minHumidity = 100;
+	this->maxHumidity = 0;
+
 	this-> humiditySampleCounter =	this->samplingCounter;
 
 	this->maxGas = TASK_CHM_MAX_GAS;
@@ -496,18 +475,12 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 *  @return ... .
 */
 
-void TTaskCHM::GetSensorBme688(EIfcBme688Sensor ifcBme688Sensor)
-{
-	u8* pData;
-	pData = this->InterfaceMasterVIP.GetPointerDataRx();
-	taskENTER_CRITICAL();
-	memcpy((void*)&this->bmeSensorFan, (void*)(pData + IFC_VIP_BME688_TEMPERATURE), sizeof(TBme688Sensor));
-	taskEXIT_CRITICAL();
-}
+
 void TTaskCHM::GetSensorBme688()
 {
 	u8* pData;
 	pData = this->InterfaceMasterVIP.GetPointerDataRx();
+
 	taskENTER_CRITICAL();
 	memcpy((void*)&this->bmeSensorChamber, (void*)((pData + IFC_VIP_BME688_TEMPERATURE)), sizeof(TBme688Sensor));
 	taskEXIT_CRITICAL();
@@ -516,22 +489,16 @@ void TTaskCHM::GetSensorBme688()
 
 void TTaskCHM::TickProcess()
 {
-//	s8 padTemp;
-//	s8 ptcTemp;
-//
-//	padTemp = this->GetPadTemperature();
-//	ptcTemp = this->GetPtcTemperature();
 
-
-	this->GetSensorBme688(IfcBme688Sensor_Fan);
 	this->GetSensorBme688();
+
 
 	this->BmeControlParams(bmeSensorChamber.temperature, bmeSensorChamber.humidity);
 
 
 	////// Mixing counter. //////
 	if (this->mixCounterWorkTime > 0){
-			this->mixCounterWorkTime--; // decrement according to time
+			this->mixCounterWorkTime--;
 
 	} else {
 		this->Mixing();
@@ -539,7 +506,7 @@ void TTaskCHM::TickProcess()
 
 	////// PTC Fan & Heater counter. For Duty Cycle	 //////
 	if (this->ptcCounterWorkTime > 0) {
-		this->ptcCounterWorkTime--; // decrement according to time
+		this->ptcCounterWorkTime--;
 
 	} else {
 		this->SetStepDutyCycles();
@@ -551,30 +518,29 @@ void TTaskCHM::TickProcess()
 
 		switch (this->mixingPhase) {
 			case MixingPhase_0:
-//	            curr_min_humidity = min(curr_min_humidity, curr_humidity)
+				if (bmeSensorChamber.humidity <= this->minHumidity){
+					this->minHumidity = bmeSensorChamber.humidity;
+				}
 				break;
 
 			case MixingPhase_1:
 			case MixingPhase_2:
 			case MixingPhase_3:
 			case MixingPhase_4:
-
+				if (bmeSensorChamber.humidity >= this->maxHumidity){
+					this->maxHumidity = bmeSensorChamber.humidity;
+				}
 				break;
-//				curr_max_humidity = max(curr_max_humidity, curr_humidity)
-//	            case _:
-
-
 		}
 
 	} else {
+		this->MaxHumidityDifference();
 
 	}
 
 
 
 	this->ActuatorPWMCheck();
-
-
 	if (this->ptcFanPwm > 0) {
 		this->StartFanPtc(this->ptcFanPwm);
 	} else {
@@ -626,10 +592,6 @@ void TTaskCHM::TickProcess()
 //
 //	}
 
-	// todo:
-	// close loop Humidity
-	// close loop level sensor
-	// close loop gas sensor - ???
 }
 //=== end TickProcess ==============================================================
 
@@ -704,8 +666,6 @@ void TTaskCHM::TickProcess()
 void TTaskCHM::Mixing()
 {
 	EOsResult result;
-	u16 timeCw;
-	u16 timeCcw;
 
 	switch(mixingPhase) {
 
@@ -1212,7 +1172,7 @@ void TTaskCHM::SetStepCompostProcess()
 *
 *  @return ... .
 */
-void TTaskCHM::SetConfigCompostProcess(u8 hours)
+/*void TTaskCHM::SetConfigCompostProcess(u8 hours)
 {
 	u8 timeStart;
 	u8 timeStop;
@@ -1245,7 +1205,7 @@ void TTaskCHM::SetConfigCompostProcess(u8 hours)
 
 	}
 
-}
+}*/
 //=== end SetConfigCompostProcess ==================================================
 
 //==================================================================================

@@ -330,6 +330,10 @@ private:
 	u16 medHumidity;
 	u16 lowHumidity;
 
+	u16 minHumidity;
+	u16 maxHumidity;
+	u16 absoluteDifferenceHumidity;
+
 	u16 avgHumidity;
 	u16 maxRelativeHumidity;
 	u16 humiditySampleCounter;
@@ -342,8 +346,6 @@ private:
     s16 bmeHighTemp;
 
     TBme688Sensor bmeSensorChamber;
-    TBme688Sensor bmeSensorFan;
-
 
 
     u32 ptcCounterWorkTime;
