@@ -12,10 +12,12 @@
 
 /**********************************************************************************/
 #include <HalMotChambers.hpp>
-#include "../Sys/OsTask.hpp"
+// #include "../Sys/OsTask.hpp"
 #include "HalDcFans.hpp"
 #include "HalHeaters.hpp"
 #include "HalMotChambers.hpp"
+#include "Interfaces/InterfaceVIP.hpp"
+#include "TaskSYS.hpp"
 
 
 /**********************************************************************************/
@@ -58,8 +60,44 @@
 #define TASK_CHM_INDEX_PTC_H_COMPOST_PROCESS    3
 #define TASK_CHM_INDEX_PTC_F_COMPOST_PROCESS    4
 
+/**********************************************************************************/
+#define TASK_CHM_LOW_HUMIDITY	8
+#define TASK_CHM_MED_HUMIDITY	8.5
+#define TASK_CHM_HIGH_HUMIDITY	10
+
+#define TASK_CHM_LOW_TEMP		57
+#define TASK_CHM_MED_TEMP 		58.5
+#define TASK_CHM_HIGH_TEMP 		60
+
+#define TASK_CHM_MAX_GAS		10.2
+#define TASK_CHM_MIN_GAS		4.0
+
+#define TASK_CHM_MIX_LONG 		120
+#define TASK_CHM_MIX_SHORT		20
 
 /**********************************************************************************/
+////// Dynamic Algorithm //////
+typedef enum
+{
+	MixingPhase_0,
+	MixingPhase_1,
+	MixingPhase_2,
+	MixingPhase_3,
+	MixingPhase_4,
+
+} EMixingPhase;
+
+typedef enum
+{
+	DutyCycleMode_0,
+	DutyCycleMode_1,
+	DutyCycleMode_2,
+	DutyCycleMode_3,
+	DutyCycleMode_99,
+
+} EDutyCycleMode;
+////// end Dynamic Algorithm //////
+
 typedef enum
 {
 	TaskChamber_Left,
@@ -165,6 +203,7 @@ public:
 	EOsResult Init(ETaskChamber taskChamber);
 	EOsResult Init(void) { return(OsResult_Ok); }
 	ETaskChmState GetState(void);
+	void UpdateSensorBme688(TBme688Sensor* bme688Sensor);
 //	void SetState(u32 event);
 
 	EHeaterPwm GetPwmHeaterPtc(void);
@@ -251,7 +290,51 @@ private:
 	u16 counterCycleCompostProcess;
 	EMixingMode mixingMode;
 
+	////// Dynamic Algorithm variables //////
+	u16 samplingCounter;
 
+	s8 ptcHeaterPwm;
+	s8 padHeaterPwm;
+
+	s8 ptcFanPwm;
+	s8 filterFanPwm;
+	s8 exhaustFanPwm;
+
+	u16 highHumidity;
+	u16 medHumidity;
+	u16 lowHumidity;
+
+	u16 minHumidity;
+	u16 maxHumidity;
+	u16 absoluteDifferenceHumidity;
+
+	u16 avgHumidity;
+	u16 maxRelativeHumidity;
+	u16 humiditySampleCounter;
+
+	u32 maxGas;
+	u32 minGas;
+
+    s16 bmeLowTemp;
+    s16 bmeMedTemp;
+    s16 bmeHighTemp;
+
+    TBme688Sensor bmeSensorChamber;
+
+//    u32 ptcCounterWorkTime;
+    u32 ptcIntervalTime;
+    bool ptcDutyCycleOnFlag;
+
+	u16 timeCw;
+	u16 timeCcw;
+
+	u16 mixCounterWorkTime;
+	u16 mixIntervalTime;
+
+	EMixingPhase mixingPhase;
+	EDutyCycleMode dutyCycle;
+
+	////// end Dynamic Algorithm variables //////
 
 
 	////// constants //////
@@ -260,7 +343,7 @@ private:
 	////// functions //////
 	void Process(ETaskChmState taskChmState);
 	void TickProcess(void);
-	void Mixing(void);
+	void Mixing(EMixingPhase mixingPhase);
 	void StopProcess(void);
 	void StartFanPtc(u8 pwm);
 	void StopFanPtc(void);
@@ -274,6 +357,17 @@ private:
 	EOsResult DelaySecond(u16 seconds);
 	void SetStepCompostProcess(ECycleStep cycleStep);
 	void SetStepCompostProcess(u16 timeStep);
+
+	////// Dynamic Algorithm Logic //////
+//	void GetSensorBme688(void);
+	void BmeControlParams(u16 temperature, u16 rHumidity);
+	void SetStepCompostProcess();
+	void SetStepDutyCycles(void);
+	void ActuatorPWMCheck(void);
+	void Mixing(void);
+	void AverageHumidity();
+	void MaxHumidityDifference();
+	////// end Dynamic Algorithm Logic //////
 
 
 	void Run(void);

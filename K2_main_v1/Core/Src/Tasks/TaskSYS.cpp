@@ -1828,10 +1828,12 @@ void TTaskSYS::UpdateSensorBme688(EIfcBme688Sensor ifcBme688Sensor, u8* pBufferS
 		if(ifcBme688Sensor == IfcBme688Sensor_Left)
 		{
 			memcpy((void*)&this->bme688SensorLeft, (void*)pBufferState, sizeof(TBme688Sensor));
+			TaskChmLeft.UpdateSensorBme688(&this->bme688SensorLeft);
 		}
 		else  // IfcBme688Sensor_Right
 		{
 			memcpy((void*)&this->bme688SensorRight, (void*)pBufferState, sizeof(TBme688Sensor));
+			TaskChmRight.UpdateSensorBme688(&this->bme688SensorRight);
 		}
 	}
 
