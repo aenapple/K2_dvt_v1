@@ -507,9 +507,6 @@ void TTaskCHM::TickProcess()
 
 
 
-	this->UpdateSensorBme688(this->bmeSensorChamber);
-
-
 	this->BmeControlParams(this->bmeSensorChamber.temperature, this->bmeSensorChamber.humidity);
 
 
