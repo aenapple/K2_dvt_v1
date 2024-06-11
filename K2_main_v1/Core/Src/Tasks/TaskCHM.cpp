@@ -110,7 +110,7 @@ void TTaskCHM::MaxHumidityDifference()
 
 	this->maxHumidity = 0;
 	this->minHumidity = 100;
-	this->humiditySampleCounter = this->mixIntervalTime + this->mixCounterWorkTime;
+	this->humiditySampleCounter = this->mixIntervalTime;
 }
 //=== end MaxHumidityDifference ====================================================
 
@@ -390,7 +390,7 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 
 	this->mixingPhase = MixingPhase_0;
 	this->mixIntervalTime = TASK_SYS_2_MINUTES;
-	this->mixCounterWorkTime =  TASK_SYS_20_SECONDS;
+//	this->mixCounterWorkTime =  TASK_SYS_20_SECONDS;
 
 	this->SetEvents(TASK_CHM_EVENT_MIXING);
 
@@ -512,12 +512,22 @@ void TTaskCHM::TickProcess()
 
 
 	////// Mixing counter. //////
-	if (this->mixCounterWorkTime > 0){
+	if(this->mixCounterIntervalTime < this->mixIntervalTime)
+	{
+		this->mixCounterIntervalTime++;
+	}
+	else
+	{
+		this->mixCounterIntervalTime = 0;
+		this->SetEvents(TASK_CHM_EVENT_MIXING);
+	}
+
+/*	if (this->mixCounterWorkTime > 0){
 			this->mixCounterWorkTime--;
 
 	} else {
 		this->Mixing();
-	}
+	} */
 
 	////// PTC Fan & Heater counter. For Duty Cycle	 //////
 	if (this->ptcCounterWorkTime > 0) {
@@ -621,6 +631,58 @@ void TTaskCHM::Mixing()
 	EOsResult result;
 
 
+	this->mixingPhase = MixingPhase_1;
+	this->StartForwardMotorChamber();
+	result = this->DelaySecond(this->timeCw);
+	this->StopMotorChamber();
+	if(result == OsResult_StopProcess)
+	{
+		return;
+	}
+
+	this->mixingPhase = MixingPhase_2;
+	this->StartBackwardMotorChamber();
+	result = this->DelaySecond(this->timeCcw);
+	this->StopMotorChamber();
+	if(result == OsResult_StopProcess)
+	{
+		return;
+	}
+
+	this->mixingPhase = MixingPhase_3;
+	this->StartForwardMotorChamber();
+	result = this->DelaySecond(this->timeCw);
+	this->StopMotorChamber();
+	if(result == OsResult_StopProcess)
+	{
+		return;
+	}
+
+	this->mixingPhase = MixingPhase_4;
+	this->StartBackwardMotorChamber();
+	result = this->DelaySecond(this->timeCcw);
+	this->StopMotorChamber();
+	if(result == OsResult_StopProcess)
+	{
+		return;
+	}
+
+	this->mixingPhase = MixingPhase_0;
+
+}
+//=== end Mixing ===================================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+/* void TTaskCHM::Mixing()
+{
+	EOsResult result;
+
+
 	switch(mixingPhase) {
 		case MixingPhase_0:
 			this->StartForwardMotorChamber();
@@ -682,7 +744,7 @@ void TTaskCHM::Mixing()
 
 	}
 
-}
+} */
 //=== end Mixing ===================================================================
 
 //==================================================================================
@@ -1344,6 +1406,10 @@ EOsResult TTaskCHM::Init(ETaskChamber taskChamber)
 
 	static THalMotChambers& halMC = THalMotChambers::GetInstance();
 	this->HalMotChambers= &halMC;
+
+	this->mixCounterIntervalTime = 0;
+	this->mixIntervalTime = TASK_SYS_15_MINUTES;
+	this->mixingPhase = MixingPhase_0;
 
 	if(taskChamber == TaskChamber_Left)
 	{

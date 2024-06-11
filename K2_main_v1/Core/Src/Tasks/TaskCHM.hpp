@@ -284,11 +284,11 @@ private:
 	u16 padCounterWorkTime;
 	bool flagPadOn;
 
-	u16 mixingCounterRepeatTime;
-	u16 mixingRepeatTime;
-	u16 mixingCounterTimeMode1;
-	u16 counterCycleCompostProcess;
-	EMixingMode mixingMode;
+//	u16 mixingCounterRepeatTime;
+//	u16 mixingRepeatTime;
+//	u16 mixingCounterTimeMode1;
+//	u16 counterCycleCompostProcess;
+//	EMixingMode mixingMode;
 
 	////// Dynamic Algorithm variables //////
 	u16 samplingCounter;
@@ -328,7 +328,8 @@ private:
 	u16 timeCw;
 	u16 timeCcw;
 
-	u16 mixCounterWorkTime;
+//	u16 mixCounterWorkTime;
+	u16 mixCounterIntervalTime;
 	u16 mixIntervalTime;
 
 	EMixingPhase mixingPhase;
