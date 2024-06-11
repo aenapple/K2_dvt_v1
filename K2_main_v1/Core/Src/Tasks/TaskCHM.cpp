@@ -505,10 +505,12 @@ void TTaskCHM::UpdateSensorBme688(TBme688Sensor* newBme688Sensor)
 void TTaskCHM::TickProcess()
 {
 
-//	this->GetSensorBme688();
 
 
-	this->BmeControlParams(bmeSensorChamber.temperature, bmeSensorChamber.humidity);
+	this->UpdateSensorBme688(this->bmeSensorChamber);
+
+
+	this->BmeControlParams(this->bmeSensorChamber.temperature, this->bmeSensorChamber.humidity);
 
 
 	////// Mixing counter. //////
@@ -591,6 +593,7 @@ void TTaskCHM::TickProcess()
 	}
 
 	// Activate filter fan
+	// TODO: Function for filter fan
 
 
 
