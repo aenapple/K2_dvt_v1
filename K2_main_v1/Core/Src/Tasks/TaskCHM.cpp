@@ -106,11 +106,15 @@ void TTaskCHM::Run(void)
 void TTaskCHM::MaxHumidityDifference()
 {
 
-	this->absoluteDifferenceHumidity = this->maxHumidity - this->minHumidity;
-
+	this->maxDifferenceHumidity = this->maxHumidity - this->minHumidity;
 	this->maxHumidity = 0;
 	this->minHumidity = 100;
-	this->humiditySampleCounter = this->mixIntervalTime;
+
+	if (this->mixIntervalTime >= TASK_SYS_20_MINUTES) {
+		this->humiditySampleCounter = this->mixIntervalTime;
+	} else {
+		this->humiditySampleCounter = TASK_SYS_20_MINUTES;
+	}
 }
 //=== end MaxHumidityDifference ====================================================
 
@@ -120,21 +124,133 @@ void TTaskCHM::MaxHumidityDifference()
 *
 *  @return ... .
 */
-void TTaskCHM::BmeControlParams(u16 temperature, u16 rHumidity)
+void TTaskCHM::BmeControlParams(u16 temperature, u16 bmeHumidity)
 {
+	u16 rHumidity;
 
-	if (this->avgHumidity == 0)
-		rHumidity = this->avgHumidity;
-	else
-		rHumidity = this->absoluteDifferenceHumidity;
+	if (this->maxDifferenceHumidity == 0)
+	{
+		rHumidity = bmeHumidity;
+	} else {
+		rHumidity = this->maxDifferenceHumidity;
+	}
 
 
+	if (temperature <= this->bmeLowTemp && temperature > 0){
 
-		this->mixIntervalTime = TASK_SYS_10_MINUTES;
-		this->ptcHeaterPwm    = 100;
-		this->padHeaterPwm    = 100;
-		this->ptcFanPwm       = 100;
-		this->exhaustFanPwm   = 10;
+			if (rHumidity >= this->highHumidity)
+			{
+
+				this->dutyCycle = DutyCycleMode_0;
+				this->mixIntervalTime = TASK_SYS_2_MINUTES;
+
+				this->padHeaterPwm = 100;
+				this->ptcHeaterPwm = 100;
+
+				this->ptcFanPwm = 30;
+				this->exhaustFanPwm = 0;
+				this->airFanPwm = 30;
+
+				if (this->ptcCounterWorkTime <= 0){
+					this->ptcDutyCycleOnFlag = true;
+					this->ptcCounterWorkTime = TASK_SYS_3_MINUTES;
+				}
+
+			} else if (rHumidity >= this->medHumidity) {
+				this->dutyCycle = DutyCycleMode_0;
+				this->mixIntervalTime = TASK_SYS_4_MINUTES;
+
+				this->padHeaterPwm = 90;
+				this->ptcHeaterPwm = 80;
+
+				this->ptcFanPwm = 25;
+				this->exhaustFanPwm = 0;
+				this->airFanPwm = 20;
+
+				if (this->ptcCounterWorkTime <= 0){
+					this->ptcDutyCycleOnFlag = true;
+					this->ptcCounterWorkTime = TASK_SYS_2_MINUTES;
+				}
+
+			} else {
+
+				this->mixIntervalTime = TASK_SYS_15_MINUTES;
+
+				this->padHeaterPwm = 75;
+				this->ptcHeaterPwm = 50;
+
+				this->ptcFanPwm = 10;
+				this->exhaustFanPwm = 0;
+				this->airFanPwm = 10;
+
+				if (this->ptcCounterWorkTime <= 0){
+					this->ptcDutyCycleOnFlag = true;
+					this->ptcCounterWorkTime = TASK_SYS_2_MINUTES;
+				}
+			}
+	} else if (temperature <= this->bmeHighTemp) {
+		this->dutyCycle = DutyCycleMode_0;
+
+		if (rHumidity >= this->highHumidity) {
+			this->mixIntervalTime = TASK_SYS_4_MINUTES;
+
+			this->padHeaterPwm = 90;
+			this->ptcHeaterPwm = 90;
+
+			this->ptcFanPwm = 20;
+			this->exhaustFanPwm = 15;
+			this->airFanPwm = 15;
+
+			if (this->ptcCounterWorkTime <= 0){
+				this->ptcDutyCycleOnFlag = true;
+				this->ptcCounterWorkTime = TASK_SYS_1_MINUTE;
+			}
+
+
+		} else if (rHumidity >= this->medHumidity) {
+			this->mixIntervalTime = TASK_SYS_10_MINUTES;
+
+			this->padHeaterPwm = 80;
+			this->ptcHeaterPwm = 70;
+
+			this->ptcFanPwm = 30;
+			this->exhaustFanPwm = 10;
+			this->airFanPwm = 10;
+
+			if (this->ptcCounterWorkTime <= 0){
+				this->ptcDutyCycleOnFlag = true;
+				this->ptcCounterWorkTime = TASK_SYS_1_MINUTE;
+			}
+
+
+		} else if (rHumidity >= this->lowHumidity) {
+
+            if (this->ptcCounterWorkTime >= 0 && this->dutyCycle != DutyCycleMode_1) {
+            	this->ptcDutyCycleOnFlag = true;
+            	this->dutyCycle = DutyCycleMode_1;
+				this->ptcCounterWorkTime = 0;
+            }
+
+		} else {
+            if (this->ptcCounterWorkTime >= 0 && this->dutyCycle != DutyCycleMode_2) {
+            	this->ptcDutyCycleOnFlag = true;
+            	this->dutyCycle = DutyCycleMode_2;
+				this->ptcCounterWorkTime = 0;
+            }
+		}
+
+	} else if (temperature >= this->bmeHighTemp) {
+        if (this->ptcCounterWorkTime >= 0 && this->dutyCycle != DutyCycleMode_2) {
+        	this->ptcDutyCycleOnFlag = true;
+        	this->dutyCycle = DutyCycleMode_2;
+			this->ptcCounterWorkTime = 0;
+        }
+
+	} else if  (temperature < 0) {
+		this->dutyCycle = DutyCycleMode_99;
+	}
+
+
 
 
 }
@@ -152,58 +268,44 @@ void TTaskCHM::SetStepDutyCycles()
 	switch(this->dutyCycle)
 	{
 		case DutyCycleMode_0:
-			if (this->ptcDutyCycleOnFlag) {
-				ptcIntervalTime = 0;
-				ptcCounterWorkTime = 0;
-			}
+			this->ptcIntervalTime = 0;
+			this->ptcCounterWorkTime = 0;
+
+			this->ptcFanPwm = 10;
+			this->ptcHeaterPwm = 0;
+			this->exhaustFanPwm = 10;
+
+			this->airFanPwm = 10;
+			this->ptcDutyCycleOnFlag = false;
+
 			break;
-
-		case DutyCycleMode_99:
-			if (this->ptcDutyCycleOnFlag) {
-				this->ptcDutyCycleOnFlag = false;
-
-				this->ptcHeaterPwm  = 0;
-				this->ptcFanPwm     = 0;
-				this->filterFanPwm  = 100;
-				this->exhaustFanPwm = 50;
-
-				this->ptcIntervalTime = TASK_SYS_2_MINUTES;
-				this->ptcCounterWorkTime = this->ptcIntervalTime;
-			} else {
-				this->ptcDutyCycleOnFlag = true;
-
-				this->ptcHeaterPwm  = 0;
-				this->ptcFanPwm     = 0;
-				this->filterFanPwm  = 100;
-				this->exhaustFanPwm = 50;
-
-				this->ptcIntervalTime = TASK_SYS_2_MINUTES;
-				this->ptcCounterWorkTime = this->ptcIntervalTime;
-			}
-			break;
-
 
 		case DutyCycleMode_1:
 			if (this->ptcDutyCycleOnFlag) {
 				this->ptcDutyCycleOnFlag = false;
 
 				this->ptcHeaterPwm  = 0;
-				this->ptcFanPwm     = 0;
-				this->filterFanPwm  = 100;
-				this->exhaustFanPwm = 50;
+				this->padHeaterPwm  = 0;
 
-				this->ptcIntervalTime = TASK_SYS_2_MINUTES;
+				this->ptcFanPwm     = 0;
+				this->airFanPwm  =   10;
+				this->exhaustFanPwm = 0;
+
+				this->ptcIntervalTime = TASK_SYS_15_MINUTES;
 				this->ptcCounterWorkTime = this->ptcIntervalTime;
 			} else {
 				this->ptcDutyCycleOnFlag = true;
+				this->mixIntervalTime = TASK_SYS_30_MINUTES;
 
-				this->ptcHeaterPwm  = 0;
-				this->ptcFanPwm     = 0;
-				this->filterFanPwm  = 100;
-				this->exhaustFanPwm = 50;
+				this->padHeaterPwm  = 40;
 
-				this->ptcIntervalTime = TASK_SYS_2_MINUTES;
-				this->ptcCounterWorkTime = this->ptcIntervalTime;
+				this->ptcHeaterPwm  = 60;
+				this->ptcFanPwm     = 20;
+
+				this->airFanPwm  =    0;
+				this->exhaustFanPwm = 0;
+
+				this->ptcCounterWorkTime = TASK_SYS_5_MINUTES;
 			}
 			break;
 
@@ -212,52 +314,63 @@ void TTaskCHM::SetStepDutyCycles()
 				this->ptcDutyCycleOnFlag = false;
 
 				this->ptcHeaterPwm  = 0;
-				this->ptcFanPwm     = 0;
-				this->filterFanPwm  = 100;
-				this->exhaustFanPwm = 50;
+				this->padHeaterPwm  = 0;
 
-				this->ptcIntervalTime = TASK_SYS_2_MINUTES;
+				this->ptcFanPwm     = 0;
+				this->airFanPwm  =    0;
+				this->exhaustFanPwm = 0;
+
+				this->ptcIntervalTime = TASK_SYS_40_MINUTES;
 				this->ptcCounterWorkTime = this->ptcIntervalTime;
 			} else {
 				this->ptcDutyCycleOnFlag = true;
+				this->mixIntervalTime = TASK_SYS_20_MINUTES;
 
-				this->ptcHeaterPwm  = 0;
-				this->ptcFanPwm     = 0;
-				this->filterFanPwm  = 100;
-				this->exhaustFanPwm = 50;
+				this->padHeaterPwm  = 30;
 
-				this->ptcIntervalTime = TASK_SYS_2_MINUTES;
-				this->ptcCounterWorkTime = this->ptcIntervalTime;
+				this->ptcHeaterPwm  = 40;
+				this->ptcFanPwm     = 20;
+
+				this->airFanPwm  =    10;
+				this->exhaustFanPwm = 0;
+
+				this->ptcCounterWorkTime = TASK_SYS_5_MINUTES;
 			}
 			break;
 
-		case DutyCycleMode_3:
-			if (this->ptcDutyCycleOnFlag) {
-				this->ptcDutyCycleOnFlag = false;
+		case DutyCycleMode_99:
+				if (this->ptcDutyCycleOnFlag) {
+					this->ptcDutyCycleOnFlag = false;
 
-				this->ptcHeaterPwm  = 0;
-				this->ptcFanPwm     = 0;
-				this->filterFanPwm  = 100;
-				this->exhaustFanPwm = 50;
+					this->ptcHeaterPwm  = 0;
+					this->padHeaterPwm  = 50;
 
-				this->ptcIntervalTime = TASK_SYS_2_MINUTES;
-				this->ptcCounterWorkTime = this->ptcIntervalTime;
-			} else {
-				this->ptcDutyCycleOnFlag = true;
+					this->ptcFanPwm     = 0;
+					this->airFanPwm  =    0;
+					this->exhaustFanPwm = 0;
 
-				this->ptcHeaterPwm  = 0;
-				this->ptcFanPwm     = 0;
-				this->filterFanPwm  = 100;
-				this->exhaustFanPwm = 50;
+					this->ptcIntervalTime = TASK_SYS_2_MINUTES;
+					this->ptcCounterWorkTime = this->ptcIntervalTime;
+				} else {
+					this->ptcDutyCycleOnFlag = true;
+					this->mixIntervalTime = TASK_SYS_10_MINUTES;
 
-				this->ptcIntervalTime = TASK_SYS_2_MINUTES;
-				this->ptcCounterWorkTime = this->ptcIntervalTime;
-			}
-			break;
+					this->padHeaterPwm  = 70;
+
+					this->ptcHeaterPwm  = 80;
+					this->ptcFanPwm     = 20;
+
+					this->airFanPwm  =    10;
+					this->exhaustFanPwm = 0;
+
+					this->ptcCounterWorkTime = TASK_SYS_2_MINUTES;
+				}
+				break;
+
+
+
 
 	}
-
-
 }
 //=== end SetStepDutyCycles ========================================================
 
@@ -279,20 +392,20 @@ void TTaskCHM::ActuatorPWMCheck()
 	 else if (this->ptcFanPwm <= 0)
 		this->ptcFanPwm = 0;
 
-	if (this->filterFanPwm >= 100)
-		this->filterFanPwm = 100;
-	 else if (this->filterFanPwm <= 0)
-		this->filterFanPwm = 0;
+	if (this->airFanPwm >= 100)
+		this->airFanPwm = 100;
+	 else if (this->airFanPwm <= 0)
+		this->airFanPwm = 0;
 
 	if (this->exhaustFanPwm >= 100)
 		this->exhaustFanPwm = 100;
 	 else if (this->exhaustFanPwm <= 0)
 		this->exhaustFanPwm = 0;
 
-	if (this->filterFanPwm >= 100)
-		this->filterFanPwm = 100;
-	 else if (this->filterFanPwm <= 0)
-		this->filterFanPwm = 0;
+	if (this->airFanPwm >= 100)
+		this->airFanPwm = 100;
+	 else if (this->airFanPwm <= 0)
+		this->airFanPwm = 0;
 }
 //=== end ActuatorPWMCheck =========================================================
 
@@ -307,38 +420,38 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 	u32 resultBits;
 //	EOsResult result;
 
-
 	this->Delay(10);
 
 	this->taskChmState = taskChmState;
+	this-> humiditySampleCounter =	this->samplingCounter;
+
 //	this->SetEvents(TASK_CHM_EVENT_MIXING);
-//	this->ptcCounterRepeatTime = 0;
-//	this->ptcCounterWorkTime = this->ptcWorkTime;
-//	this->flagPtcOn = true;
-//	this->SetPtcTemperatureLevels(50, 55);
-//	this->SetPadTemperatureLevels(38, 40);
 
 	this->samplingCounter = TASK_SYS_20_MINUTES;
 
 	this->mixingPhase = MixingPhase_0;
 	this->mixIntervalTime = TASK_SYS_2_MINUTES;
-//	this->mixCounterWorkTime =  TASK_SYS_20_SECONDS;
+//	this->mixCounterIntervalTime = 0;
 
-	this->SetEvents(TASK_CHM_EVENT_MIXING);
-
-	this->modePtcFan = ModePtcFan_1h_2h;
-	this->StartFanPtc(50);
-	this->ptcFanCounterRepeatTime = TASK_SYS_2_HOURS;
-	this->ptcFanCounterWorkTime = TASK_SYS_1_HOUR;
+	this->dutyCycle = DutyCycleMode_0;
 
 	this->lowHumidity  = TASK_CHM_LOW_HUMIDITY;
 	this->medHumidity  = TASK_CHM_MED_HUMIDITY;
 	this->highHumidity = TASK_CHM_HIGH_HUMIDITY;
 
-	this->minHumidity = 100;
-	this->maxHumidity = 0;
 
-	this-> humiditySampleCounter =	this->samplingCounter;
+	this->padHeaterPwm = 100;
+
+	this->ptcHeaterPwm = 50;
+	this->ptcFanPwm = 10;
+	this->ptcIntervalTime = 0;
+	this->ptcCounterWorkTime = 0;
+	this->ptcDutyCycleOnFlag = false;
+
+	this->airFanPwm = 10;
+
+	this->exhaustFanPwm = 10;
+
 
 	this->maxGas = TASK_CHM_MAX_GAS;
 	this->minGas = TASK_CHM_MIN_GAS;
@@ -347,9 +460,16 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 	this->bmeMedTemp   = TASK_CHM_MED_TEMP;
 	this->bmeHighTemp  = TASK_CHM_HIGH_TEMP;
 
-	this->ptcDutyCycleOnFlag = false;
 
-	this->dutyCycle = DutyCycleMode_0;
+	// Feature Variables
+	this->minHumidity = 100;
+	this->maxHumidity = 0;
+
+	this->maxDifferenceHumidity = 0;
+
+
+
+
 
 	this->ClearEvents(TASK_CHM_EVENT_TICK_PROCESS);
 	while(true)
@@ -439,9 +559,6 @@ void TTaskCHM::TickProcess()
 
 
 
-	this->BmeControlParams(this->bmeSensorChamber.temperature, this->bmeSensorChamber.humidity);
-
-
 	////// Mixing counter. //////
 	if(this->mixCounterIntervalTime < this->mixIntervalTime)
 	{
@@ -453,12 +570,6 @@ void TTaskCHM::TickProcess()
 		this->SetEvents(TASK_CHM_EVENT_MIXING);
 	}
 
-/*	if (this->mixCounterWorkTime > 0){
-			this->mixCounterWorkTime--;
-
-	} else {
-		this->Mixing();
-	} */
 
 	////// PTC Fan & Heater counter. For Duty Cycle	 //////
 	if (this->ptcCounterWorkTime > 0) {
@@ -495,12 +606,15 @@ void TTaskCHM::TickProcess()
 	}
 
 
+	// TODO Get BME Sensor data from Exhaust
+	this->BmeControlParams(this->bmeSensorChamber.temperature, this->bmeSensorChamber.humidity);
 
 	this->ActuatorPWMCheck();
-	if (this->ptcFanPwm > 0) {
-		this->StartFanPtc(this->ptcFanPwm);
+
+	if (this->padHeaterPwm) {
+		this->StartHeaterPad(padHeaterPwm);
 	} else {
-		this->StopFanPtc();
+		this->StopHeaterPad();
 	}
 
 	if (this->ptcHeaterPwm > 0) {
@@ -509,21 +623,28 @@ void TTaskCHM::TickProcess()
 		this->StopHeaterPtc();
 	}
 
-	if (this->exhaustFanPwm > 0) {
-		TaskHAL.StartMainFan(exhaustFanPwm);
- 	} else {
-		TaskHAL.StopMainFan();
- 	}
-
-	if (this->padHeaterPwm) {
-		this->StartHeaterPad(padHeaterPwm);
+	if (this->ptcFanPwm > 0) {
+		this->StartFanPtc(this->ptcFanPwm);
 	} else {
-		this->StopHeaterPad();
+		this->StopFanPtc();
 	}
 
-	// Activate filter fan
-	// TODO: Function for filter fan
+	if (this->airFanPwm > 0) {
+		this->StartFanAir(this->airFanPwm);
+	} else {
+		this->StopFanAir();
+	}
 
+
+	// TODO if (TaskChmLeft.exhaustFanPwm > TaskChmRight.exhaustFanPwm)
+	// 	           TaskHAL.StartMainFan(TaskChmRight.exhaustFanPwm);
+	//       else
+	//             TaskHAL.StartMainFan(TaskChmLeft.exhaustFanPwm);
+//	if (this->exhaustFanPwm > 0) {
+//		TaskHAL.StartMainFan(exhaustFanPwm);
+// 	} else {
+//		TaskHAL.StopMainFan();
+// 	}
 
 
 //	if(this->counterCycleCompostProcess < TASK_SYS_360_MINUTES)
