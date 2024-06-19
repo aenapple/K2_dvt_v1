@@ -268,7 +268,7 @@ void TTaskSYS::Run(void)
 					TASK_SYS_EVENT_UART_RX_CPLT |
 					TASK_SYS_EVENT_UART_ERROR	|
 					TASK_SYS_EVENT_RESET        |
-					TASK_SYS_EVENT_TOP_REMOVED  |
+//					TASK_SYS_EVENT_TOP_REMOVED  |
 					TASK_SYS_EVENT_LID_OPEN     |
 					TASK_SYS_EVENT_TICK_PROCESS |
 					TASK_SYS_EVENT_START_TEST   |
@@ -312,11 +312,13 @@ void TTaskSYS::Run(void)
 
 #ifndef __DEBUG_EXTERNAL_PC_CONTROL
 
- 		if((resultBits & TASK_SYS_EVENT_TOP_REMOVED) > 0)
- 		{
- 			this->SetSysState(SysState_TopRemoved);
- 			this->SelfTest();
- 		}
+// 		if((resultBits & TASK_SYS_EVENT_TOP_REMOVED) > 0)
+// 		{
+// 			this->SetSysState(SysState_TopRemoved);
+// 			this->SelfTest();
+//
+// 			this->ProcessTopRemoved();
+// 		}
 
  		if((resultBits & TASK_SYS_EVENT_LID_OPEN) > 0)
  		{
@@ -371,17 +373,17 @@ void TTaskSYS::Run(void)
 void TTaskSYS::SelfTest()
 {
 	u32 resultBits;
-	ESysState inputSysState;
 
 
-	TaskChmLeft.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
-	TaskChmRight.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+//	TaskChmLeft.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+//	TaskChmRight.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+//	this->ControlMainFan(0);
 
 	this->ClearEvents(TASK_SYS_EVENT_TOP_PRESENT | TASK_SYS_EVENT_LID_CLOSED | TASK_SYS_EVENT_TOP_LOCKED);
 	TaskHAL.SetEvents(TASK_HAL_CMD_SELF_TEST);
 
-	inputSysState = this->sysState;
-	if(inputSysState != SysState_TopRemoved)
+///	inputSysState = this->sysState;
+//	if(inputSysState != SysState_TopRemoved)
 	{
 		this->SetSysState(SysState_SelsfTest);
 	}
@@ -408,13 +410,14 @@ void TTaskSYS::SelfTest()
 
 		if((resultBits & TASK_SYS_EVENT_OK) > 0)
 		{
-			if(inputSysState == SysState_TopRemoved)
+/*			if(inputSysState == SysState_TopRemoved)
 			{
 				this->SetSysState(SysState_Idle);
 				TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 				TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
-			}
+			} */
 
+			//this->ControlMainFan(20);
 			break;  // Self Test - OK
 		}
 
@@ -635,8 +638,9 @@ void TTaskSYS::ProcessTopUnlocked()
 
 		if((resultBits & TASK_SYS_EVENT_TOP_REMOVED) > 0)
 		{
-		   	this->SetEvents(TASK_SYS_EVENT_TOP_REMOVED);
-		   	return;
+//		   	this->SetEvents(TASK_SYS_EVENT_TOP_REMOVED);
+//		   	return;
+			this->ProcessTopRemoved();
 		}
 
 		if((resultBits & TASK_SYS_EVENT_TOP_LOCKED) > 0)
@@ -670,6 +674,58 @@ void TTaskSYS::ProcessTopUnlocked()
 }
 //=== end ProcessTopUnlocked =======================================================
 
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskSYS::ProcessTopRemoved()
+{
+	u32 resultBits;
+
+
+//	TaskChmLeft.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+//	TaskChmRight.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+//	TaskHAL.SetEvents();
+
+	this->SetSysState(SysState_TopRemoved);
+	while(true)
+	{
+
+		if(this->EventGroup.WaitOrBits(
+					TASK_SYS_EVENT_UART_RX_CPLT |
+					TASK_SYS_EVENT_UART_ERROR	|
+					TASK_SYS_EVENT_TOP_PRESENT,
+					&resultBits,
+					100
+					) == OsResult_Timeout)
+	    {
+			continue;
+	    }
+
+		if((resultBits & TASK_SYS_EVENT_TOP_PRESENT) > 0)
+		{
+			HAL_NVIC_SystemReset();
+		   	return;
+		}
+
+	    if((resultBits & TASK_SYS_EVENT_UART_RX_CPLT) > 0)
+	    {
+	    	this->ProcessRxData();
+	    }
+
+	    if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
+	    {
+	    	this->Delay(20);
+	    	this->ReInitUart();
+	    	this->StartRxData();
+       	}
+
+	}
+
+}
+//=== end ProcessTopRemoved ========================================================
 
 //==================================================================================
 /**
@@ -1365,6 +1421,25 @@ EOsResult TTaskSYS::GetStateLamp(EIfcVipCommand ifcVipCommand, u8* pData)
 	return(OsResult_Ok);
 }
 //=== end GetStateLamp =============================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return
+*  		none.
+*/
+EOsResult TTaskSYS::ControlMainFan(u8 pwm)
+{
+	TSysCommand sysCommand;
+
+
+	sysCommand.command = SysCommand_ControlFan;
+	sysCommand.parameters[IFC_VIP_FAN_PWM_INDEX] = pwm;
+
+	return(TaskHAL.SendSysCommand(&sysCommand));
+}
+//=== end ControlMainFan ===========================================================
 
 //==================================================================================
 /**

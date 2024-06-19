@@ -277,6 +277,7 @@ private:
 	////// functions //////
     void SelfTest(void);
     void ProcessTopUnlocked(void);
+    void ProcessTopRemoved(void);
     void ProcessLidOpen(void);
     void ProcessTest(void);
     void ProcessSetPosition(u8 position);
@@ -300,6 +301,7 @@ private:
     EOsResult ReadPacketFromEeprom(u32 address, u8* data);
     EOsResult ControlLamp(u8* pData);
     EOsResult GetStateLamp(EIfcVipCommand ifcVipCommand, u8* pData);
+    EOsResult ControlMainFan(u8 pwm);
     EOsResult ControlFan(u8* pData);
     EOsResult GetStateFan(u8* pData);
     EOsResult ControlMotor(u8* pData);

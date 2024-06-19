@@ -752,6 +752,10 @@ void TTaskHAL::ProcessSelfTest(void)
 
 	} // end while()
 
+	this->StartMainFan(20);
+
+	this->Delay(100);
+
 	this->ProcessTestTop();
 
 //	TaskSYS.SetEvents(TASK_SYS_EVENT_OK);
