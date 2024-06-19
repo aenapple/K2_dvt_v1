@@ -10,13 +10,14 @@
 /**********************************************************************************/
 SYS_STATE_TABLE	 (SysState_NoState, IfcVipState_NoState, 0),
 
-SYS_STATE_TABLE	 (SysState_SelsfTest,	IfcVipState_SelfTest,	0),
-SYS_STATE_TABLE	 (SysState_Idle,		IfcVipState_Idle,		0),
-SYS_STATE_TABLE	 (SysState_Init,		IfcVipState_Init,		0),
-SYS_STATE_TABLE	 (SysState_Busy,		IfcVipState_Busy,		0),
-SYS_STATE_TABLE	 (SysState_TopRemoved,	IfcVipState_TopRemoved,	0),
-SYS_STATE_TABLE	 (SysState_LidOpen,		IfcVipState_LidOpen,	0),
-SYS_STATE_TABLE	 (SysState_Grinding,	IfcVipState_Grinding,	0),
+SYS_STATE_TABLE	 (SysState_SelsfTest,		IfcVipState_SelfTest,		0),
+SYS_STATE_TABLE	 (SysState_Idle,			IfcVipState_Idle,			0),
+SYS_STATE_TABLE	 (SysState_Init,			IfcVipState_Init,			0),
+SYS_STATE_TABLE	 (SysState_Busy,			IfcVipState_Busy,			0),
+SYS_STATE_TABLE	 (SysState_TopRemoved,		IfcVipState_TopRemoved,		0),
+SYS_STATE_TABLE	 (SysState_LidOpen,			IfcVipState_LidOpen,		0),
+SYS_STATE_TABLE	 (SysState_Grinding,		IfcVipState_Grinding,		0),
+SYS_STATE_TABLE	 (SysState_TopUnlocked,		IfcVipState_TopUnlocked,	0),
 
 
 SYS_STATE_TABLE	 (SysError_Start,	IfcVipState_Error, 0),

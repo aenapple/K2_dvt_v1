@@ -346,6 +346,8 @@ private:
 	void TickProcess(void);
 	void Mixing(EMixingPhase mixingPhase);
 	void StopProcess(void);
+	void StartFanAir(u8 pwm);
+	void StopFanAir(void);
 	void StartFanPtc(u8 pwm);
 	void StopFanPtc(void);
 	void StartHeaterPtc(u8 pwm);

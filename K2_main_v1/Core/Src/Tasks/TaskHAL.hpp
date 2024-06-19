@@ -304,6 +304,8 @@ private:
 	bool flagSentEventTopPresent;
 	bool flagSentEventLidOpen;
 	bool flagSentEventLidClosed;
+	bool flagSentEventUnlocked;
+	bool flagSentEventLocked;
 	bool flagTopLocked;
 
 	bool flagPresentTank;
@@ -341,6 +343,7 @@ private:
 	void ProcessSelfTest(void);
 	void ProcessTestTop(void);
 	void ProcessSetPosition(u8 position);
+	EOsResult WaitingLocked(void);
 	void Grinding(void);
 	EOsResult CheckConnectionTopCpu(void);
 	EOsResult CheckLockTop(void);

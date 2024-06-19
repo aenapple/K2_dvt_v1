@@ -243,13 +243,13 @@ void TTaskSYS::Run(void)
 
 	this->SetSysState(SysState_Idle);
 
-	// DEBUG
+#ifdef __DEBUG_EXTERNAL_PC_CONTROL
 	TaskHAL.AcPowerOn();
 	this->Delay(400);
-//	this->SetEvents(TASK_SYS_EVENT_START_TEST);
-//	this->SetEvents(TASK_SYS_CMD_SET_RIGHT_OPEN);
-	// DEBUG
-
+#else
+	TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+	TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+#endif
 
 	while(true)
 	{
@@ -275,6 +275,7 @@ void TTaskSYS::Run(void)
 //					TASK_SYS_EVENT_END_GRINDING |
 					TASK_SYS_CMD_SET_LEFT_OPEN  |
 					TASK_SYS_CMD_SET_RIGHT_OPEN |
+					TASK_SYS_EVENT_TOP_UNLOCKED |
 					TASK_SYS_EVENT_ERROR,
 					&resultBits,
 					1000  // 1 Sec
@@ -320,6 +321,11 @@ void TTaskSYS::Run(void)
  		if((resultBits & TASK_SYS_EVENT_LID_OPEN) > 0)
  		{
  		   	this->ProcessLidOpen();
+ 		}
+
+ 		if((resultBits & TASK_SYS_EVENT_TOP_UNLOCKED) > 0)
+ 		{
+ 		 	this->ProcessTopUnlocked();
  		}
 
  		if((resultBits & TASK_SYS_EVENT_TICK_PROCESS) > 0)
@@ -368,7 +374,10 @@ void TTaskSYS::SelfTest()
 	ESysState inputSysState;
 
 
-	this->ClearEvents(TASK_SYS_EVENT_TOP_PRESENT | TASK_SYS_EVENT_LID_CLOSED);
+	TaskChmLeft.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+	TaskChmRight.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+
+	this->ClearEvents(TASK_SYS_EVENT_TOP_PRESENT | TASK_SYS_EVENT_LID_CLOSED | TASK_SYS_EVENT_TOP_LOCKED);
 	TaskHAL.SetEvents(TASK_HAL_CMD_SELF_TEST);
 
 	inputSysState = this->sysState;
@@ -387,6 +396,8 @@ void TTaskSYS::SelfTest()
 					TASK_SYS_EVENT_TOP_PRESENT  |
 					TASK_SYS_EVENT_LID_OPEN     |
 					TASK_SYS_EVENT_LID_CLOSED   |
+					TASK_SYS_EVENT_TOP_LOCKED   |
+					TASK_SYS_EVENT_TOP_UNLOCKED |
 					TASK_SYS_EVENT_ERROR,
 					&resultBits,
 					100
@@ -400,6 +411,8 @@ void TTaskSYS::SelfTest()
 			if(inputSysState == SysState_TopRemoved)
 			{
 				this->SetSysState(SysState_Idle);
+				TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+				TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 			}
 
 			break;  // Self Test - OK
@@ -412,7 +425,6 @@ void TTaskSYS::SelfTest()
 
 		if((resultBits & TASK_SYS_EVENT_TOP_PRESENT) > 0)
 		{
-//			TaskHAL.SetEvents(TASK_HAL_CMD_SELF_TEST);
 			this->SetSysState(SysState_SelsfTest);
 		}
 
@@ -423,7 +435,16 @@ void TTaskSYS::SelfTest()
 
 		if((resultBits & TASK_SYS_EVENT_LID_CLOSED) > 0)
 		{
-//			TaskHAL.SetEvents(TASK_HAL_CMD_SELF_TEST);
+			this->SetSysState(SysState_SelsfTest);
+		}
+
+		if((resultBits & TASK_SYS_EVENT_TOP_UNLOCKED) > 0)
+		{
+		   	this->SetSysState(SysState_TopUnlocked);
+		}
+
+		if((resultBits & TASK_SYS_EVENT_TOP_LOCKED) > 0)
+		{
 			this->SetSysState(SysState_SelsfTest);
 		}
 
@@ -585,6 +606,77 @@ void TTaskSYS::ProcessSetPosition(u8 position)
 *
 *  @return ... .
 */
+void TTaskSYS::ProcessTopUnlocked()
+{
+	u32 resultBits;
+
+
+	TaskChmLeft.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+	TaskChmRight.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+//	TaskHAL.SetEvents();
+
+	this->SetSysState(SysState_TopUnlocked);
+	this->ClearEvents(TASK_SYS_EVENT_TOP_LOCKED);
+	while(true)
+	{
+
+		if(this->EventGroup.WaitOrBits(
+					TASK_SYS_EVENT_UART_RX_CPLT |
+					TASK_SYS_EVENT_UART_ERROR	|
+					TASK_SYS_EVENT_TOP_REMOVED  |
+					TASK_SYS_EVENT_TOP_LOCKED   |
+					TASK_SYS_EVENT_ERROR,
+					&resultBits,
+					100
+					) == OsResult_Timeout)
+	    {
+			continue;
+	    }
+
+		if((resultBits & TASK_SYS_EVENT_TOP_REMOVED) > 0)
+		{
+		   	this->SetEvents(TASK_SYS_EVENT_TOP_REMOVED);
+		   	return;
+		}
+
+		if((resultBits & TASK_SYS_EVENT_TOP_LOCKED) > 0)
+		{
+			TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+			TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+			this->SetSysState(SysState_Idle);
+			return;  // ОК
+		}
+
+	    if((resultBits & TASK_SYS_EVENT_ERROR) > 0)
+	    {
+	       	this->SetEvents(TASK_SYS_EVENT_ERROR);
+	    	return;
+	    }
+
+	    if((resultBits & TASK_SYS_EVENT_UART_RX_CPLT) > 0)
+	    {
+	    	this->ProcessRxData();
+	    }
+
+	    if((resultBits & TASK_SYS_EVENT_UART_ERROR) > 0)
+	    {
+	    	this->Delay(20);
+	    	this->ReInitUart();
+	    	this->StartRxData();
+       	}
+
+	}
+
+}
+//=== end ProcessTopUnlocked =======================================================
+
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
 void TTaskSYS::ProcessLidOpen()
 {
 	EOsResult result;
@@ -614,8 +706,8 @@ void TTaskSYS::ProcessLidOpen()
 		return;
 	}
 
-	TaskChmLeft.StartCycleCompostProcess();
-	TaskChmRight.StartCycleCompostProcess();
+//	TaskChmLeft.StartCycleCompostProcess();
+//	TaskChmRight.StartCycleCompostProcess();
 
 	if(result == OsResult_LidOpen)
 	{
@@ -645,7 +737,7 @@ void TTaskSYS::ProcessLidOpen()
 void TTaskSYS::InitProcessError(EOsResult result)
 {
 	// DEBUG
-	this->SetSysState(SysError_ApplicationError);
+
 	this->ProcessError();
 	// DEBUG
 }
@@ -672,7 +764,19 @@ void TTaskSYS::ProcessError()
 	} */
 #endif
 
+
+	if(this->sysState == SysError_InterfaceVipM)
+	{
+		this->Delay(1000);
+		this->SetEvents(TASK_SYS_EVENT_TOP_REMOVED);
+		return;
+	}
+
 	TaskUI.SetState(TASK_UI_EVENT_ERROR);
+	TaskChmLeft.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+	TaskChmRight.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+
+
 
 	while(true)
 	{
@@ -1799,11 +1903,11 @@ void TTaskSYS::UpdateTopCpuState(TIfcSystemState* IfcSystemState)
 
 	taskEXIT_CRITICAL();
 
-/*	if(this->getState.state == IfcVipState_Error)
+	if(IfcSystemState->sysState == IfcVipState_Error)
 	{
-		this->SetSysState(this->getState.error);
+		this->SetSysState(SysError_InterfaceVipM);
 	}
-	*/
+
 }
 //=== end UpdateTopCpuState ========================================================
 
@@ -2032,19 +2136,19 @@ void TTaskSYS::TestChamberMotors()
 	{
 		HalMotChambers->StartForwardMotorLeft();
 		HalMotChambers->StartForwardMotorRight();
-		this->Delay(10 * 60 * 1000);  // 10 minutes
+		this->Delay(10 * 1000);  // 10 Sec
 		HalMotChambers->StopMotorLeft();
 		HalMotChambers->StopMotorRight();
 
-		this->Delay(10 * 60 * 1000);  // 10 minutes
+		this->Delay(1000);  // 1 Sec
 
 		HalMotChambers->StartBackwardMotorLeft();
 		HalMotChambers->StartBackwardMotorRight();
-		this->Delay(10 * 60 * 1000);  // 10 minutes
+		this->Delay(10 * 1000);  // 10 Sec
 		HalMotChambers->StopMotorLeft();
 		HalMotChambers->StopMotorRight();
 
-		this->Delay(10 * 60 * 1000);  // 10 minutes
+		this->Delay(1000);  // 1 Sec
 	}
 
 
@@ -2075,7 +2179,7 @@ void TTaskSYS::TestMainMotor()
 		// short cut resistor
 		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_SET);
 
-		this->Delay(5800);
+		this->Delay(4800);
 
 		// added resistor
 		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
@@ -2091,7 +2195,7 @@ void TTaskSYS::TestMainMotor()
 
 
 		// added resistor
-		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
+/*		HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
 
 		TaskHAL.StartMainMotorCCW();
 
@@ -2111,7 +2215,7 @@ void TTaskSYS::TestMainMotor()
 		TaskHAL.BrakeOnMainMotor();
 		this->Delay(2000);
 
-		TaskUI.SetState(TASK_UI_EVENT_INIT);
+		TaskUI.SetState(TASK_UI_EVENT_INIT); */
 
 
 		TaskHAL.AcPowerOff();
@@ -2389,9 +2493,10 @@ EOsResult TTaskSYS::Init(void)
    	this->enableTickHook = true;
 
 
-   	HAL_GPIO_WritePin(TOP_RST_GPIO_Port, TOP_RST_Pin, GPIO_PIN_SET);
+/*  	HAL_GPIO_WritePin(TOP_RST_GPIO_Port, TOP_RST_Pin, GPIO_PIN_SET);
    	this->Delay(200);
    	HAL_GPIO_WritePin(TOP_RST_GPIO_Port, TOP_RST_Pin, GPIO_PIN_RESET);
+   	this->Delay(200); */
 
 // 	this->TestChamberMotors();
 // 	this->TestMainMotor();

@@ -61,7 +61,7 @@ void THalDcFans::StartFanPtcLeft(u8 pwm)
 */
 void THalDcFans::StopFanPtcLeft()
 {
-	this->FanPtcLeft.StopPwm();
+	this->FanPtcLeft.StartPwm(0);
 }
 //=== end StopFanPtcLeft ===========================================================
 
@@ -109,7 +109,7 @@ void THalDcFans::StartFanPtcRight(u8 pwm)
 */
 void THalDcFans::StopFanPtcRight()
 {
-	this->FanPtcRight.StopPwm();
+	this->FanPtcRight.StartPwm(0);
 }
 //=== end StopFanPtcRight ==========================================================
 
@@ -157,7 +157,7 @@ void THalDcFans::StartFanAirLeft(u8 pwm)
 */
 void THalDcFans::StopFanAirLeft()
 {
-	this->FanAirLeft.StopPwm();
+	this->FanAirLeft.StartPwm(0);
 }
 //=== end StopFanAirLeft ===========================================================
 
@@ -205,7 +205,7 @@ void THalDcFans::StartFanAirRight(u8 pwm)
 */
 void THalDcFans::StopFanAirRight()
 {
-	this->FanAirRight.StopPwm();
+	this->FanAirRight.StartPwm(0);
 }
 //=== end StopFanAirRight ==========================================================
 

@@ -16,11 +16,10 @@
 
 //	#define __DEBUG_TOP_CPU_NOT_PRESENT
 //	#define __DEBUG_TEST_MIXING_MECHANISM
-	#define __DEBUG_RTC_NOT_PRESENT
 
 //	#define __DEBUG_BETA_TEST
 
-	#define __DEBUG_EXTERNAL_PC_CONTROL
+//	#define __DEBUG_EXTERNAL_PC_CONTROL
 
 #endif
 

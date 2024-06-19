@@ -443,7 +443,7 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 
         if((resultBits & TASK_CHM_EVENT_MIXING) > 0)
         {
-//        	this->Mixing();
+        	this->Mixing();
         	this->ClearEvents(TASK_CHM_EVENT_MIXING);
         }
 
@@ -753,6 +753,44 @@ void TTaskCHM::Mixing()
 *
 *  @return ... .
 */
+void TTaskCHM::StartFanAir(u8 pwm)
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalDcFans->StartFanAirLeft(pwm);
+	}
+	else
+	{
+		this->HalDcFans->StartFanAirRight(pwm);
+	}
+}
+//=== end StartFanAir ==============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::StopFanAir()
+{
+	if(this->taskChamber == TaskChamber_Left)
+	{
+		this->HalDcFans->StopFanAirLeft();
+	}
+	else
+	{
+		this->HalDcFans->StopFanAirRight();
+	}
+}
+//=== end StopFanAir ===============================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
 void TTaskCHM::StartFanPtc(u8 pwm)
 {
 	if(this->taskChamber == TaskChamber_Left)
@@ -1044,6 +1082,7 @@ void TTaskCHM::StopProcess()
 	this->StopHeaterPtc();
 	this->StopHeaterPad();
 	this->StopFanPtc();
+	this->StopFanAir();
 }
 //=== end StopProcess ==============================================================
 
@@ -1085,7 +1124,8 @@ EOsResult TTaskCHM::DelaySecond(u16 seconds)
 	    }
 	    else
 	    {
-	       	return(OsResult_StopProcess);  // received TASK_CHM_EVENT_STOP_PROCESS
+	    	this->SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+	    	return(OsResult_StopProcess);  // received TASK_CHM_EVENT_STOP_PROCESS
 	    }
 
 	}  // end while(true)

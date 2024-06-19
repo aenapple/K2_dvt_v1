@@ -119,7 +119,7 @@ void TTaskHAL::SetEventTickFromISR(void)
 		this->counterGetBme688 = 0;
 	}
 
-	if(this->counterGetCpuState > 0)
+/*	if(this->counterGetCpuState > 0)
 	{
 		this->counterGetCpuState--;
 	}
@@ -127,7 +127,7 @@ void TTaskHAL::SetEventTickFromISR(void)
 	{
 		this->counterGetCpuState = TASK_HAL_TIME_GET_CPU_STATE;
 		this->SetEventsFromISR(TASK_HAL_EVENT_GET_CPU_STATE);
-	}
+	} */
 
 #endif
 
@@ -186,8 +186,40 @@ void TTaskHAL::Run(void)
 					100
 					) == OsResult_Timeout)
         {
-            this->CheckTopRemoved();
-//            this->CheckLidOpen();
+#ifndef __DEBUG_EXTERNAL_PC_CONTROL
+        	if(this->CheckTopRemoved())
+        	{
+        		this->AcPowerOff();
+        	}
+        	else
+        	{
+        		if(!this->CheckTopPresent())
+        		{
+        			this->AcPowerOff();
+        			TaskSYS.SetSysState(SysError_InterfaceVipM);
+        		    continue;
+        		}
+
+        		result = this->CheckLockTop();
+        		if(result != OsResult_Ok)
+        		{
+        			this->AcPowerOff();
+        			TaskSYS.SetSysState(SysError_InterfaceVipM);
+        		    continue;
+        		}
+
+        		if(this->flagTopLocked)
+        		{
+        			this->AcPowerOn();
+        			this->CheckLidOpen();
+        		}
+        		else
+        		{
+        			this->AcPowerOff();
+        		}
+
+        	}
+#endif
 
         	continue;
         }
@@ -248,14 +280,14 @@ void TTaskHAL::Run(void)
             this->GetSensorBme688(IfcBme688Sensor_Right);
         }
 
-        if((resultBits & TASK_HAL_EVENT_GET_CPU_STATE) > 0)
+/*        if((resultBits & TASK_HAL_EVENT_GET_CPU_STATE) > 0)
         {
         	result = this->GetStateTopCpu();
         	if(result != OsResult_Ok)
         	{
         		TaskSYS.SetSysState(SysError_InterfaceVipM);
         	}
-        }
+        } */
 
         if((resultBits & TASK_HAL_CMD_SELF_TEST) > 0)
         {
@@ -602,99 +634,108 @@ void TTaskHAL::ProcessSelfTest(void)
 	EOsResult result;
 
 
-	this->AcPowerOff();
-	this->Delay(200);
-	if(this->flagAcMainPresent)
-	{
-		TaskSYS.SetSysState(SysError_MainAcNotPresent);  // Error - AC Main is present
-		return;
-	}
-
-/*	this->AcPowerOn();
-	this->Delay(300);
-	if(!this->flagAcMainPresent)
-	{
-		this->AcPowerOff();
-		TaskSYS.SetSysState(SysError_MainAcNotPresent);  // Error - AC Main is not present
-		return;
-	} */
-
-	// DEBUG
-//	this->Gpio.SetLevelTopResetPin(GpioLevel_Low);  // Clear Reset Top CPU
-	// DEBUG
+	this->flagSentEventTopRemoved = false;
+	this->flagSentEventTopPresent = true;
+	this->flagSentEventLidOpen = false;
+	this->flagSentEventLidClosed = true;
+	this->flagSentEventUnlocked = false;
+	this->flagSentEventLocked = true;
+	this->flagTopLocked = false;
 
 	while(true)
 	{
-		if(this->CheckTopRemoved())
-		{
-			continue;
-		}
-
-		if(this->CheckLidOpen())
-		{
-			continue;
-		}
-
-		break;  // if 'Top Present' and 'Lid Closed'
-	}
-
-
-	// todo:
-	// check present chamber left
-	// check present chamber right
-
-
-	this->AcPowerOn();
-	this->Delay(300);
-	if(!this->flagAcMainPresent)
-	{
 		this->AcPowerOff();
-		TaskSYS.SetSysState(SysError_MainAcNotPresent);  // Error - AC Main is not present
-		return;
-	}
+		this->Delay(200);
+		if(this->flagAcMainPresent)
+		{
+			TaskSYS.SetSysState(SysError_MainAcNotPresent);  // Error - AC Main is present
+			return;
+		}
+
+		while(true)
+		{
+			if(this->CheckTopRemoved())
+			{
+				continue;
+			}
+			else
+			{
+				this->Delay(5000);
+				if(this->CheckTopRemoved())
+				{
+					continue;
+				}
+
+			}
+
+			if(this->CheckLidOpen())
+			{
+				continue;
+			}
+
+			break;  // if 'Top Present' and 'Lid Closed'
+		}
+
+
+		// todo:
+		// check present chamber left
+		// check present chamber right
+
+		this->AcPowerOn();
+		this->Delay(300);
+		if(!this->flagAcMainPresent)
+		{
+			this->AcPowerOff();
+			TaskSYS.SetSysState(SysError_MainAcNotPresent);  // Error - AC Main is not present
+			return;
+		}
 
 #ifndef	__DEBUG_TOP_CPU_NOT_PRESENT
-	if(!this->CheckTopPresent())
-	{
-		this->AcPowerOff();
-		TaskSYS.SetSysState(SysError_InterfaceVipM);
-		return;
-	}
+		if(!this->CheckTopPresent())
+		{
+			this->AcPowerOff();
+			TaskSYS.SetSysState(SysError_InterfaceVipM);
+			return;
+		}
 
-	this->Delay(100);
-	this->Gpio.SetLevelTopResetPin(GpioLevel_Low);  // Clear Reset Top CPU
-	this->Delay(1000);
+		this->Gpio.SetLevelTopResetPin(GpioLevel_High);  // Reset Top CPU
+		this->Delay(100);
+		this->Gpio.SetLevelTopResetPin(GpioLevel_Low);   // Clear Reset Top CPU
+		this->Delay(200);
 
-	////// check connection with Top CPU and wait state 'IfcVipState_Idle' //////
-	result = this->CheckConnectionTopCpu();
-	if(result != OsResult_Ok)
-	{
-		this->AcPowerOff();
-		TaskSYS.SetSysState(SysError_InterfaceVipM);
-		return;
-	}
+		////// check connection with Top CPU and wait state 'IfcVipState_Idle' //////
+		result = this->CheckConnectionTopCpu();
+		if(result != OsResult_Ok)
+		{
+			this->AcPowerOff();
+			TaskSYS.SetSysState(SysError_InterfaceVipM);
+			return;
+		}
 
 
-	result = this->CheckLockTop();
-	if(result != OsResult_Ok)
-	{
-		this->AcPowerOff();
-		TaskSYS.SetSysState(SysError_InterfaceVipM);
-		return;
-	}
-
-	if(!this->flagTopLocked)
-	{
-		this->AcPowerOff();
-		this->flagSentEventTopRemoved = true;
-		TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_REMOVED);
-		return;
-	}
+		result = this->WaitingLocked();
+		if(result == OsResult_Error)
+		{
+			TaskSYS.SetSysState(SysError_InterfaceVipM);
+			return;
+		}
+		else
+		{
+			if(result == OsResult_Ok)
+			{
+				break;  // top part is locked
+			}
+			else
+			{
+				continue;  // top part is removed or Lid is open
+			}
+		}
 
 #else
-	this->Delay(100);
-	this->Gpio.SetLevelTopResetPin(GpioLevel_Low);  // Clear Reset Top CPU
-	this->Delay(100);
+		this->Delay(100);
+		this->Gpio.SetLevelTopResetPin(GpioLevel_Low);  // Clear Reset Top CPU
+		this->Delay(100);
+		break;
 #endif
 
 	// todo:
@@ -709,10 +750,58 @@ void TTaskHAL::ProcessSelfTest(void)
 	// test Main motor
 	// test Chamber motors - ???
 
+	} // end while()
 
-	TaskSYS.SetEvents(TASK_SYS_EVENT_OK);
+	this->ProcessTestTop();
+
+//	TaskSYS.SetEvents(TASK_SYS_EVENT_OK);
 }
 //=== end ProcessSelfTest ==========================================================
+
+//==================================================================================
+/**
+*  Todo: function description.
+*
+*  @return void .
+*/
+EOsResult TTaskHAL::WaitingLocked()
+{
+	EOsResult result;
+
+
+	this->AcPowerOff();
+	while(true)
+	{
+		result = this->CheckLockTop();
+		if(result != OsResult_Ok)
+		{
+			return(OsResult_Error);
+		}
+
+		if(this->flagTopLocked)
+		{
+			break;  // top locked
+		}
+
+		if(this->CheckTopRemoved())
+		{
+			return(OsResult_Continue);
+		}
+
+		if(this->CheckLidOpen())
+		{
+			return(OsResult_Continue);
+		}
+
+		this->Delay(100);
+	}
+
+	this->AcPowerOn();
+
+
+	return(OsResult_Ok);
+}
+//=== end WaitingLocked ============================================================
 
 //==================================================================================
 /**
@@ -736,7 +825,7 @@ void TTaskHAL::Grinding(void)
 	HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_SET);
 
 	////// grinding //////
-	result = this->Delay_IT(19600);
+	result = this->Delay_IT(5600);
 
 	////// added resistor //////
 	HAL_GPIO_WritePin(SW_STATOR1_GPIO_Port, SW_STATOR1_Pin, GPIO_PIN_RESET);
@@ -818,22 +907,46 @@ EOsResult TTaskHAL::CheckLockTop()
 
 	if((this->IfcSystemState.sensorStates & IFC_SYS_STATE_SWITCH_LOCK_LEFT) > 0)
 	{
+		if(!this->flagSentEventUnlocked)
+		{
+			this->flagSentEventUnlocked = true;
+			TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_UNLOCKED);
+		}
+
+		this->flagSentEventLocked = false;
+
 		this->flagTopLocked = false;
 	}
 	else
 	{
 		if((this->IfcSystemState.sensorStates & IFC_SYS_STATE_SWITCH_LOCK_RIGHT) > 0)
 		{
+			if(!this->flagSentEventUnlocked)
+			{
+				this->flagSentEventUnlocked = true;
+				TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_UNLOCKED);
+			}
+
+			this->flagSentEventLocked = false;
+
 			this->flagTopLocked = false;
 		}
 		else
 		{
+			if(!this->flagSentEventLocked)
+			{
+				this->flagSentEventLocked = true;
+				TaskSYS.SetEvents(TASK_SYS_EVENT_TOP_LOCKED);
+			}
+
+			this->flagSentEventUnlocked = false;
+
 			this->flagTopLocked = true;
 		}
 	}
 
 	// DEBUG
-	this->flagTopLocked = true;
+//	this->flagTopLocked = true;
 	// DEBUG
 
 
@@ -3072,6 +3185,8 @@ EOsResult TTaskHAL::Init(void)
 	this->flagSentEventTopPresent = true;
 	this->flagSentEventLidOpen = false;
 	this->flagSentEventLidClosed = true;
+	this->flagSentEventUnlocked = false;
+	this->flagSentEventLocked = true;
 	this->flagTopLocked = false;
 
 	this->adcIndexConversion = 0;

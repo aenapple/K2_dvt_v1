@@ -29,15 +29,17 @@
 #define TASK_SYS_EVENT_TOP_PRESENT   (1<<7)
 #define TASK_SYS_EVENT_LID_OPEN      (1<<8)
 #define TASK_SYS_EVENT_LID_CLOSED    (1<<9)
-#define TASK_SYS_EVENT_TICK_PROCESS  (1<<10)
-#define TASK_SYS_EVENT_START_TEST    (1<<11)
-#define TASK_SYS_EVENT_END_GRINDING  (1<<12)
+#define TASK_SYS_EVENT_TOP_LOCKED    (1<<9)
+#define TASK_SYS_EVENT_TOP_UNLOCKED  (1<<10)
+#define TASK_SYS_EVENT_TICK_PROCESS  (1<<11)
+#define TASK_SYS_EVENT_START_TEST    (1<<12)
+#define TASK_SYS_EVENT_END_GRINDING  (1<<13)
 
-#define TASK_SYS_CMD_SET_LEFT_OPEN   (1<<13)
-#define TASK_SYS_CMD_SET_RIGHT_OPEN  (1<<14)
+#define TASK_SYS_CMD_SET_LEFT_OPEN   (1<<14)
+#define TASK_SYS_CMD_SET_RIGHT_OPEN  (1<<15)
 
-#define TASK_SYS_EVENT_OK     (1<<15)
-#define TASK_SYS_EVENT_ERROR  (1<<16)
+#define TASK_SYS_EVENT_OK     (1<<16)
+#define TASK_SYS_EVENT_ERROR  (1<<17)
 
 
 
@@ -274,6 +276,7 @@ private:
 
 	////// functions //////
     void SelfTest(void);
+    void ProcessTopUnlocked(void);
     void ProcessLidOpen(void);
     void ProcessTest(void);
     void ProcessSetPosition(u8 position);
