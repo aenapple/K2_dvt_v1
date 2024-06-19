@@ -129,81 +129,13 @@ void TTaskCHM::BmeControlParams(u16 temperature, u16 rHumidity)
 		rHumidity = this->absoluteDifferenceHumidity;
 
 
-	if (temperature <= this->bmeLowTemp){
 
-		if (rHumidity >= this->highHumidity)
-		{
-			this->mixIntervalTime = TASK_SYS_2_MINUTES;
-			this->ptcHeaterPwm    = 100;
-			this->ptcFanPwm       = 8;
-			this->exhaustFanPwm   = 10;
+		this->mixIntervalTime = TASK_SYS_10_MINUTES;
+		this->ptcHeaterPwm    = 100;
+		this->padHeaterPwm    = 100;
+		this->ptcFanPwm       = 100;
+		this->exhaustFanPwm   = 10;
 
-		} else if (rHumidity >= this->medHumidity) {
-			this->mixIntervalTime = TASK_SYS_4_MINUTES;
-			this->ptcHeaterPwm    = 100;
-			this->ptcFanPwm       = 5;
-			this->exhaustFanPwm   = 0;
-
-
-		} else {
-			this->mixIntervalTime = TASK_SYS_12_MINUTES;
-			this->ptcHeaterPwm    = 50;
-			this->ptcFanPwm       = 2;
-			this->exhaustFanPwm   = 0;
-		}
-
-	} else if (temperature  <= this->bmeMedTemp) {
-		this->dutyCycle =   DutyCycleMode_0;
-
-		if (rHumidity >=        this->highHumidity)
-		{
-			this->mixIntervalTime = TASK_SYS_3_MINUTES;
-			this->ptcHeaterPwm    = 100;
-			this->ptcFanPwm       = 5;
-			this->exhaustFanPwm   = 10;
-
-		} else if (rHumidity >= this->medHumidity) {
-			this->mixIntervalTime = TASK_SYS_10_MINUTES;
-			this->ptcHeaterPwm    = 100;
-			this->ptcFanPwm       = 4;
-			this->exhaustFanPwm   = 0;
-
-		} else if (rHumidity >= this->lowHumidity) {
-			this->mixIntervalTime = TASK_SYS_15_MINUTES;
-			this->ptcHeaterPwm    = 50;
-			this->ptcFanPwm       = 2;
-			this->exhaustFanPwm   = 0;
-
-		} else {
-			this->dutyCycle =   DutyCycleMode_1;
-
-
-		}
-	} else if (temperature  <= this->bmeHighTemp) {
-		this->dutyCycle =   DutyCycleMode_0;
-
-		if (rHumidity >=        this->highHumidity)
-		{
-			this->mixIntervalTime = TASK_SYS_4_MINUTES;
-			this->ptcHeaterPwm    = 100;
-			this->ptcFanPwm       = 5;
-			this->exhaustFanPwm   = 10;
-
-		} else if (rHumidity >= this->medHumidity) {
-			this->mixIntervalTime = TASK_SYS_10_MINUTES;
-			this->ptcHeaterPwm    = 100;
-			this->ptcFanPwm       = 1;
-			this->exhaustFanPwm   = 0;
-		} else if (rHumidity >= this->lowHumidity) {
-			this->dutyCycle =   DutyCycleMode_2;
-
-		} else {
-			this->dutyCycle =   DutyCycleMode_3;
-
-		}
-	} else {
-		this->dutyCycle =   DutyCycleMode_3;
-	}
 
 }
 //=== end BmeControlParams =========================================================
