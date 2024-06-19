@@ -61,16 +61,16 @@
 #define TASK_CHM_INDEX_PTC_F_COMPOST_PROCESS    4
 
 /**********************************************************************************/
-#define TASK_CHM_LOW_HUMIDITY	8
-#define TASK_CHM_MED_HUMIDITY	8.5
-#define TASK_CHM_HIGH_HUMIDITY	10
+#define TASK_CHM_LOW_HUMIDITY	200
+#define TASK_CHM_MED_HUMIDITY	500
+#define TASK_CHM_HIGH_HUMIDITY	800
 
-#define TASK_CHM_LOW_TEMP		57
-#define TASK_CHM_MED_TEMP 		58.5
-#define TASK_CHM_HIGH_TEMP 		60
+#define TASK_CHM_LOW_TEMP		5100
+#define TASK_CHM_MED_TEMP 		5200
+#define TASK_CHM_HIGH_TEMP 		5300
 
-#define TASK_CHM_MAX_GAS		10.2
-#define TASK_CHM_MIN_GAS		4.0
+#define TASK_CHM_MAX_GAS		10.2e7
+#define TASK_CHM_MIN_GAS		4.0e7
 
 #define TASK_CHM_MIX_LONG 		120
 #define TASK_CHM_MIX_SHORT		20
@@ -92,7 +92,7 @@ typedef enum
 	DutyCycleMode_0,
 	DutyCycleMode_1,
 	DutyCycleMode_2,
-	DutyCycleMode_3,
+//	DutyCycleMode_3,
 	DutyCycleMode_99,
 
 } EDutyCycleMode;
@@ -268,7 +268,7 @@ private:
 	u32 ptcRepeatTime;
 	u32 ptcCounterRepeatTime;
 	u32 ptcWorkTime;
-	u32 ptcCounterWorkTime;
+
 	bool flagPtcOn;
 	EModePtcHeater modePtcHeater;
 	u16 ptcFanCounterWorkTime;
@@ -297,7 +297,7 @@ private:
 	s8 padHeaterPwm;
 
 	s8 ptcFanPwm;
-	s8 filterFanPwm;
+	s8 airFanPwm;
 	s8 exhaustFanPwm;
 
 	u16 highHumidity;
@@ -306,7 +306,8 @@ private:
 
 	u16 minHumidity;
 	u16 maxHumidity;
-	u16 absoluteDifferenceHumidity;
+	u16 maxDifferenceHumidity;
+
 
 	u16 avgHumidity;
 	u16 maxRelativeHumidity;
@@ -320,9 +321,11 @@ private:
     s16 bmeHighTemp;
 
     TBme688Sensor bmeSensorChamber;
+    TBme688Sensor bmeSensorFan;
 
 //    u32 ptcCounterWorkTime;
     u32 ptcIntervalTime;
+    u32 ptcCounterWorkTime;
     bool ptcDutyCycleOnFlag;
 
 	u16 timeCw;

@@ -121,6 +121,7 @@
 
 #define TASK_SYS_0_MINUTES    (u16)0
 #define TASK_SYS_30_MINUTES   (u16)(30 * (TASK_SYS_1_MINUTE + 1) - 1)
+#define TASK_SYS_40_MINUTES   (u16)(40 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_60_MINUTES   (u16)(60 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_80_MINUTES   (u16)(80 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_90_MINUTES   (u16)(90 * (TASK_SYS_1_MINUTE + 1) - 1)
