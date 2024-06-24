@@ -159,17 +159,7 @@ struct TRtc  // sizeof = 8 bytes, format BCD
 	u8 reserved1;
 };
 
-struct TimeSystem  // sizeof = 8 bytes
-	{
-		u16 ms;
-		u16 d;
-		u8 h;
-		u8 m;
-		u8 s;
-		u8 reserved;
-	};
-
-struct TBetaTestRecord  // sizeof = 48 bytes
+/* struct TBetaTestRecord  // sizeof = 48 bytes
 {
 	TBme688Sensor bme688SensorLeft;
 	TBme688Sensor bme688SensorRight;
@@ -179,7 +169,7 @@ struct TBetaTestRecord  // sizeof = 48 bytes
 	s8 tPtcLeft;
 	s8 tPtcRight;
 	TimeSystem timestamp;
-};
+}; */
 
 /**********************************************************************************/
 //==================================================================================
@@ -195,6 +185,16 @@ public:
 
 		DateTime():year(0), month(0), day(0), seconds(0)
 		{}
+	};
+
+	struct TimeSystem  // sizeof = 8 bytes
+	{
+		u16 ms;
+		u16 d;
+		u8 h;
+		u8 m;
+		u8 s;
+		u8 reserved;
 	};
 
 	////// variables //////

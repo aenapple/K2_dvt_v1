@@ -206,6 +206,8 @@ public:
 	void UpdateSensorBme688(TBme688Sensor* bme688Sensor);
 //	void SetState(u32 event);
 
+	void SetError(void);
+
 	EHeaterPwm GetPwmHeaterPtc(void);
 	void PulseOnHeaterPtc(void);
 	void PulseOffHeaterPtc(void);
@@ -261,6 +263,8 @@ private:
 	THalDcFans* HalDcFans;
 	THalHeaters* HalHeaters;
 	THalMotChambers* HalMotChambers;
+
+	bool error;
 
 	s8 ptcLowLevel_T;
 	s8 ptcHighLevel_T;

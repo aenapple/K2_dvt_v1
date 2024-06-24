@@ -14,12 +14,15 @@ TTaskHAL TaskHAL;
 extern TTaskSYS TaskSYS;
 extern TTaskCHM TaskChmLeft;
 extern TTaskCHM TaskChmRight;
+
+#ifndef __RELEASE
+	#include "TaskConsole.hpp"
+	extern TTaskConsole TaskConsole;
+#endif
 /**********************************************************************************/
 #ifdef __DEBUG_HAL_OUTPUT_ENABLED
-	#include "TaskCLI.hpp"
-	extern TTaskCLI TaskCLI;
-	#define DiagPrintf(...) TaskCLI.DebugPrintf(__VA_ARGS__)
-	#define DiagNotice(fmt, ...) TaskCLI.DebugNotice("HAL: " fmt "\r\n", ##__VA_ARGS__)
+	#define DiagPrintf(...) TaskConsole.DebugPrintf(__VA_ARGS__)
+	#define DiagNotice(fmt, ...) TaskConsole.DebugNotice("HAL: " fmt "\r\n", ##__VA_ARGS__)
 #else
 	#define DiagPrintf(...)
 	#define DiagNotice(...)
@@ -220,6 +223,9 @@ void TTaskHAL::Run(void)
 
         	}
 #endif
+        	// DEBUG
+        	DiagNotice("Working !!!");
+        	// DEBUG
 
         	continue;
         }
@@ -296,7 +302,14 @@ void TTaskHAL::Run(void)
 
         if((resultBits & TASK_HAL_CMD_START_GRINDING) > 0)
         {
-            this->Grinding();
+        	// DEBUG
+        	DiagNotice("Grinding !!!");
+        	// DEBUG
+        	this->Grinding();
+
+        	// DEBUG
+        	DiagNotice("END Grinding !!!");
+        	// DEBUG
         }
 
         if((resultBits & TASK_HAL_CMD_AC_POWER_OFF) > 0)
@@ -357,6 +370,15 @@ EOsResult TTaskHAL::GetStateTopCpu()
 		result = this->SendCommand(IfcVipCommand_GetState, 0);
 		if(result != OsResult_Ok)
 		{
+			// DEBUG
+			while(true)
+			{
+				DiagNotice("Error 01 !!!");
+				this->Delay(2000);
+			}
+			// DEBUG
+
+
 			return(result);
 		}
 	}
@@ -384,6 +406,10 @@ void TTaskHAL::GetSensorBme688(EIfcBme688Sensor ifcBme688Sensor)
 	u8 buffer[IFC_VIP_UART_SIZE_DATA];
 	TBme688Sensor bme688Sensor;
 
+
+	// DEBUG
+	DiagNotice("Get BME Sensor !!!");
+	// DEBUG
 
 	buffer[0] = (u8)ifcBme688Sensor;
 	result = this->SendCommand(IfcVipCommand_GetBme688_Part1, buffer);
@@ -663,6 +689,9 @@ void TTaskHAL::ProcessSelfTest(void)
 				this->Delay(5000);
 				if(this->CheckTopRemoved())
 				{
+					// DEBUG
+					DiagNotice("Top Removed !!!");
+					// DEBUG
 					continue;
 				}
 
@@ -670,6 +699,9 @@ void TTaskHAL::ProcessSelfTest(void)
 
 			if(this->CheckLidOpen())
 			{
+				// DEBUG
+				DiagNotice("Lid Open !!!");
+				// DEBUG
 				continue;
 			}
 
@@ -798,6 +830,10 @@ EOsResult TTaskHAL::WaitingLocked()
 		}
 
 		this->Delay(100);
+		// DEBUG
+		this->Delay(1000);
+		DiagNotice("Top Unlocked !!!");
+		// DEBUG
 	}
 
 	this->AcPowerOn();
@@ -3033,10 +3069,19 @@ EOsResult TTaskHAL::SendCommand(EIfcVipCommand command, u8* pBuffer)
 						TASK_HAL_EVENT_UART_ERROR   |
 						TASK_HAL_EVENT_UART_RX_TIMEOUT,
 						&resultBits,
-						100);
+						400);
 
 	if(result == OsResult_Timeout)
 	{
+		// DEBUG
+		while(true)
+		{
+			DiagNotice("Error Timeout");
+			this->Delay(2000);
+			HAL_NVIC_SystemReset();
+		}
+		// DEBUG
+
 		return(OsResult_Timeout);
 	}
 
@@ -3047,6 +3092,14 @@ EOsResult TTaskHAL::SendCommand(EIfcVipCommand command, u8* pBuffer)
 
 	if((resultBits & TASK_HAL_EVENT_UART_ERROR) > 0)
 	{
+		// DEBUG
+		while(true)
+		{
+			DiagNotice("Error Uart Error");
+			this->Delay(2000);
+		}
+		// DEBUG
+
 		return(OsResult_ErrorUart);
 	}
 

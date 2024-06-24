@@ -19,12 +19,15 @@ extern TTaskUI TaskUI;
 extern TTaskHAL TaskHAL;
 extern TTaskCHM TaskChmLeft;
 extern TTaskCHM TaskChmRight;
+
+#ifndef __RELEASE
+	#include "TaskConsole.hpp"
+	extern TTaskConsole TaskConsole;
+#endif
 /**********************************************************************************/
 #ifdef __DEBUG_SYS_OUTPUT_ENABLED
-	#include "../Debug/TaskCLI.hpp"
-	extern TTaskCLI TaskCLI;
-	#define DiagPrintf(...) TaskCLI.DebugPrintf(__VA_ARGS__)
-	#define DiagNotice(fmt, ...) TaskCLI.DebugNotice("SYS: " fmt "\r\n", ##__VA_ARGS__)
+	#define DiagPrintf(...) TaskConsole.DebugPrintf(__VA_ARGS__)
+	#define DiagNotice(fmt, ...) TaskConsole.DebugNotice("SYS: " fmt "\r\n", ##__VA_ARGS__)
 #else
 	#define DiagPrintf(...)
 	#define DiagNotice(...)
@@ -130,6 +133,9 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 */
 extern "C" void CreateApplicationTasks()
 {
+#ifndef __RELEASE
+	TaskConsole.CreateTaskStatic();
+#endif
 	TaskUI.CreateTaskStatic();
 	TaskHAL.CreateTaskStatic();
 	TaskChmLeft.CreateTaskStatic();
@@ -239,7 +245,9 @@ void TTaskSYS::Run(void)
 
 	} */
 
-//	DiagNotice("TaskSYS started!");
+	// DEBUG
+	DiagNotice("Started !!!");
+	// DEBUG
 
 	this->SetSysState(SysState_Idle);
 
@@ -281,6 +289,10 @@ void TTaskSYS::Run(void)
 					1000  // 1 Sec
 					) == OsResult_Timeout)
         {
+			// DEBUG
+			DiagNotice("TaskSYS works!!");
+			// DEBUG
+
 			continue;
         }
 
@@ -322,12 +334,27 @@ void TTaskSYS::Run(void)
 
  		if((resultBits & TASK_SYS_EVENT_LID_OPEN) > 0)
  		{
- 		   	this->ProcessLidOpen();
+ 			// DEBUG
+ 			DiagNotice("ProcessLidOpen !!!");
+ 			// DEBUG
+ 			this->ProcessLidOpen();
+
+ 			// DEBUG
+ 			DiagNotice("END ProcessLidOpen !!!");
+ 			// DEBUG
  		}
 
  		if((resultBits & TASK_SYS_EVENT_TOP_UNLOCKED) > 0)
  		{
- 		 	this->ProcessTopUnlocked();
+ 			// DEBUG
+ 			DiagNotice("ProcessTopUnlocked !!!");
+ 			// DEBUG
+
+ 			this->ProcessTopUnlocked();
+
+ 			// DEBUG
+ 			DiagNotice("END ProcessTopUnlocked !!!");
+ 			// DEBUG
  		}
 
  		if((resultBits & TASK_SYS_EVENT_TICK_PROCESS) > 0)
@@ -630,9 +657,12 @@ void TTaskSYS::ProcessTopUnlocked()
 					TASK_SYS_EVENT_TOP_LOCKED   |
 					TASK_SYS_EVENT_ERROR,
 					&resultBits,
-					100
+					1000
 					) == OsResult_Timeout)
 	    {
+			// DEBUG
+			DiagNotice("Top Unlocked !!!");
+			// DEBUG
 			continue;
 	    }
 
@@ -698,9 +728,12 @@ void TTaskSYS::ProcessTopRemoved()
 					TASK_SYS_EVENT_UART_ERROR	|
 					TASK_SYS_EVENT_TOP_PRESENT,
 					&resultBits,
-					100
+					1000
 					) == OsResult_Timeout)
 	    {
+			// DEBUG
+			DiagNotice("Top Removed !!!");
+			// DEBUG
 			continue;
 	    }
 
@@ -821,17 +854,18 @@ void TTaskSYS::ProcessError()
 #endif
 
 
-	if(this->sysState == SysError_InterfaceVipM)
+/*	if(this->sysState == SysError_InterfaceVipM)
 	{
 		this->Delay(1000);
 		this->SetEvents(TASK_SYS_EVENT_TOP_REMOVED);
 		return;
-	}
+	} */
 
 	TaskUI.SetState(TASK_UI_EVENT_ERROR);
-	TaskChmLeft.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
-	TaskChmRight.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
-
+//	TaskChmLeft.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+//	TaskChmRight.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+	TaskChmLeft.SetError();
+	TaskChmRight.SetError();
 
 
 	while(true)
@@ -845,6 +879,9 @@ void TTaskSYS::ProcessError()
 					1000  // 1 Sec
 					) == OsResult_Timeout)
 		{
+			// DEBUG
+			DiagNotice("ERROR !!!");
+			// DEBUG
 			continue;
 		}
 
@@ -1104,17 +1141,17 @@ void TTaskSYS::ProcessRxData()
 			break;
 
 		case IfcVipCommand_SetRTC:
-			memcpy((void*)&Rtc, (void*)&pData[IFC_VIP_DATA_START], sizeof(TRtc));
+/*			memcpy((void*)&Rtc, (void*)&pData[IFC_VIP_DATA_START], sizeof(TRtc));
 			pEeprom = TaskHAL.GetPointerEeprom();
 			result = pEeprom->WriteRtc(&Rtc);
 			if(result != OsResult_Ok)
 			{
 				this->SetSysState(SysError_I2cErrorChannel2);
-			}
+			} */
 			break;
 
 		case IfcVipCommand_GetRTC:
-			pEeprom = TaskHAL.GetPointerEeprom();
+/*			pEeprom = TaskHAL.GetPointerEeprom();
 			result = pEeprom->ReadRtc(&Rtc);
 			if(result != OsResult_Ok)
 			{
@@ -1124,7 +1161,7 @@ void TTaskSYS::ProcessRxData()
 			else
 			{
 				memcpy((void*)&data[IFC_VIP_DATA_START], (void*)&Rtc, sizeof(TRtc));
-			}
+			} */
 			break;
 
 
@@ -1783,10 +1820,13 @@ void TTaskSYS::ProcessTick()
 {
 	EOsResult result;
 	TEeprom* pEeprom;
-	TRtc Rtc;
-	TBetaTestRecord BetaTestRecord;
+//	TRtc Rtc;
+//	TBetaTestRecord BetaTestRecord;
 
 
+	// DEBUG
+	DiagNotice("ProcessTick !!!");
+	// DEBUG
 	TaskChmLeft.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
 	TaskChmRight.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
 
@@ -1861,7 +1901,7 @@ void TTaskSYS::ProcessTick()
 	}
 	else
 	{
-		BetaTestRecord.bme688SensorFan = this->bme688SensorFan;
+/*		BetaTestRecord.bme688SensorFan = this->bme688SensorFan;
 		BetaTestRecord.bme688SensorLeft = this->bme688SensorLeft;
 		BetaTestRecord.bme688SensorRight = this->bme688SensorRight;
 		BetaTestRecord.tPadLeft = TaskHAL.GetTemperaturePadLeft();
@@ -1869,7 +1909,7 @@ void TTaskSYS::ProcessTick()
 		BetaTestRecord.tPtcLeft = TaskHAL.GetTemperaturePtcLeft();
 		BetaTestRecord.tPtcRight = TaskHAL.GetTemperaturePtcRight();
 		BetaTestRecord.timestamp = this->GetTimeSystem();
-		BetaTestRecord.timestamp.reserved = 0;
+		BetaTestRecord.timestamp.reserved = 0; */
 
 /*		pEeprom = TaskHAL.GetPointerEeprom();
 		result = pEeprom->WriteRecord(&BetaTestRecord);
@@ -1980,6 +2020,29 @@ void TTaskSYS::UpdateTopCpuState(TIfcSystemState* IfcSystemState)
 
 	if(IfcSystemState->sysState == IfcVipState_Error)
 	{
+		// DEBUG
+		while(true)
+		{
+			if(IfcSystemState->error == IfcVipError_I2c1)
+			{
+				DiagNotice("Error IfcVipError_I2c1");
+			}
+			else
+			{
+				if(IfcSystemState->error == IfcVipError_I2c2)
+				{
+					DiagNotice("Error IfcVipError_I2c2");
+				}
+				else
+				{
+					DiagNotice("Error ????");
+				}
+			}
+
+			this->Delay(2000);
+		}
+		// DEBUG
+
 		this->SetSysState(SysError_InterfaceVipM);
 	}
 
@@ -2040,9 +2103,15 @@ void TTaskSYS::SetSysState(ESysState sysState)
 	if(this->sysState > SysError_Start)
 	{
 		this->SetEvents(TASK_SYS_EVENT_ERROR);
+		// DEBUG
+		DiagNotice("Set Error State");
+		// DEBUG
 		return;
 	}
 
+	// DEBUG
+	DiagNotice("Set New State");
+	// DEBUG
 
 	switch(this->sysState)
 	{
@@ -2161,7 +2230,7 @@ void TTaskSYS::ReInitUart()
 *
 *  @return ... .
 */
-TimeSystem TTaskSYS::GetTimeSystem(void)
+TTaskSYS::TimeSystem TTaskSYS::GetTimeSystem(void)
 {
 	TimeSystem timeSystem;
 
@@ -2552,6 +2621,10 @@ EOsResult TTaskSYS::Init(void)
 	this->SetSysState(SysState_Init);
 	this->ReInitUart();
    	this->StartRxData();
+
+#ifndef __RELEASE
+	TaskConsole.Init();
+#endif
 
    	result = TaskHAL.Init();
    	if(result != OsResult_Ok)

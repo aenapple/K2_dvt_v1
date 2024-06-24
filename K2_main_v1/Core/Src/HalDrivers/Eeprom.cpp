@@ -93,7 +93,7 @@ EOsResult TEeprom::ReadProcessCounter(u32* data)
 *
 *  @return ... .
 */
-EOsResult TEeprom::WriteTimestamp(TRtc* rtc)
+/* EOsResult TEeprom::WriteTimestamp(TRtc* rtc)
 {
 	HAL_StatusTypeDef halResult;
 	u16 tempDataAddress;
@@ -134,7 +134,7 @@ EOsResult TEeprom::WriteTimestamp(TRtc* rtc)
 
 
 	return(OsResult_Ok);
-}
+} */
 //=== end WriteTimestamp ===========================================================
 
 //==================================================================================
@@ -143,7 +143,7 @@ EOsResult TEeprom::WriteTimestamp(TRtc* rtc)
 *
 *  @return ... .
 */
-EOsResult TEeprom::ReadTimestamp(TRtc* rtc)
+/* EOsResult TEeprom::ReadTimestamp(TRtc* rtc)
 {
 	HAL_StatusTypeDef halResult;
 	u16 tempDataAddress;
@@ -195,7 +195,7 @@ EOsResult TEeprom::ReadTimestamp(TRtc* rtc)
 
 
 	return(OsResult_Ok);
-}
+} */
 //=== end ReadTimestamp ============================================================
 
 //==================================================================================
@@ -204,7 +204,7 @@ EOsResult TEeprom::ReadTimestamp(TRtc* rtc)
 *
 *  @return ... .
 */
-EOsResult TEeprom::WriteRecord(TBetaTestRecord* record)
+/* EOsResult TEeprom::WriteRecord(TBetaTestRecord* record)
 {
 	HAL_StatusTypeDef halResult;
 	EOsResult result;
@@ -260,7 +260,7 @@ EOsResult TEeprom::WriteRecord(TBetaTestRecord* record)
 
 
 	return(OsResult_Ok);
-}
+} */
 //=== end WriteRecord ==============================================================
 
 //==================================================================================
@@ -269,7 +269,7 @@ EOsResult TEeprom::WriteRecord(TBetaTestRecord* record)
 *
 *  @return ... .
 */
-EOsResult TEeprom::ReadRecord(TBetaTestRecord* record)
+/* EOsResult TEeprom::ReadRecord(TBetaTestRecord* record)
 {
 	HAL_StatusTypeDef halResult;
 	u16 tempDataAddress;
@@ -333,7 +333,7 @@ EOsResult TEeprom::ReadRecord(TBetaTestRecord* record)
 
 
 	return(OsResult_Ok);
-}
+} */
 //=== end ReadRecord ===============================================================
 
 //==================================================================================
@@ -372,6 +372,7 @@ EOsResult TEeprom::WritePacket(u32 address, u8* data)
 	}
 
 	HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_RESET);
+	taskENTER_CRITICAL();
 	halResult = HAL_I2C_Master_Transmit(
 					&hi2c1,
 					tempDevAddress,
@@ -379,6 +380,7 @@ EOsResult TEeprom::WritePacket(u32 address, u8* data)
 					sizeof(writeBuffer),
 					50  // timeout 50 mSec
 					);
+	taskEXIT_CRITICAL();
 	this->Delay(6);
 	HAL_GPIO_WritePin(WC_EEPROM_GPIO_Port, WC_EEPROM_Pin, GPIO_PIN_SET);
 	this->Semaphore.Give();
@@ -425,6 +427,7 @@ EOsResult TEeprom::ReadPacket(u32 address, u8* data)
 
 	writeBuffer[0] = (u8)(address >> 8);
 	writeBuffer[1] = (u8)address;
+	taskENTER_CRITICAL();
 	halResult = HAL_I2C_Master_Transmit(
 					&hi2c1,
 					tempDevAddress,
@@ -434,6 +437,7 @@ EOsResult TEeprom::ReadPacket(u32 address, u8* data)
 					);
 	if(halResult != HAL_OK)
 	{
+		taskEXIT_CRITICAL();
 		this->Semaphore.Give();
 		return(OsResult_ErrorI2c1);
 	}
@@ -445,6 +449,7 @@ EOsResult TEeprom::ReadPacket(u32 address, u8* data)
 					sizeof(readBuffer),
 					50  // timeout 20 mSec
 					);
+	taskEXIT_CRITICAL();
 	this->Semaphore.Give();
 	if(halResult != HAL_OK)
 	{
@@ -883,7 +888,7 @@ EOsResult TEeprom::Format()
 *
 *  @return ... .
 */
-EOsResult TEeprom::WriteRtc(TRtc* rtc)
+/* EOsResult TEeprom::WriteRtc(TRtc* rtc)
 {
 #ifdef __DEBUG_RTC_NOT_PRESENT
 	return(OsResult_Ok);
@@ -916,7 +921,7 @@ EOsResult TEeprom::WriteRtc(TRtc* rtc)
 
 	return(OsResult_Ok);
 #endif
-}
+} */
 //=== end WriteRtc =================================================================
 
 //==================================================================================
@@ -925,7 +930,7 @@ EOsResult TEeprom::WriteRtc(TRtc* rtc)
 *
 *  @return ... .
 */
-EOsResult TEeprom::ReadRtc(TRtc* rtc)
+/* EOsResult TEeprom::ReadRtc(TRtc* rtc)
 {
 #ifdef __DEBUG_RTC_NOT_PRESENT
 	memset((void*)rtc, 0, sizeof(TRtc));
@@ -975,7 +980,7 @@ EOsResult TEeprom::ReadRtc(TRtc* rtc)
 
 	return(OsResult_Ok);
 #endif
-}
+} */
 //=== end WriteRtc =================================================================
 
 //==================================================================================
@@ -984,7 +989,7 @@ EOsResult TEeprom::ReadRtc(TRtc* rtc)
 *
 *  @return ... .
 */
-EOsResult TEeprom::WriteMinutes(u8 minutes)
+/* EOsResult TEeprom::WriteMinutes(u8 minutes)
 {
 #ifdef __DEBUG_RTC_NOT_PRESENT
 	return(OsResult_Ok);
@@ -1010,7 +1015,7 @@ EOsResult TEeprom::WriteMinutes(u8 minutes)
 
 	return(OsResult_Ok);
 #endif
-}
+} */
 //=== end WriteMinutes ===================================================================
 
 //==================================================================================
@@ -1019,7 +1024,7 @@ EOsResult TEeprom::WriteMinutes(u8 minutes)
 *
 *  @return ... .
 */
-EOsResult TEeprom::ReadMinutes(u8* minutes)
+/* EOsResult TEeprom::ReadMinutes(u8* minutes)
 {
 #ifdef __DEBUG_RTC_NOT_PRESENT
 	*minutes = 30;
@@ -1062,7 +1067,7 @@ EOsResult TEeprom::ReadMinutes(u8* minutes)
 
 	return(OsResult_Ok);
 #endif
-}
+} */
 //=== end ReadMinutes ==============================================================
 
 //==================================================================================
@@ -1071,7 +1076,7 @@ EOsResult TEeprom::ReadMinutes(u8* minutes)
 *
 *  @return ... .
 */
-EOsResult TEeprom::WriteHours(u8 hours)
+/* EOsResult TEeprom::WriteHours(u8 hours)
 {
 #ifdef __DEBUG_RTC_NOT_PRESENT
 	return(OsResult_Ok);
@@ -1097,7 +1102,7 @@ EOsResult TEeprom::WriteHours(u8 hours)
 
 	return(OsResult_Ok);
 #endif
-}
+} */
 //=== end WriteHours ===============================================================
 
 //==================================================================================
@@ -1106,7 +1111,7 @@ EOsResult TEeprom::WriteHours(u8 hours)
 *
 *  @return ... .
 */
-EOsResult TEeprom::ReadHours(u8* hours)
+/* EOsResult TEeprom::ReadHours(u8* hours)
 {
 #ifdef __DEBUG_RTC_NOT_PRESENT
 	*hours = 0x10;
@@ -1149,7 +1154,7 @@ EOsResult TEeprom::ReadHours(u8* hours)
 
 	return(OsResult_Ok);
 #endif
-}
+} */
 //=== end ReadHours ================================================================
 
 /**********************************************************************************/

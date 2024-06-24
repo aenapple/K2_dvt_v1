@@ -13,12 +13,15 @@ TTaskCHM TaskChmLeft;
 TTaskCHM TaskChmRight;
 extern TTaskHAL TaskHAL;
 extern TTaskSYS TaskSYS;
+
+#ifndef __RELEASE
+	#include "TaskConsole.hpp"
+	extern TTaskConsole TaskConsole;
+#endif
 /**********************************************************************************/
-#ifdef __DEBUG_UID_OUTPUT_ENABLED
-	#include "../Debug/TaskCLI.hpp"
-	extern TTaskCLI TaskCLI;
-	#define DiagPrintf(...) printf(__VA_ARGS__)  // TaskCLI.DebugPrintf(__VA_ARGS__)
-	#define DiagNotice(fmt, ...) TaskCLI.DebugNotice("UI: " fmt "\r\n", ##__VA_ARGS__)
+#ifdef __DEBUG_CHM_OUTPUT_ENABLED
+	#define DiagPrintf(...) printf(__VA_ARGS__)  // TaskConsole.DebugPrintf(__VA_ARGS__)
+	#define DiagNotice(fmt, ...) TaskConsole.DebugNotice("CHM: " fmt "\r\n", ##__VA_ARGS__)
 #else
 	#define DiagPrintf(...)
 	#define DiagNotice(...)
@@ -62,7 +65,16 @@ void TTaskCHM::Run(void)
 					1000
 					) == OsResult_Timeout)
         {
-//        	DiagNotice("Working");
+        	// DEBUG
+        	if(this->taskChamber == TaskChamber_Left)
+        	{
+        		DiagNotice("TaskChmLeft composting!!");
+        	}
+        	else
+        	{
+        		DiagNotice("TaskChmRight composting!!");
+        	}
+        	// DEBUG
 
             continue;
         }
@@ -72,7 +84,29 @@ void TTaskCHM::Run(void)
 
         if((resultBits & TASK_CHM_EVENT_START_COMPOSTING) > 0)
         {
+        	// DEBUG
+        	if(this->taskChamber == TaskChamber_Left)
+        	{
+        	    DiagNotice("TaskChmLeft started composting!!");
+        	}
+        	else
+        	{
+        	    DiagNotice("TaskChmRight started composting!!");
+        	}
+        	// DEBUG
+
         	this->Process(TaskChmState_Composting);
+
+        	// DEBUG
+        	if(this->taskChamber == TaskChamber_Left)
+        	{
+        	    DiagNotice("TaskChmLeft started composting!!");
+        	}
+        	else
+        	{
+        	    DiagNotice("TaskChmRight started composting!!");
+        	}
+        	// DEBUG
         }
 
         if((resultBits & TASK_CHM_EVENT_START_COLLECTING) > 0)
@@ -135,6 +169,11 @@ void TTaskCHM::BmeControlParams(u16 temperature, u16 bmeHumidity)
 		rHumidity = this->maxDifferenceHumidity;
 	}
 
+	if(this->error)
+	{
+		this->dutyCycle = DutyCycleMode_99;
+		return;
+	}
 
 	if (temperature <= this->bmeLowTemp && temperature > 0){
 
@@ -467,10 +506,6 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 
 	this->maxDifferenceHumidity = 0;
 
-
-
-
-
 	this->ClearEvents(TASK_CHM_EVENT_TICK_PROCESS);
 	while(true)
 	{
@@ -482,7 +517,16 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 					1000
 					) == OsResult_Timeout)
        {
-//        	DiagNotice("Working");
+			// DEBUG
+			if(this->taskChamber == TaskChamber_Left)
+			{
+			    DiagNotice("TaskChmLeft composting!!");
+			}
+			else
+			{
+			    DiagNotice("TaskChmRight composting!!");
+			}
+			// DEBUG
 
             continue;
         }
@@ -495,8 +539,30 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 
         if((resultBits & TASK_CHM_EVENT_MIXING) > 0)
         {
+        	// DEBUG
+        	if(this->taskChamber == TaskChamber_Left)
+        	{
+        	    DiagNotice("TaskChmLeft start mixing!!");
+        	}
+        	else
+        	{
+        	    DiagNotice("TaskChmRight start mixing!!");
+        	}
+        	// DEBUG
+
         	this->Mixing();
         	this->ClearEvents(TASK_CHM_EVENT_MIXING);
+
+        	// DEBUG
+        	if(this->taskChamber == TaskChamber_Left)
+        	{
+        	    DiagNotice("TaskChmLeft stop mixing!!");
+        	}
+        	else
+        	{
+        	    DiagNotice("TaskChmRight stop mixing!!");
+        	}
+        	// DEBUG
         }
 
         if((resultBits & TASK_CHM_EVENT_STOP_PROCESS) > 0)
@@ -557,7 +623,16 @@ void TTaskCHM::UpdateSensorBme688(TBme688Sensor* newBme688Sensor)
 void TTaskCHM::TickProcess()
 {
 
-
+	// DEBUG
+	if(this->taskChamber == TaskChamber_Left)
+	{
+	    DiagNotice("TaskChmLeft TickProcess!!");
+	}
+	else
+	{
+	    DiagNotice("TaskChmRight TickProcess!!");
+	}
+	// DEBUG
 
 	////// Mixing counter. //////
 	if(this->mixCounterIntervalTime < this->mixIntervalTime)
@@ -1473,11 +1548,11 @@ ETaskChmState TTaskCHM::GetState(void)
 *
 *  @return ... .
 */
-/* void TTaskCHM::SetState(u32 event)
+void TTaskCHM::SetError()
 {
-	this->SetEvents(event | TASK_CHM_EVENT_NEW_STATE);
-} */
-//=== end SetState =================================================================
+	this->error = true;
+}
+//=== end SetError =================================================================
 
 //==================================================================================
 /**
@@ -1503,6 +1578,7 @@ EOsResult TTaskCHM::Init(ETaskChamber taskChamber)
 	this->mixCounterIntervalTime = 0;
 	this->mixIntervalTime = TASK_SYS_15_MINUTES;
 	this->mixingPhase = MixingPhase_0;
+	this->error = false;
 
 	if(taskChamber == TaskChamber_Left)
 	{

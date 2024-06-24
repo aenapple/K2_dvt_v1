@@ -11,12 +11,15 @@
 
 TTaskUI TaskUI;
 extern TTaskSYS TaskSYS;
+
+#ifndef __RELEASE
+	#include "TaskConsole.hpp"
+	extern TTaskConsole TaskConsole;
+#endif
 /**********************************************************************************/
 #ifdef __DEBUG_UI_OUTPUT_ENABLED
-	#include "../Debug/TaskCLI.hpp"
-	extern TTaskConsole TaskConsole;
 	#define DiagPrintf(...) TaskConsole.DebugPrintf(__VA_ARGS__)
-	#define DiagNotice(fmt, ...) TaskConsole.DebugNotice("NET: " fmt "\r\n", ##__VA_ARGS__)
+	#define DiagNotice(fmt, ...) TaskConsole.DebugNotice("UI: " fmt "\r\n", ##__VA_ARGS__)
 #else
 	#define DiagPrintf(...)
 	#define DiagNotice(...)
@@ -64,10 +67,15 @@ void TTaskUI::Run(void)
 					1000
 					) == OsResult_Timeout)
         {
-            
-
+            // DEBUG
+        	DiagNotice("TaskUI works!!");
+        	// DEBUG
             continue;
         }
+
+        // DEBUG
+        DiagNotice("TaskUI set new State!!");
+        // DEBUG
 
         this->ClearEvents(TASK_UI_EVENT_NEW_SET_STATE);
       
@@ -122,6 +130,10 @@ void TTaskUI::FlashError(void)
 	numberFlashes = this->GetErrorNumberFlashes();
 	while(true)
 	{
+		// DEBUG
+		DiagNotice("TaskUI set new State!!");
+		// DEBUG
+
 		this->LedAllOff();
 		if(this->EventGroup.WaitAndBits(TASK_UI_EVENT_NEW_SET_STATE, 500) == OsResult_Ok)
 		{
