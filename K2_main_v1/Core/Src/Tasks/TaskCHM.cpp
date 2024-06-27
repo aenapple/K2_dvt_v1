@@ -187,8 +187,8 @@ void TTaskCHM::BmeControlParams(u16 temperature, u16 bmeHumidity)
 				this->ptcHeaterPwm = 100;
 
 				this->ptcFanPwm = 30;
-				this->exhaustFanPwm = 0;
-				this->airFanPwm = 30;
+				this->exhaustFanPwm = 20;
+				this->airFanPwm = 10;
 
 				if (this->ptcCounterWorkTime <= 0){
 					this->ptcDutyCycleOnFlag = true;
@@ -213,7 +213,7 @@ void TTaskCHM::BmeControlParams(u16 temperature, u16 bmeHumidity)
 
 			} else {
 
-				this->mixIntervalTime = TASK_SYS_15_MINUTES;
+				this->mixIntervalTime = TASK_SYS_8_MINUTES;
 
 				this->padHeaterPwm = 75;
 				this->ptcHeaterPwm = 50;
@@ -236,8 +236,8 @@ void TTaskCHM::BmeControlParams(u16 temperature, u16 bmeHumidity)
 			this->padHeaterPwm = 90;
 			this->ptcHeaterPwm = 90;
 
-			this->ptcFanPwm = 20;
-			this->exhaustFanPwm = 15;
+			this->ptcFanPwm = 15;
+			this->exhaustFanPwm = 20;
 			this->airFanPwm = 15;
 
 			if (this->ptcCounterWorkTime <= 0){
@@ -247,7 +247,7 @@ void TTaskCHM::BmeControlParams(u16 temperature, u16 bmeHumidity)
 
 
 		} else if (rHumidity >= this->medHumidity) {
-			this->mixIntervalTime = TASK_SYS_10_MINUTES;
+			this->mixIntervalTime = TASK_SYS_5_MINUTES;
 
 			this->padHeaterPwm = 80;
 			this->ptcHeaterPwm = 70;
@@ -264,31 +264,60 @@ void TTaskCHM::BmeControlParams(u16 temperature, u16 bmeHumidity)
 
 		} else if (rHumidity >= this->lowHumidity) {
 
-            if (this->ptcCounterWorkTime >= 0 && this->dutyCycle != DutyCycleMode_1) {
-            	this->ptcDutyCycleOnFlag = true;
-            	this->dutyCycle = DutyCycleMode_1;
-				this->ptcCounterWorkTime = 0;
-            }
+			this->mixIntervalTime = TASK_SYS_15_MINUTES;
 
-		} else {
-            if (this->ptcCounterWorkTime >= 0 && this->dutyCycle != DutyCycleMode_2) {
-            	this->ptcDutyCycleOnFlag = true;
-            	this->dutyCycle = DutyCycleMode_2;
-				this->ptcCounterWorkTime = 0;
-            }
+			this->padHeaterPwm = 90;
+			this->ptcHeaterPwm = 70;
+
+			this->ptcFanPwm = 10;
+			this->exhaustFanPwm = 0;
+			this->airFanPwm = 10;
+
+			if (this->ptcCounterWorkTime <= 0) {
+				this->ptcDutyCycleOnFlag = true;
+				this->ptcCounterWorkTime = TASK_SYS_10_MINUTES;
+			}
+
+
 		}
-
 	} else if (temperature >= this->bmeHighTemp) {
-        if (this->ptcCounterWorkTime >= 0 && this->dutyCycle != DutyCycleMode_2) {
-        	this->ptcDutyCycleOnFlag = true;
-        	this->dutyCycle = DutyCycleMode_2;
-			this->ptcCounterWorkTime = 0;
-        }
+	            if (rHumidity >= this->lowHumidity)
+	            {
+					this->padHeaterPwm = 100;
+					this->ptcHeaterPwm = 0;
 
+					this->exhaustFanPwm = 40;
+					this->airFanPwm = 10;
+
+					this->ptcFanPwm = 0;
+
+					this->mixIntervalTime = TASK_SYS_30_MINUTES;
+
+	                if (this->ptcCounterWorkTime <= 0){
+						this->ptcDutyCycleOnFlag = true;
+						this->ptcCounterWorkTime = TASK_SYS_2_MINUTES;
+
+	                }
+		}
+	            else {
+	            	this->padHeaterPwm = 100;
+					this->ptcHeaterPwm = 0;
+
+					this->exhaustFanPwm = 0;
+					this->airFanPwm = 0;
+
+					this->ptcFanPwm = 0;
+					this->exhaustFanPwm = 0;
+
+
+	                if (this->ptcCounterWorkTime <= 0) {
+	                    this->ptcDutyCycleOnFlag = true;
+	                    this->ptcCounterWorkTime = TASK_SYS_5_MINUTES;
+	                }
+	            }
 	} else if  (temperature < 0) {
 		this->dutyCycle = DutyCycleMode_99;
 	}
-
 
 
 
@@ -1582,8 +1611,9 @@ EOsResult TTaskCHM::Init(ETaskChamber taskChamber)
 
 	if(taskChamber == TaskChamber_Left)
 	{
-		this->timeCw = TASK_CHM_MIX_LONG;
-		this->timeCcw = TASK_CHM_MIX_SHORT;
+		this->timeCw = TASK_CHM_MIX_SHORT
+				;
+		this->timeCcw = TASK_CHM_MIX_LONG;
 	}
 	else
 	{
