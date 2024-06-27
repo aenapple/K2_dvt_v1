@@ -739,6 +739,19 @@ void TTaskCHM::TickProcess()
 		this->StopFanAir();
 	}
 
+	if (this->exhaustFanPwm > 0) {
+		TSysCommand sysCommand;
+		sysCommand.command = SysCommand_ControlFan;
+		sysCommand.parameters[IFC_VIP_FAN_PWM_INDEX] = this->exhaustFanPwm;
+		result = TaskHAL.SendSysCommand(&sysCommand);
+
+	} else {
+		TSysCommand sysCommand;
+		sysCommand.command = SysCommand_ControlFan;
+		sysCommand.parameters[IFC_VIP_FAN_PWM_INDEX] = 0;
+		result = TaskHAL.SendSysCommand(&sysCommand);
+	}
+
 
 	// TODO if (TaskChmLeft.exhaustFanPwm > TaskChmRight.exhaustFanPwm)
 	// 	           TaskHAL.StartMainFan(TaskChmRight.exhaustFanPwm);
