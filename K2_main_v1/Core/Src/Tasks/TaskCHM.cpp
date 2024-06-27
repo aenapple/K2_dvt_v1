@@ -264,6 +264,8 @@ void TTaskCHM::BmeControlParams(u16 temperature, u16 bmeHumidity)
 
 		} else if (rHumidity >= this->lowHumidity) {
 
+			// TODO ADD BLUE LIGHT FOR USER TO ADD WATER
+
 			this->mixIntervalTime = TASK_SYS_15_MINUTES;
 
 			this->padHeaterPwm = 90;
@@ -300,6 +302,8 @@ void TTaskCHM::BmeControlParams(u16 temperature, u16 bmeHumidity)
 	                }
 		}
 	            else {
+	            	// TODO ADD BLUE LIGHT FOR USER TO ADD WATER
+
 	            	this->padHeaterPwm = 100;
 					this->ptcHeaterPwm = 0;
 
@@ -495,6 +499,8 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 
 //	this->SetEvents(TASK_CHM_EVENT_MIXING);
 
+	this->counterPause = TASK_SYS_30_SECONDS;
+
 	this->samplingCounter = TASK_SYS_20_MINUTES;
 
 	this->mixingPhase = MixingPhase_0;
@@ -651,6 +657,11 @@ void TTaskCHM::UpdateSensorBme688(TBme688Sensor* newBme688Sensor)
 */
 void TTaskCHM::TickProcess()
 {
+	if (this->counterPause > 0) {
+		this->counterPause--;
+	} else {
+		this->counterPause = TASK_SYS_30_SECONDS;
+	}
 
 	// DEBUG
 	if(this->taskChamber == TaskChamber_Left)
@@ -739,6 +750,8 @@ void TTaskCHM::TickProcess()
 		this->StopFanAir();
 	}
 
+	EOsResult result;
+	result = OsResult_Ok;
 	if (this->exhaustFanPwm > 0) {
 		TSysCommand sysCommand;
 		sysCommand.command = SysCommand_ControlFan;

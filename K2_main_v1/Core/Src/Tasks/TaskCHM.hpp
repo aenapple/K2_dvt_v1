@@ -61,8 +61,8 @@
 #define TASK_CHM_INDEX_PTC_F_COMPOST_PROCESS    4
 
 /**********************************************************************************/
-#define TASK_CHM_LOW_HUMIDITY	200
-#define TASK_CHM_MED_HUMIDITY	500
+#define TASK_CHM_LOW_HUMIDITY	450
+#define TASK_CHM_MED_HUMIDITY	600
 #define TASK_CHM_HIGH_HUMIDITY	800
 
 #define TASK_CHM_LOW_TEMP		5100
@@ -341,6 +341,8 @@ private:
 
 	EMixingPhase mixingPhase;
 	EDutyCycleMode dutyCycle;
+
+	u8 counterPause;
 
 	////// end Dynamic Algorithm variables //////
 

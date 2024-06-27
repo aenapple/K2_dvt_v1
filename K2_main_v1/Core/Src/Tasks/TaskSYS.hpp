@@ -103,6 +103,8 @@
 
 #define TASK_SYS_20_SECONDS  (u16)20
 
+#define TASK_SYS_30_SECONDS  (u16)30
+
 #define TASK_SYS_1_MINUTE   59
 #define TASK_SYS_2_MINUTES  (u16)(2 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_3_MINUTES  (u16)(3 * (TASK_SYS_1_MINUTE + 1) - 1)
