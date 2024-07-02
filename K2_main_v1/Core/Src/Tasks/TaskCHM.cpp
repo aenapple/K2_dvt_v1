@@ -177,8 +177,10 @@ void TTaskCHM::BmeControlParams(u16 temperature, u16 bmeHumidity)
 
 	if (temperature <= this->bmeLowTemp && temperature > 0){
 
+			// OFF LED for user to add water
 			if (rHumidity >= this->highHumidity)
 			{
+
 
 				this->dutyCycle = DutyCycleMode_0;
 				this->mixIntervalTime = TASK_SYS_2_MINUTES;
@@ -231,6 +233,7 @@ void TTaskCHM::BmeControlParams(u16 temperature, u16 bmeHumidity)
 		this->dutyCycle = DutyCycleMode_0;
 
 		if (rHumidity >= this->highHumidity) {
+			// OFF LED for user to add water
 			this->mixIntervalTime = TASK_SYS_4_MINUTES;
 
 			this->padHeaterPwm = 90;
@@ -247,6 +250,7 @@ void TTaskCHM::BmeControlParams(u16 temperature, u16 bmeHumidity)
 
 
 		} else if (rHumidity >= this->medHumidity) {
+			// OFF LED for user to add water
 			this->mixIntervalTime = TASK_SYS_5_MINUTES;
 
 			this->padHeaterPwm = 80;
@@ -285,6 +289,7 @@ void TTaskCHM::BmeControlParams(u16 temperature, u16 bmeHumidity)
 	} else if (temperature >= this->bmeHighTemp) {
 	            if (rHumidity >= this->lowHumidity)
 	            {
+	            	// OFF LED for user to add water
 					this->padHeaterPwm = 100;
 					this->ptcHeaterPwm = 0;
 
