@@ -61,13 +61,13 @@
 #define TASK_CHM_INDEX_PTC_F_COMPOST_PROCESS    4
 
 /**********************************************************************************/
-#define TASK_CHM_LOW_HUMIDITY	450
+#define TASK_CHM_LOW_HUMIDITY	500
 #define TASK_CHM_MED_HUMIDITY	600
 #define TASK_CHM_HIGH_HUMIDITY	800
 
-#define TASK_CHM_LOW_TEMP		5100
-#define TASK_CHM_MED_TEMP 		5200
-#define TASK_CHM_HIGH_TEMP 		5300
+#define TASK_CHM_LOW_TEMP		3500
+#define TASK_CHM_MED_TEMP 		3600
+#define TASK_CHM_HIGH_TEMP 		3900
 
 #define TASK_CHM_MAX_GAS		10.2e7
 #define TASK_CHM_MIN_GAS		4.0e7
