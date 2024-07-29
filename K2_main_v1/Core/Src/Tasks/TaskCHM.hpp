@@ -18,6 +18,7 @@
 #include "HalMotChambers.hpp"
 #include "Interfaces/InterfaceVIP.hpp"
 #include "TaskSYS.hpp"
+#include "TaskAI.hpp"
 
 
 /**********************************************************************************/
@@ -61,13 +62,21 @@
 #define TASK_CHM_INDEX_PTC_F_COMPOST_PROCESS    4
 
 /**********************************************************************************/
-#define TASK_CHM_LOW_HUMIDITY	500
-#define TASK_CHM_MED_HUMIDITY	600
-#define TASK_CHM_HIGH_HUMIDITY	800
+#define TASK_CHM_NUM_PREDICTIONS 3
 
-#define TASK_CHM_LOW_TEMP		3500
-#define TASK_CHM_MED_TEMP 		3600
-#define TASK_CHM_HIGH_TEMP 		3900
+
+#define TASK_CHM_LOW_HUMIDITY	4500
+#define TASK_CHM_MED_HUMIDITY	5000
+#define TASK_CHM_HIGH_HUMIDITY	5500
+
+#define TASK_CHM_LOW_TEMP		4500
+#define TASK_CHM_MED_TEMP 		4600
+#define TASK_CHM_HIGH_TEMP 		4900
+
+#define TASK_CHM_LOW_MOISTURE      40
+#define TASK_CHM_MEDIUM_MOISTURE   55
+#define TASK_CHM_HIGH_MOISTURE     70
+
 
 #define TASK_CHM_MAX_GAS		10.2e7
 #define TASK_CHM_MIN_GAS		4.0e7
@@ -79,24 +88,21 @@
 ////// Dynamic Algorithm //////
 typedef enum
 {
-	MixingPhase_0,
-	MixingPhase_1,
-	MixingPhase_2,
-	MixingPhase_3,
-	MixingPhase_4,
+	PtcDutyCycleMode_0,
+	PtcDutyCycleMode_1,
+	PtcDutyCycleMode_2,
+	PtcDutyCycleMode_3,
+	PtcDutyCycleMode_4,
+	PtcDutyCycleMode_5,
+	PtcDutyCycleMode_6,
+	PtcDutyCycleMode_7,
 
-} EMixingPhase;
-
-typedef enum
-{
-	DutyCycleMode_0,
-	DutyCycleMode_1,
-	DutyCycleMode_2,
-//	DutyCycleMode_3,
-	DutyCycleMode_99,
+	PtcDutyCycleMode_99,
 
 } EDutyCycleMode;
 ////// end Dynamic Algorithm //////
+
+
 
 typedef enum
 {
@@ -104,58 +110,58 @@ typedef enum
 	TaskChamber_Right,
 } ETaskChamber;
 
-typedef enum
-{
-	TypeMixing_Na,
-	TypeMixing_Off,
-	TypeMixing_25s,
-	TypeMixing_5m,
-	TypeMixing_5m_5h,
-} ETypeMixing;
+//typedef enum
+//{
+//	TypeMixing_Na,
+//	TypeMixing_Off,
+//	TypeMixing_25s,
+//	TypeMixing_5m,
+//	TypeMixing_5m_5h,
+//} ETypeMixing;
 
-typedef enum
-{
-	ModePtcHeater_Na,
-	ModePtcHeater_Off,
-	ModePtcHeater_10m,
-	ModePtcHeater_5m,
-	ModePtcHeater_5m_5h,
-} EModePtcHeater;
+//typedef enum
+//{
+//	ModePtcHeater_Na,
+//	ModePtcHeater_Off,
+//	ModePtcHeater_10m,
+//	ModePtcHeater_5m,
+//	ModePtcHeater_5m_5h,
+//} EModePtcHeater;
 
-typedef enum
-{
-	ModePtcFan_Na,
-	ModePtcFan_Off,
-	ModePtcFan_On,    // 66% power
-	ModePtcFan_1h_2h,
-} EModePtcFan;
+//typedef enum
+//{
+//	ModePtcFan_Na,
+//	ModePtcFan_Off,
+//	ModePtcFan_On,    // 66% power
+//	ModePtcFan_1h_2h,
+//} EModePtcFan;
 
-typedef enum
-{
-	PadHeaterT_Na,
-	PadHeaterT_55degC,
-	PadHeaterT_50degC,
-	PadHeaterT_45degC,
-	PadHeaterT_40degC,
-} EPadHeaterT;
+//typedef enum
+//{
+//	PadHeaterT_Na,
+//	PadHeaterT_55degC,
+//	PadHeaterT_50degC,
+//	PadHeaterT_45degC,
+//	PadHeaterT_40degC,
+//} EPadHeaterT;
 
-typedef enum
-{
-	CycleStep_0m,
-	CycleStep_30m,
-	CycleStep_60m,
-	CycleStep_80m,
-	CycleStep_90m,
-	CycleStep_105m,
-	CycleStep_120m,
-	CycleStep_150m,
-	CycleStep_165m,
-	CycleStep_180m,
-	CycleStep_210m,
-	CycleStep_240m,
-	CycleStep_360m,
-
-} ECycleStep;
+//typedef enum
+//{
+//	CycleStep_0m,
+//	CycleStep_30m,
+//	CycleStep_60m,
+//	CycleStep_80m,
+//	CycleStep_90m,
+//	CycleStep_105m,
+//	CycleStep_120m,
+//	CycleStep_150m,
+//	CycleStep_165m,
+//	CycleStep_180m,
+//	CycleStep_210m,
+//	CycleStep_240m,
+//	CycleStep_360m,
+//
+//} ECycleStep;
 
 typedef enum
 {
@@ -164,26 +170,26 @@ typedef enum
 	TaskChmState_Collecting = 2,
 } ETaskChmState;
 
-typedef enum
-{
-	MixingMode_5m,  //
-	MixingMode_25s,
-	MixingMode_5m_5h,
-} EMixingMode;
+//typedef enum
+//{
+//	MixingMode_5m,  //
+//	MixingMode_25s,
+//	MixingMode_5m_5h,
+//} EMixingMode;
 
-typedef enum
-{
-	TimeCompostProcess_00 = 0,  // time 00:00
-	TimeCompostProcess_07 = 1,  // time 07:00
-	TimeCompostProcess_11 = 2,  // time 11:00
-	TimeCompostProcess_14 = 3,  // time 14:00
-	TimeCompostProcess_17 = 4,  // time 17:00
-	TimeCompostProcess_22 = 5,  // time 22:00
-	TimeCompostProcess_23 = 6,  // time 23:00
-
-	TimeCompostProcess_Last = 7
-
-} ETimeCompostProcess;
+//typedef enum
+//{
+//	TimeCompostProcess_00 = 0,  // time 00:00
+//	TimeCompostProcess_07 = 1,  // time 07:00
+//	TimeCompostProcess_11 = 2,  // time 11:00
+//	TimeCompostProcess_14 = 3,  // time 14:00
+//	TimeCompostProcess_17 = 4,  // time 17:00
+//	TimeCompostProcess_22 = 5,  // time 22:00
+//	TimeCompostProcess_23 = 6,  // time 23:00
+//
+//	TimeCompostProcess_Last = 7
+//
+//} ETimeCompostProcess;
 
 /**********************************************************************************/
 //==================================================================================
@@ -201,32 +207,53 @@ public:
 
 	////// functions //////
 	EOsResult Init(ETaskChamber taskChamber);
-	EOsResult Init(void) { return(OsResult_Ok); }
+	EOsResult Init(void)  { return(OsResult_Ok); }
 	ETaskChmState GetState(void);
-	void UpdateSensorBme688(TBme688Sensor* bme688Sensor);
+	void UpdateSensorBme688(TBme688Sensor* leftBme688Sensor, TBme688Sensor* rightBme688Sensor);
 //	void SetState(u32 event);
 
 	void SetError(void);
 
-	EHeaterPwm GetPwmHeaterPtc(void);
-	void PulseOnHeaterPtc(void);
-	void PulseOffHeaterPtc(void);
-	EHeaterPwm GetPwmHeaterPad(void);
-	void PulseOnHeaterPad(void);
-	void PulseOffHeaterPad(void);
+	EHeaterPwm GetPwmHeaterPtcLeft(void);
+	EHeaterPwm GetPwmHeaterPtcRight(void);
 
-	void StartCycleCompostProcess(void);
-	void SetConfigCompostProcess(u8 hours);
-	void SetTimeCompostProcess(ETimeCompostProcess timeCompostProcess);
-	void SetPtcTemperature(s8 temperature);
-	s8 GetPtcTemperature(void);
+	void PulseOnHeaterPtcLeft(void);
+	void PulseOnHeaterPtcRight(void);
+
+	void PulseOffHeaterPtcLeft(void);
+	void PulseOffHeaterPtcRight(void);
+
+	EHeaterPwm GetPwmHeaterPadLeft(void);
+	EHeaterPwm GetPwmHeaterPadRight(void);
+
+	void PulseOnHeaterPadLeft(void);
+	void PulseOnHeaterPadRight(void);
+
+	void PulseOffHeaterPadLeft(void);
+	void PulseOffHeaterPadRight(void);
+
+//	void StartCycleCompostProcess(void);
+//	void SetConfigCompostProcess(u8 hours);
+//	void SetTimeCompostProcess(ETimeCompostProcess timeCompostProcess);
+
+	void SetPtcTemperatureLeft(s8 temperature);
+	void SetPtcTemperatureRight(s8 temperature);
+
+	s8 GetPtcTemperatureLeft(void);
+	s8 GetPtcTemperatureRight(void);
+
 	void SetPtcTemperatureLevels(s8 lowLevel, s8 highLevel);
 	void SetPtcTime(u32 repeatTime, u32 workTime);
-	void SetPadTemperature(s8 temperature);
-	s8 GetPadTemperature(void);
+
+	void SetPadTemperatureLeft(s8 temperature);
+	void SetPadTemperatureRight(s8 temperature);
+
+	s8 GetPadTemperatureLeft(void);
+	s8 GetPadTemperatureRight(void);
+
 	void SetPadTemperatureLevels(s8 lowLevel, s8 highLevel);
 	void SetPadTime(u16 repeatTime, u16 workTime);
-	void StartMixingTimeMode1(void);
+//	void StartMixingTimeMode1(void);
 
 
 
@@ -255,8 +282,6 @@ private:
 	////// variables //////
 	StackType_t xStackBuffer[OS_TASK_CHM_SIZE_STACK];
 	
-	static const u8 tableCompostProcess[TASK_CHM_SIZE_TABLE_COMPOST_PROCESS][TASK_CHM_NUM_PARAMETERS_COMPOST_PROCESS];
-
 	ETaskChamber taskChamber;
 	ETaskChmState taskChmState;
 
@@ -273,20 +298,20 @@ private:
 	u32 ptcCounterRepeatTime;
 	u32 ptcWorkTime;
 
-	bool flagPtcOn;
-	EModePtcHeater modePtcHeater;
-	u16 ptcFanCounterWorkTime;
-	u16 ptcFanCounterRepeatTime;
-	EModePtcFan modePtcFan;
 
-	s8 padLowLevel_T;
-	s8 padHighLevel_T;
-	s8 padTemperature;
-	u16 padRepeatTime;
-	u16 padCounterRepeatTime;
-	u16 padWorkTime;
-	u16 padCounterWorkTime;
-	bool flagPadOn;
+//	EModePtcHeater modePtcHeater;
+//	EModePtcFan modePtcFan;
+
+
+//
+//	s8 padLowLevel_T;
+//	s8 padHighLevel_T;
+
+//	u16 padRepeatTime;
+//	u16 padCounterRepeatTime;
+//	u16 padWorkTime;
+//	u16 padCounterWorkTime;
+//	bool flagPadOn;
 
 //	u16 mixingCounterRepeatTime;
 //	u16 mixingRepeatTime;
@@ -295,54 +320,53 @@ private:
 //	EMixingMode mixingMode;
 
 	////// Dynamic Algorithm variables //////
-	u16 samplingCounter;
+	u16 incrementCounter;
+	u16 incrementTime;
 
-	s8 ptcHeaterPwm;
-	s8 padHeaterPwm;
+	u64 heatPurgeInterval;
+	u64 heatPurgeCounter;
+	bool isHeatPurge;
 
-	s8 ptcFanPwm;
-	s8 airFanPwm;
-	s8 exhaustFanPwm;
+	u32 lowTemp;
+	u32 highTemp;
 
-	u16 highHumidity;
-	u16 medHumidity;
-	u16 lowHumidity;
+	u32 lastLowTemp;
 
-	u16 minHumidity;
-	u16 maxHumidity;
-	u16 maxDifferenceHumidity;
-
-
-	u16 avgHumidity;
-	u16 maxRelativeHumidity;
-	u16 humiditySampleCounter;
-
-	u32 maxGas;
-	u32 minGas;
-
-    s16 bmeLowTemp;
-    s16 bmeMedTemp;
-    s16 bmeHighTemp;
-
-    TBme688Sensor bmeSensorChamber;
-    TBme688Sensor bmeSensorFan;
-
-//    u32 ptcCounterWorkTime;
     u32 ptcIntervalTime;
     u32 ptcCounterWorkTime;
     bool ptcDutyCycleOnFlag;
+    EDutyCycleMode ptcDutyCycle;
+
+    u8 ptcFanPwm;
+    u8 ptcHeaterPwm;
+
+    // Fix for P50 TODO FIX
+    s8 ptcTemperatureRight;
+    s8 ptcTemperatureLeft;
+    s8 padTemperatureRight;
+    s8 padTemperatureLeft;
+
+
 
 	u16 timeCw;
 	u16 timeCcw;
 
+	u16 rightMoisturePredictions[TASK_CHM_NUM_PREDICTIONS] = {0,0,0}; //short time intervals
+	u16 leftMoisturePredictions[TASK_CHM_NUM_PREDICTIONS]  = {0,0,0};
+
+    TBme688Sensor leftBmeSensorChamber;
+    TBme688Sensor rightBmeSensorChamber;
+    TBme688Sensor bmeSensorFan;
+
+
+
 //	u16 mixCounterWorkTime;
+    // Might need larger counting intervals depending on how large we make it.
 	u16 mixCounterIntervalTime;
 	u16 mixIntervalTime;
 
 	EMixingPhase mixingPhase;
-	EDutyCycleMode dutyCycle;
 
-	u8 counterPause;
 
 	////// end Dynamic Algorithm variables //////
 
@@ -366,19 +390,24 @@ private:
 	void StartForwardMotorChamber(void);
 	void StartBackwardMotorChamber(void);
 	void StopMotorChamber(void);
-	EOsResult DelaySecond(u16 seconds);
-	void SetStepCompostProcess(ECycleStep cycleStep);
-	void SetStepCompostProcess(u16 timeStep);
+	EOsResult DelaySecond(u16 seconds);///	void SetStepCompostProcess(ECycleStep cycleStep);///	void SetStepCompostProcess(u16 timeStep);
 
 	////// Dynamic Algorithm Logic //////
 //	void GetSensorBme688(void);
+
 	void BmeControlParams(u16 temperature, u16 rHumidity);
-	void SetStepCompostProcess();
-	void SetStepDutyCycles(void);
+
 	void ActuatorPWMCheck(void);
 	void Mixing(void);
 	void AverageHumidity();
-	void MaxHumidityDifference();
+
+	/// Modulate Duty Cycles
+	void SetPtcDutyCycles(void);
+
+	////// CHeck Chamber Conditions (change naming convention after)
+
+	void DeterminePtcDutyCycle(u16 moistureChamberA, u16 moistureChamberB);
+	void ModulatModulateChamberTemperatures(u16 leftChamberHumidity, u16 rightChamberHumidity);
 	////// end Dynamic Algorithm Logic //////
 
 

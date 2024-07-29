@@ -8,11 +8,15 @@
 #include "TaskCHM.hpp"
 #include "TaskHAL.hpp"
 #include "TaskSYS.hpp"
+#include "TaskAI.hpp"
 
-TTaskCHM TaskChmLeft;
-TTaskCHM TaskChmRight;
+
+TTaskCHM TaskChm;
 extern TTaskHAL TaskHAL;
 extern TTaskSYS TaskSYS;
+
+extern TTaskAI TaskAILeft;
+//extern TTaskAI  TaskAIRight;
 
 #ifndef __RELEASE
 	#include "TaskConsole.hpp"
@@ -32,6 +36,127 @@ extern TTaskSYS TaskSYS;
 
 /**********************************************************************************/
 //==================================================================================
+void TTaskCHM::Process(ETaskChmState taskChmState)
+{
+	u32 resultBits;
+//	EOsResult result;
+
+	this->Delay(10);
+
+	this->incrementTime  = TASK_SYS_30_SECONDS;
+	this->incrementCounter = this->incrementCounter;
+
+	this->heatPurgeInterval = TASK_SYS_10_HOURS;
+	this->heatPurgeCounter = TASK_SYS_10_HOURS;
+	this->isHeatPurge      = false;
+
+	this->lowTemp   = TASK_CHM_LOW_TEMP;
+	this->highTemp  = TASK_CHM_HIGH_TEMP;
+
+	this->lastLowTemp = this->lowTemp;
+
+
+
+	this->ptcIntervalTime    = 0;
+	this->ptcCounterWorkTime = 0;
+	this->ptcDutyCycle       = PtcDutyCycleMode_0;
+	this->ptcDutyCycleOnFlag = false;
+
+	this->ptcFanPwm          = 60;
+	this->ptcHeaterPwm       = 100;
+
+	this->taskChmState = taskChmState;
+
+
+
+	//  Include Instances of AI Class;
+	//  TODO Add neural networks, and maybe increment size thingie
+		TaskAILeft.Init(this->incrementTime);
+	//	TaskAIRight.Init(this->incrementTime);
+
+	this->mixingPhase = MixingPhase_0;
+	this->mixIntervalTime = TASK_SYS_2_MINUTES;
+//	this->mixCounterIntervalTime = 0;DeterminePtcDutyCycle
+
+	this->ClearEvents(TASK_CHM_EVENT_TICK_PROCESS);
+	while(true)
+	{
+		if(this->EventGroup.WaitOrBits(
+					TASK_CHM_EVENT_TICK_PROCESS |
+					TASK_CHM_EVENT_MIXING       |
+					TASK_CHM_EVENT_STOP_PROCESS,
+					&resultBits,
+					1000
+					) == OsResult_Timeout)
+	   {
+			// DEBUG
+			if(this->taskChamber == TaskChamber_Left)
+			{
+				DiagNotice("TaskChmLeft composting!!");
+			}
+			else
+			{
+				DiagNotice("TaskChmRight composting!!");
+			}
+			// DEBUG
+
+			continue;
+		}
+
+
+		if((resultBits & TASK_CHM_EVENT_TICK_PROCESS) > 0)
+		{
+			this->TickProcess();
+		}
+
+		if((resultBits & TASK_CHM_EVENT_MIXING) > 0)
+		{
+			// DEBUG
+			if(this->taskChamber == TaskChamber_Left)
+			{
+				DiagNotice("TaskChmLeft start mixing!!");
+			}
+			else
+			{
+				DiagNotice("TaskChmRight start mixing!!");
+			}
+			// DEBUG
+
+			this->Mixing();
+			this->ClearEvents(TASK_CHM_EVENT_MIXING);
+
+			// DEBUG
+			if(this->taskChamber == TaskChamber_Left)
+			{
+				DiagNotice("TaskChmLeft stop mixing!!");
+			}
+			else
+			{
+				DiagNotice("TaskChmRight stop mixing!!");
+			}
+			// DEBUG
+		}
+
+		if((resultBits & TASK_CHM_EVENT_STOP_PROCESS) > 0)
+		{
+			this->StopProcess();
+			return;
+		}
+
+
+
+
+			// this->Delay(50);  // mSec
+
+
+		  //this->DebugPrint("Cycles - %06d\r\n", counter);
+
+
+
+		}  // end while(true)
+}
+	//=== end Process ==================================================================
+
 /**
 *  Todo: function description..
 *
@@ -41,7 +166,6 @@ void TTaskCHM::Run(void)
 {
 	u32 resultBits;
 //	EOsResult result;
-
 
 	this->Delay(20);  // must be minimum 4 mSec delay before call WaitAndBits/WaitOrBits !!!
 
@@ -137,605 +261,91 @@ void TTaskCHM::Run(void)
 *
 *  @return ... .
 */
-void TTaskCHM::MaxHumidityDifference()
-{
-
-	this->maxDifferenceHumidity = this->maxHumidity - this->minHumidity;
-	this->maxHumidity = 0;
-	this->minHumidity = 100;
-
-	if (this->mixIntervalTime >= TASK_SYS_20_MINUTES) {
-		this->humiditySampleCounter = this->mixIntervalTime;
-	} else {
-		this->humiditySampleCounter = TASK_SYS_20_MINUTES;
-	}
-}
-//=== end MaxHumidityDifference ====================================================
-
-//==================================================================================
-/**
-*  Todo: function description..
-*
-*  @return ... .
-*/
-void TTaskCHM::BmeControlParams(u16 temperature, u16 bmeHumidity)
-{
-	u16 rHumidity;
-
-	if (this->maxDifferenceHumidity == 0)
-	{
-		rHumidity = bmeHumidity;
-	} else {
-		rHumidity = this->maxDifferenceHumidity;
-	}
-
-	if(this->error)
-	{
-		this->dutyCycle = DutyCycleMode_99;
-		return;
-	}
-
-	if (temperature <= this->bmeLowTemp && temperature > 0){
-
-			// OFF LED for user to add water
-			if (rHumidity >= this->highHumidity)
-			{
-
-
-				this->dutyCycle = DutyCycleMode_0;
-				this->mixIntervalTime = TASK_SYS_2_MINUTES;
-
-				this->padHeaterPwm = 100;
-				this->ptcHeaterPwm = 100;
-
-				this->ptcFanPwm = 30;
-				this->exhaustFanPwm = 20;
-				this->airFanPwm = 10;
-
-				if (this->ptcCounterWorkTime <= 0){
-					this->ptcDutyCycleOnFlag = true;
-					this->ptcCounterWorkTime = TASK_SYS_3_MINUTES;
-				}
-
-			} else if (rHumidity >= this->medHumidity) {
-				this->dutyCycle = DutyCycleMode_0;
-				this->mixIntervalTime = TASK_SYS_4_MINUTES;
-
-				this->padHeaterPwm = 90;
-				this->ptcHeaterPwm = 80;
-
-				this->ptcFanPwm = 25;
-				this->exhaustFanPwm = 0;
-				this->airFanPwm = 20;
-
-				if (this->ptcCounterWorkTime <= 0){
-					this->ptcDutyCycleOnFlag = true;
-					this->ptcCounterWorkTime = TASK_SYS_2_MINUTES;
-				}
-
-			} else {
-
-				this->mixIntervalTime = TASK_SYS_8_MINUTES;
-
-				this->padHeaterPwm = 75;
-				this->ptcHeaterPwm = 50;
-
-				this->ptcFanPwm = 10;
-				this->exhaustFanPwm = 0;
-				this->airFanPwm = 10;
-
-				if (this->ptcCounterWorkTime <= 0){
-					this->ptcDutyCycleOnFlag = true;
-					this->ptcCounterWorkTime = TASK_SYS_2_MINUTES;
-				}
-			}
-	} else if (temperature <= this->bmeHighTemp) {
-		this->dutyCycle = DutyCycleMode_0;
-
-		if (rHumidity >= this->highHumidity) {
-			// OFF LED for user to add water
-			this->mixIntervalTime = TASK_SYS_4_MINUTES;
-
-			this->padHeaterPwm = 90;
-			this->ptcHeaterPwm = 90;
-
-			this->ptcFanPwm = 15;
-			this->exhaustFanPwm = 20;
-			this->airFanPwm = 15;
-
-			if (this->ptcCounterWorkTime <= 0){
-				this->ptcDutyCycleOnFlag = true;
-				this->ptcCounterWorkTime = TASK_SYS_1_MINUTE;
-			}
-
-
-		} else if (rHumidity >= this->medHumidity) {
-			// OFF LED for user to add water
-			this->mixIntervalTime = TASK_SYS_5_MINUTES;
-
-			this->padHeaterPwm = 80;
-			this->ptcHeaterPwm = 70;
-
-			this->ptcFanPwm = 30;
-			this->exhaustFanPwm = 10;
-			this->airFanPwm = 10;
-
-			if (this->ptcCounterWorkTime <= 0){
-				this->ptcDutyCycleOnFlag = true;
-				this->ptcCounterWorkTime = TASK_SYS_1_MINUTE;
-			}
-
-
-		} else if (rHumidity >= this->lowHumidity) {
-
-			// TODO ADD BLUE LIGHT FOR USER TO ADD WATER
-
-			this->mixIntervalTime = TASK_SYS_15_MINUTES;
-
-			this->padHeaterPwm = 90;
-			this->ptcHeaterPwm = 70;
-
-			this->ptcFanPwm = 10;
-			this->exhaustFanPwm = 0;
-			this->airFanPwm = 10;
-
-			if (this->ptcCounterWorkTime <= 0) {
-				this->ptcDutyCycleOnFlag = true;
-				this->ptcCounterWorkTime = TASK_SYS_10_MINUTES;
-			}
-
-
-		}
-	} else if (temperature >= this->bmeHighTemp) {
-	            if (rHumidity >= this->lowHumidity)
-	            {
-	            	// OFF LED for user to add water
-					this->padHeaterPwm = 100;
-					this->ptcHeaterPwm = 0;
-
-					this->exhaustFanPwm = 40;
-					this->airFanPwm = 10;
-
-					this->ptcFanPwm = 0;
-
-					this->mixIntervalTime = TASK_SYS_30_MINUTES;
-
-	                if (this->ptcCounterWorkTime <= 0){
-						this->ptcDutyCycleOnFlag = true;
-						this->ptcCounterWorkTime = TASK_SYS_2_MINUTES;
-
-	                }
-		}
-	            else {
-	            	// TODO ADD BLUE LIGHT FOR USER TO ADD WATER
-
-	            	this->padHeaterPwm = 100;
-					this->ptcHeaterPwm = 0;
-
-					this->exhaustFanPwm = 0;
-					this->airFanPwm = 0;
-
-					this->ptcFanPwm = 0;
-					this->exhaustFanPwm = 0;
-
-
-	                if (this->ptcCounterWorkTime <= 0) {
-	                    this->ptcDutyCycleOnFlag = true;
-	                    this->ptcCounterWorkTime = TASK_SYS_5_MINUTES;
-	                }
-	            }
-	} else if  (temperature < 0) {
-		this->dutyCycle = DutyCycleMode_99;
-	}
-
-
-
-}
-//=== end BmeControlParams =========================================================
-
-//==================================================================================
-/**
-*  Todo: function description..
-*
-*  @return ... .
-*/
-void TTaskCHM::SetStepDutyCycles()
-{
-
-	switch(this->dutyCycle)
-	{
-		case DutyCycleMode_0:
-			this->ptcIntervalTime = 0;
-			this->ptcCounterWorkTime = 0;
-
-			this->ptcFanPwm = 10;
-			this->ptcHeaterPwm = 0;
-			this->exhaustFanPwm = 10;
-
-			this->airFanPwm = 10;
-			this->ptcDutyCycleOnFlag = false;
-
-			break;
-
-		case DutyCycleMode_1:
-			if (this->ptcDutyCycleOnFlag) {
-				this->ptcDutyCycleOnFlag = false;
-
-				this->ptcHeaterPwm  = 0;
-				this->padHeaterPwm  = 0;
-
-				this->ptcFanPwm     = 0;
-				this->airFanPwm  =   10;
-				this->exhaustFanPwm = 0;
-
-				this->ptcIntervalTime = TASK_SYS_15_MINUTES;
-				this->ptcCounterWorkTime = this->ptcIntervalTime;
-			} else {
-				this->ptcDutyCycleOnFlag = true;
-				this->mixIntervalTime = TASK_SYS_30_MINUTES;
-
-				this->padHeaterPwm  = 40;
-
-				this->ptcHeaterPwm  = 60;
-				this->ptcFanPwm     = 20;
-
-				this->airFanPwm  =    0;
-				this->exhaustFanPwm = 0;
-
-				this->ptcCounterWorkTime = TASK_SYS_5_MINUTES;
-			}
-			break;
-
-		case DutyCycleMode_2:
-			if (this->ptcDutyCycleOnFlag) {
-				this->ptcDutyCycleOnFlag = false;
-
-				this->ptcHeaterPwm  = 0;
-				this->padHeaterPwm  = 0;
-
-				this->ptcFanPwm     = 0;
-				this->airFanPwm  =    0;
-				this->exhaustFanPwm = 0;
-
-				this->ptcIntervalTime = TASK_SYS_40_MINUTES;
-				this->ptcCounterWorkTime = this->ptcIntervalTime;
-			} else {
-				this->ptcDutyCycleOnFlag = true;
-				this->mixIntervalTime = TASK_SYS_20_MINUTES;
-
-				this->padHeaterPwm  = 30;
-
-				this->ptcHeaterPwm  = 40;
-				this->ptcFanPwm     = 20;
-
-				this->airFanPwm  =    10;
-				this->exhaustFanPwm = 0;
-
-				this->ptcCounterWorkTime = TASK_SYS_5_MINUTES;
-			}
-			break;
-
-		case DutyCycleMode_99:
-				if (this->ptcDutyCycleOnFlag) {
-					this->ptcDutyCycleOnFlag = false;
-
-					this->ptcHeaterPwm  = 0;
-					this->padHeaterPwm  = 50;
-
-					this->ptcFanPwm     = 0;
-					this->airFanPwm  =    0;
-					this->exhaustFanPwm = 0;
-
-					this->ptcIntervalTime = TASK_SYS_2_MINUTES;
-					this->ptcCounterWorkTime = this->ptcIntervalTime;
-				} else {
-					this->ptcDutyCycleOnFlag = true;
-					this->mixIntervalTime = TASK_SYS_10_MINUTES;
-
-					this->padHeaterPwm  = 70;
-
-					this->ptcHeaterPwm  = 80;
-					this->ptcFanPwm     = 20;
-
-					this->airFanPwm  =    10;
-					this->exhaustFanPwm = 0;
-
-					this->ptcCounterWorkTime = TASK_SYS_2_MINUTES;
-				}
-				break;
-
-
-
-
-	}
-}
-//=== end SetStepDutyCycles ========================================================
-
-//==================================================================================
-/**
-*  Todo: function description..
-*
-*  @return ... .
-*/
-void TTaskCHM::ActuatorPWMCheck()
-{
-	if (this->ptcHeaterPwm >= 100)
-		this->ptcHeaterPwm = 100;
-	 else if (this->ptcHeaterPwm)
-		this->ptcHeaterPwm = 0;
-
-	if (this->ptcFanPwm >= 100)
-		this->ptcFanPwm = 100;
-	 else if (this->ptcFanPwm <= 0)
-		this->ptcFanPwm = 0;
-
-	if (this->airFanPwm >= 100)
-		this->airFanPwm = 100;
-	 else if (this->airFanPwm <= 0)
-		this->airFanPwm = 0;
-
-	if (this->exhaustFanPwm >= 100)
-		this->exhaustFanPwm = 100;
-	 else if (this->exhaustFanPwm <= 0)
-		this->exhaustFanPwm = 0;
-
-	if (this->airFanPwm >= 100)
-		this->airFanPwm = 100;
-	 else if (this->airFanPwm <= 0)
-		this->airFanPwm = 0;
-}
-//=== end ActuatorPWMCheck =========================================================
-
-//==================================================================================
-/**
-*  Todo: function description..
-*
-*  @return ... .
-*/
-void TTaskCHM::Process(ETaskChmState taskChmState)
-{
-	u32 resultBits;
-//	EOsResult result;
-
-	this->Delay(10);
-
-	this->taskChmState = taskChmState;
-	this-> humiditySampleCounter =	this->samplingCounter;
-
-//	this->SetEvents(TASK_CHM_EVENT_MIXING);
-
-	this->counterPause = TASK_SYS_30_SECONDS;
-
-	this->samplingCounter = TASK_SYS_20_MINUTES;
-
-	this->mixingPhase = MixingPhase_0;
-	this->mixIntervalTime = TASK_SYS_2_MINUTES;
-//	this->mixCounterIntervalTime = 0;
-
-	this->dutyCycle = DutyCycleMode_0;
-
-	this->lowHumidity  = TASK_CHM_LOW_HUMIDITY;
-	this->medHumidity  = TASK_CHM_MED_HUMIDITY;
-	this->highHumidity = TASK_CHM_HIGH_HUMIDITY;
-
-
-	this->padHeaterPwm = 100;
-
-	this->ptcHeaterPwm = 50;
-	this->ptcFanPwm = 10;
-	this->ptcIntervalTime = 0;
-	this->ptcCounterWorkTime = 0;
-	this->ptcDutyCycleOnFlag = false;
-
-	this->airFanPwm = 10;
-
-	this->exhaustFanPwm = 10;
-
-
-	this->maxGas = TASK_CHM_MAX_GAS;
-	this->minGas = TASK_CHM_MIN_GAS;
-
-	this->bmeLowTemp   = TASK_CHM_LOW_TEMP;
-	this->bmeMedTemp   = TASK_CHM_MED_TEMP;
-	this->bmeHighTemp  = TASK_CHM_HIGH_TEMP;
-
-
-	// Feature Variables
-	this->minHumidity = 100;
-	this->maxHumidity = 0;
-
-	this->maxDifferenceHumidity = 0;
-
-	this->ClearEvents(TASK_CHM_EVENT_TICK_PROCESS);
-	while(true)
-	{
-		if(this->EventGroup.WaitOrBits(
-					TASK_CHM_EVENT_TICK_PROCESS |
-					TASK_CHM_EVENT_MIXING       |
-					TASK_CHM_EVENT_STOP_PROCESS,
-					&resultBits,
-					1000
-					) == OsResult_Timeout)
-       {
-			// DEBUG
-			if(this->taskChamber == TaskChamber_Left)
-			{
-			    DiagNotice("TaskChmLeft composting!!");
-			}
-			else
-			{
-			    DiagNotice("TaskChmRight composting!!");
-			}
-			// DEBUG
-
-            continue;
-        }
-
-
-        if((resultBits & TASK_CHM_EVENT_TICK_PROCESS) > 0)
-        {
-        	this->TickProcess();
-        }
-
-        if((resultBits & TASK_CHM_EVENT_MIXING) > 0)
-        {
-        	// DEBUG
-        	if(this->taskChamber == TaskChamber_Left)
-        	{
-        	    DiagNotice("TaskChmLeft start mixing!!");
-        	}
-        	else
-        	{
-        	    DiagNotice("TaskChmRight start mixing!!");
-        	}
-        	// DEBUG
-
-        	this->Mixing();
-        	this->ClearEvents(TASK_CHM_EVENT_MIXING);
-
-        	// DEBUG
-        	if(this->taskChamber == TaskChamber_Left)
-        	{
-        	    DiagNotice("TaskChmLeft stop mixing!!");
-        	}
-        	else
-        	{
-        	    DiagNotice("TaskChmRight stop mixing!!");
-        	}
-        	// DEBUG
-        }
-
-        if((resultBits & TASK_CHM_EVENT_STOP_PROCESS) > 0)
-        {
-        	this->StopProcess();
-        	return;
-        }
-
-
-
-
-	        // this->Delay(50);  // mSec
-
-
-	      //this->DebugPrint("Cycles - %06d\r\n", counter);
-
-
-
-		}  // end while(true)
-}
-//=== end Process ==================================================================
-
-//==================================================================================
-/**
-*  Todo: function description..
-*
-*  @return ... .
-*/
-void TTaskCHM::UpdateSensorBme688(TBme688Sensor* newBme688Sensor)
-{
-	memcpy((void*)&this->bmeSensorChamber, (void*)newBme688Sensor, sizeof(TBme688Sensor));
-}
-//=== end UpdateSensorBme688 =======================================================
-
-//==================================================================================
-/**
-*  Todo: function description..
-*
-*  @return ... .
-*/
-/* void TTaskCHM::GetSensorBme688()
-{
-	u8* pData;
-	pData = this->InterfaceMasterVIP.GetPointerDataRx();
-
-	taskENTER_CRITICAL();
-	memcpy((void*)&this->bmeSensorChamber, (void*)((pData + IFC_VIP_BME688_TEMPERATURE)), sizeof(TBme688Sensor));
-	taskEXIT_CRITICAL();
-} */
-//=== end GetSensorBme688 ==========================================================
-
-//==================================================================================
-/**
-*  Todo: function description..
-*
-*  @return ... .
-*/
 void TTaskCHM::TickProcess()
 {
-	if (this->counterPause > 0) {
-		this->counterPause--;
+	if (this->incrementCounter > 0) {
+		this->incrementCounter--;
+		return;
 	} else {
-		this->counterPause = TASK_SYS_30_SECONDS;
+		this->incrementCounter = this->incrementTime;
 	}
 
 	// DEBUG
-	if(this->taskChamber == TaskChamber_Left)
-	{
-	    DiagNotice("TaskChmLeft TickProcess!!");
-	}
-	else
-	{
-	    DiagNotice("TaskChmRight TickProcess!!");
-	}
+//	if(this->taskChamber == TaskChamber_Left)
+//	{
+//	    DiagNotice("TaskChmLeft TickProcess!!");
+//	}
+//	else
+//	{
+//	    DiagNotice("TaskChmRight TickProcess!!");
+//	}
 	// DEBUG
 
-	////// Mixing counter. //////
-	if(this->mixCounterIntervalTime < this->mixIntervalTime)
-	{
-		this->mixCounterIntervalTime++;
-	}
-	else
-	{
-		this->mixCounterIntervalTime = 0;
-		this->SetEvents(TASK_CHM_EVENT_MIXING);
-	}
+	// Collect Values from Temperature Sensor
+	this->padTemperatureLeft = TaskHAL.GetTemperaturePadLeft();
+	this->padTemperatureRight = TaskHAL.GetTemperaturePadRight();
+
+	this->ptcTemperatureLeft = TaskHAL.GetTemperaturePtcLeft();
+	this->ptcTemperatureRight = TaskHAL.GetTemperaturePtcRight();
+	// End Collect Values From Temperature Sensor
 
 
-	////// PTC Fan & Heater counter. For Duty Cycle	 //////
-	if (this->ptcCounterWorkTime > 0) {
-		this->ptcCounterWorkTime--;
+	// Get Moisture Predictions
+	//	this->rightMoisturePredictions = TaskAIRight.GetPredictions();
+	//	this->leftMoisturePredictions  = TaskAILeft.GetPredictions();
 
-	} else {
-		this->SetStepDutyCycles();
-	}
+	// End Get Moisture Predictions
 
-
-	if (this->humiditySampleCounter > 0) {
-		this->humiditySampleCounter--;
-
-		switch (this->mixingPhase) {
-			case MixingPhase_0:
-				if (bmeSensorChamber.humidity <= this->minHumidity){
-					this->minHumidity = bmeSensorChamber.humidity;
-				}
-				break;
-
-			case MixingPhase_1:
-			case MixingPhase_2:
-			case MixingPhase_3:
-			case MixingPhase_4:
-				if (bmeSensorChamber.humidity >= this->maxHumidity){
-					this->maxHumidity = bmeSensorChamber.humidity;
-				}
-				break;
+	////// PTC Fan & Heater counter Using Generated Moistures //////
+	// TODO check if statement; or we could do without the array (array might be good for getting an average)
+	this->ptcCounterWorkTime -= this->incrementTime;
+	if (this->ptcCounterWorkTime <= 0) {
+		if (rightMoisturePredictions[0] != 0 && rightMoisturePredictions[1] != 0 && rightMoisturePredictions[2] != 0 &&
+				leftMoisturePredictions[0] != 0 && leftMoisturePredictions[1] != 0 && leftMoisturePredictions[2] != 0) {
+			// Get Average of the predictions
+			// this->DeterminePtcDutyCycle()
 		}
-
-	} else {
-		this->MaxHumidityDifference();
-
 	}
 
+	////// End PTC Fan & Heater counter Using Generated Moistures //////
 
-	// TODO Get BME Sensor data from Exhaust
-	this->BmeControlParams(this->bmeSensorChamber.temperature, this->bmeSensorChamber.humidity);
+
+	//////// Mixing Chambers. Make sure they're not mixing at the same time     //////
+//	u16 mixingCounter = TaskAILeft.GetMixingCounter();
+//	if ( mixingCounter <= 0) {
+//		// if right.mixpahse == 0
+//			 // begin mixing cycle for left chamber
+//	} else {
+//		// decrement left mixing counter
+//	}
+//
+//	mixingCounter = TaskAIRight.GetMixingCounter();
+//	if (mixingCounter <= 0) {
+//		// if left.mixpahse == 0
+//		 // begin mixing cycle for right chamber
+//	} else {
+//		// decrement right mixing counter
+//	}
+
+//	////// Mixing counter. //////
+//	if(this->mixCounterIntervalTime < this->mixIntervalTime)
+//	{
+//		this->mixCounterIntervalTime++;
+//	}
+//	else
+//	{
+//		this->mixCounterIntervalTime = 0;
+//		this->SetEvents(TASK_CHM_EVENT_MIXING);
+//	}
+//	////// Mixing counter. //////
+	//////// End Mixing Chambers   //////
+
+
+	////// Run AI Chambers  //////
+
+	/////// End Run AI Chambers   //////
 
 	this->ActuatorPWMCheck();
-
-	if (this->padHeaterPwm) {
-		this->StartHeaterPad(padHeaterPwm);
-	} else {
-		this->StopHeaterPad();
-	}
 
 	if (this->ptcHeaterPwm > 0) {
 		this->StartHeaterPtc(this->ptcHeaterPwm);
@@ -749,38 +359,9 @@ void TTaskCHM::TickProcess()
 		this->StopFanPtc();
 	}
 
-	if (this->airFanPwm > 0) {
-		this->StartFanAir(this->airFanPwm);
-	} else {
-		this->StopFanAir();
-	}
 
-	EOsResult result;
-	result = OsResult_Ok;
-	if (this->exhaustFanPwm > 0) {
-		TSysCommand sysCommand;
-		sysCommand.command = SysCommand_ControlFan;
-		sysCommand.parameters[IFC_VIP_FAN_PWM_INDEX] = this->exhaustFanPwm;
-		result = TaskHAL.SendSysCommand(&sysCommand);
-
-	} else {
-		TSysCommand sysCommand;
-		sysCommand.command = SysCommand_ControlFan;
-		sysCommand.parameters[IFC_VIP_FAN_PWM_INDEX] = 0;
-		result = TaskHAL.SendSysCommand(&sysCommand);
-	}
-
-
-	// TODO if (TaskChmLeft.exhaustFanPwm > TaskChmRight.exhaustFanPwm)
-	// 	           TaskHAL.StartMainFan(TaskChmRight.exhaustFanPwm);
-	//       else
-	//             TaskHAL.StartMainFan(TaskChmLeft.exhaustFanPwm);
-//	if (this->exhaustFanPwm > 0) {
-//		TaskHAL.StartMainFan(exhaustFanPwm);
-// 	} else {
-//		TaskHAL.StopMainFan();
-// 	}
-
+//	EOsResult result;
+//	result = OsResult_Ok;
 
 //	if(this->counterCycleCompostProcess < TASK_SYS_360_MINUTES)
 //	{
@@ -808,12 +389,325 @@ void TTaskCHM::TickProcess()
 }
 //=== end TickProcess ==============================================================
 
+
+//==================================================================================
+void TTaskCHM::DeterminePtcDutyCycle(u16 moistureChamberA, u16 moistureChamberB){
+	if (moistureChamberA >= TASK_CHM_HIGH_MOISTURE && moistureChamberB >= TASK_CHM_HIGH_MOISTURE)
+	{
+
+		this->ptcDutyCycle = PtcDutyCycleMode_1;
+	}
+
+	else if ((moistureChamberA >= TASK_CHM_HIGH_MOISTURE && moistureChamberB >= TASK_CHM_MEDIUM_MOISTURE) ||
+			(moistureChamberB >= TASK_CHM_HIGH_MOISTURE && moistureChamberA >= TASK_CHM_MEDIUM_MOISTURE))
+	{
+
+		this->ptcDutyCycle = PtcDutyCycleMode_2;
+	}
+
+	else if ((moistureChamberA >= TASK_CHM_HIGH_MOISTURE && moistureChamberB >= TASK_CHM_LOW_MOISTURE) ||
+			(moistureChamberB >= TASK_CHM_HIGH_MOISTURE && moistureChamberA >= TASK_CHM_LOW_MOISTURE))
+	{
+
+		this->ptcDutyCycle = PtcDutyCycleMode_3;
+	}
+	else if (moistureChamberA >= TASK_CHM_MEDIUM_MOISTURE && moistureChamberB >= TASK_CHM_MEDIUM_MOISTURE)
+	{
+
+		this->ptcDutyCycle = PtcDutyCycleMode_4;
+	}
+	else if ((moistureChamberA >= TASK_CHM_MEDIUM_MOISTURE && moistureChamberB >= TASK_CHM_LOW_MOISTURE) ||
+			(moistureChamberB >= TASK_CHM_MEDIUM_MOISTURE && moistureChamberA >= TASK_CHM_LOW_MOISTURE))
+	{
+
+		this->ptcDutyCycle = PtcDutyCycleMode_5;
+	}
+	else if (moistureChamberA >= TASK_CHM_LOW_MOISTURE and moistureChamberB >= TASK_CHM_LOW_MOISTURE)
+	{
+
+		this->ptcDutyCycle = PtcDutyCycleMode_6;
+
+	}
+	else
+	{
+		this->ptcDutyCycle = PtcDutyCycleMode_7;
+	}
+
+}
+//=== end DeterminePtcDutyCycle =========================================================
+void TTaskCHM::ModulatModulateChamberTemperatures(u16 leftChamberHumidity, u16 rightChamberHumidity)
+{
+    if (leftChamberHumidity >= TASK_CHM_HIGH_HUMIDITY && rightChamberHumidity >= TASK_CHM_HIGH_HUMIDITY)
+    {
+        this->lowTemp = TASK_CHM_LOW_TEMP + 500;
+    }
+    else if  (leftChamberHumidity >= TASK_CHM_HIGH_HUMIDITY || rightChamberHumidity >= TASK_CHM_HIGH_HUMIDITY)
+    {
+    	this->lowTemp = TASK_CHM_LOW_TEMP + 300;
+    }
+    else
+    {
+    	this->lowTemp = TASK_CHM_LOW_TEMP;
+    }
+}
+//=== end ModulateChamberTemperatures =========================================================
 //==================================================================================
 /**
 *  Todo: function description..
 *
 *  @return ... .
 */
+void TTaskCHM::SetPtcDutyCycles()
+{
+
+	switch(this->ptcDutyCycle)
+	{
+    case PtcDutyCycleMode_0:  // Staring Up
+        if (this->ptcDutyCycleOnFlag) {
+
+            this->ptcFanPwm  = 10;
+            this->ptcHeaterPwm = 0;
+
+            this->ptcIntervalTime = TASK_SYS_1_MINUTE + TASK_SYS_30_SECONDS;
+            this->ptcCounterWorkTime = ptcIntervalTime;
+            this->ptcDutyCycleOnFlag = false;
+        }
+        else {
+
+            this->ptcFanPwm    = 50;
+            this->ptcHeaterPwm = 100;
+
+            this->ptcCounterWorkTime = TASK_SYS_30_SECONDS;
+            this->ptcDutyCycleOnFlag = true;
+        }
+    case PtcDutyCycleMode_1:  // High High
+        if (this->ptcDutyCycleOnFlag) {
+            ptcDutyCycleOnFlag = false;
+
+			this->ptcFanPwm  = 10;
+			this->ptcHeaterPwm = 0;
+
+			this->ptcIntervalTime = TASK_SYS_1_MINUTE;
+			this->ptcCounterWorkTime = ptcIntervalTime;
+        }
+		else {
+
+            this->ptcFanPwm    = 80;
+            this->ptcHeaterPwm = 100;
+
+            this->ptcCounterWorkTime = TASK_SYS_1_MINUTE + TASK_SYS_30_SECONDS;
+            this->ptcDutyCycleOnFlag = true;
+
+		}
+    case PtcDutyCycleMode_2: // High Medium
+        if (this->ptcDutyCycleOnFlag) {
+
+			this->ptcFanPwm  = 10;
+			this->ptcHeaterPwm = 0;
+
+			this->ptcIntervalTime = TASK_SYS_2_MINUTES;
+			this->ptcCounterWorkTime = ptcIntervalTime;
+			this->ptcDutyCycleOnFlag = false;
+        }
+        else {
+
+            this->ptcFanPwm    = 70;
+            this->ptcHeaterPwm = 100;
+
+            this->ptcCounterWorkTime = TASK_SYS_2_MINUTES + TASK_SYS_30_SECONDS;
+            this->ptcDutyCycleOnFlag = true;
+
+        }
+
+    case PtcDutyCycleMode_3: // High Low
+        if (this->ptcDutyCycleOnFlag) {
+
+			this->ptcFanPwm  = 10;
+			this->ptcHeaterPwm = 0;
+
+			this->ptcIntervalTime = TASK_SYS_3_MINUTES;
+			this->ptcCounterWorkTime = ptcIntervalTime;
+			this->ptcDutyCycleOnFlag = false;
+
+        }
+        else {
+
+            this->ptcFanPwm    = 60;
+            this->ptcHeaterPwm = 50;
+
+            this->ptcCounterWorkTime = TASK_SYS_3_MINUTES + TASK_SYS_30_SECONDS;
+            this->ptcDutyCycleOnFlag = true;
+
+        }
+    case PtcDutyCycleMode_4: // Medium Medium
+        if (this->ptcDutyCycleOnFlag) {
+
+			this->ptcFanPwm  = 10;
+			this->ptcHeaterPwm = 0;
+
+			this->ptcIntervalTime = TASK_SYS_4_MINUTES;
+			this->ptcCounterWorkTime = ptcIntervalTime;
+			this->ptcDutyCycleOnFlag = false;
+        }
+        else {
+
+            this->ptcFanPwm    = 40;
+            this->ptcHeaterPwm = 100;
+
+            this->ptcCounterWorkTime = TASK_SYS_4_MINUTES + TASK_SYS_30_SECONDS;
+            this->ptcDutyCycleOnFlag = true;
+
+        }
+
+    case PtcDutyCycleMode_5: // Medium Low
+        if (this->ptcDutyCycleOnFlag) {
+
+			this->ptcFanPwm  = 10;
+			this->ptcHeaterPwm = 0;
+
+			this->ptcIntervalTime = TASK_SYS_5_MINUTES;
+			this->ptcCounterWorkTime = ptcIntervalTime;
+			this->ptcDutyCycleOnFlag = false;
+        }
+		else {
+
+            this->ptcFanPwm    = 30;
+            this->ptcHeaterPwm = 50;
+
+            this->ptcCounterWorkTime = TASK_SYS_5_MINUTES + TASK_SYS_30_SECONDS;
+            this->ptcDutyCycleOnFlag = true;
+		}
+
+    case PtcDutyCycleMode_6: // Low Low
+        if (this->ptcDutyCycleOnFlag) {
+
+			this->ptcFanPwm  = 10;
+			this->ptcHeaterPwm = 0;
+
+			this->ptcIntervalTime = TASK_SYS_6_MINUTES;
+			this->ptcCounterWorkTime = ptcIntervalTime;
+			this->ptcDutyCycleOnFlag = false;
+        }
+        else {
+            this->ptcFanPwm    = 20;
+            this->ptcHeaterPwm = 30;
+
+            this->ptcCounterWorkTime = TASK_SYS_6_MINUTES + TASK_SYS_30_SECONDS;
+            this->ptcDutyCycleOnFlag = true;
+        }
+
+    case PtcDutyCycleMode_7:
+        if (this->ptcDutyCycleOnFlag) {
+
+			this->ptcFanPwm  = 10;
+			this->ptcHeaterPwm = 0;
+
+			this->ptcIntervalTime = TASK_SYS_7_MINUTES;
+			this->ptcCounterWorkTime = ptcIntervalTime;
+			this->ptcDutyCycleOnFlag = false;
+        }
+        else {
+        	this->ptcCounterWorkTime = TASK_SYS_7_MINUTES + TASK_SYS_30_SECONDS;
+        	this->ptcDutyCycleOnFlag = true;
+
+        }
+
+    case PtcDutyCycleMode_99:
+        if (this->ptcDutyCycleOnFlag) {
+
+			this->ptcFanPwm  = 10;
+			this->ptcHeaterPwm = 0;
+
+			this->ptcIntervalTime    = TASK_SYS_15_MINUTES;
+			this->ptcCounterWorkTime = ptcIntervalTime;
+            this->ptcDutyCycleOnFlag = false;
+        }
+        else {
+//            this->AiLeftChamber.mixIntervalTime = TASK_SYS_10_MINUTES;
+//            this->AiRightChamber.mixIntervalTime = TASK_SYS_10_MINUTES;
+
+			this->ptcFanPwm  =   80;
+			this->ptcHeaterPwm = 10;
+
+            ptcCounterWorkTime = TASK_SYS_2_MINUTES;
+            ptcDutyCycleOnFlag = true;
+        }
+        break;
+
+
+
+
+	}
+}
+//=== end SetStepDutyCycles ========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskCHM::ActuatorPWMCheck()
+{
+	if (this->ptcHeaterPwm >= 100)
+		this->ptcHeaterPwm = 100;
+	 else if (this->ptcHeaterPwm)
+		this->ptcHeaterPwm = 0;
+
+	if (this->ptcFanPwm >= 100)
+		this->ptcFanPwm = 100;
+	 else if (this->ptcFanPwm <= 0)
+		this->ptcFanPwm = 0;
+
+}
+//=== end ActuatorPWMCheck =========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+
+
+// Might have to do a left and right sensor or something
+void TTaskCHM::UpdateSensorBme688(TBme688Sensor* leftBme688Sensor, TBme688Sensor* rightBme688Sensor)
+{
+	memcpy((void*)&this->leftBmeSensorChamber, (void*)leftBme688Sensor, sizeof(TBme688Sensor));
+	memcpy((void*)&this->rightBmeSensorChamber, (void*)rightBme688Sensor, sizeof(TBme688Sensor));
+}
+//=== end UpdateSensorBme688 =======================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+//=== end GetSensorBme688 ==========================================================
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+
+//==================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+
+// TODO make MixingRight, MixingLeft
 void TTaskCHM::Mixing()
 {
 	EOsResult result;
@@ -866,74 +760,6 @@ void TTaskCHM::Mixing()
 *
 *  @return ... .
 */
-/* void TTaskCHM::Mixing()
-{
-	EOsResult result;
-
-
-	switch(mixingPhase) {
-		case MixingPhase_0:
-			this->StartForwardMotorChamber();
-			this->mixCounterWorkTime = this->timeCw;
-
-			this->mixingPhase = MixingPhase_1;
-			break;
-
-		case MixingPhase_1:
-			result = this->DelaySecond(this->timeCw);
-			this->StopMotorChamber();
-			if(result == OsResult_StopProcess)
-			{
-				return;
-			}
-
-			this->StartBackwardMotorChamber();
-			this->mixCounterWorkTime = this->timeCcw;
-			this->mixingPhase = MixingPhase_2;
-			break;
-
-		case MixingPhase_2:
-			result = this->DelaySecond(this->timeCcw);
-			this->StopMotorChamber();
-			if(result == OsResult_StopProcess)
-			{
-				return;
-			}
-			this->StartForwardMotorChamber();
-			this->mixCounterWorkTime = this->timeCw;
-
-			this->mixingPhase = MixingPhase_3;
-			break;
-
-		case MixingPhase_3:
-			result = this->DelaySecond(this->timeCw);
-			this->StopMotorChamber();
-			if(result == OsResult_StopProcess)
-			{
-				return;
-			}
-
-			this->StartBackwardMotorChamber();
-			this->mixCounterWorkTime = this->timeCcw;
-
-			this->mixingPhase = MixingPhase_4;
-			break;
-
-		case MixingPhase_4:
-			result = this->DelaySecond(this->timeCcw);
-			this->StopMotorChamber();
-			if(result == OsResult_StopProcess)
-			{
-				return;
-			}
-
-			this->mixingPhase = MixingPhase_0;
-			break;
-
-	}
-
-} */
-//=== end Mixing ===================================================================
 
 //==================================================================================
 /**
@@ -981,14 +807,9 @@ void TTaskCHM::StopFanAir()
 */
 void TTaskCHM::StartFanPtc(u8 pwm)
 {
-	if(this->taskChamber == TaskChamber_Left)
-	{
-		this->HalDcFans->StartFanPtcLeft(pwm);
-	}
-	else
-	{
-		this->HalDcFans->StartFanPtcRight(pwm);
-	}
+	this->HalDcFans->StartFanPtcLeft(pwm);
+	this->HalDcFans->StartFanPtcRight(pwm);
+
 }
 //=== end StartFanPtc ==============================================================
 
@@ -1000,14 +821,10 @@ void TTaskCHM::StartFanPtc(u8 pwm)
 */
 void TTaskCHM::StopFanPtc()
 {
-	if(this->taskChamber == TaskChamber_Left)
-	{
-		this->HalDcFans->StopFanPtcLeft();
-	}
-	else
-	{
-		this->HalDcFans->StopFanPtcRight();
-	}
+    this->HalDcFans->StopFanPtcLeft();
+
+	this->HalDcFans->StopFanPtcRight();
+
 }
 //=== end StopFanPtc ===============================================================
 
@@ -1019,14 +836,10 @@ void TTaskCHM::StopFanPtc()
 */
 void TTaskCHM::StartHeaterPtc(u8 pwm)
 {
-	if(this->taskChamber == TaskChamber_Left)
-	{
-		this->HalHeaters->StartHeaterPtcLeft(pwm);
-	}
-	else
-	{
-		this->HalHeaters->StartHeaterPtcRight(pwm);
-	}
+	this->HalHeaters->StartHeaterPtcLeft(pwm);
+
+	this->HalHeaters->StartHeaterPtcRight(pwm);
+
 }
 //=== end StartHeaterPtc ===========================================================
 
@@ -1038,14 +851,10 @@ void TTaskCHM::StartHeaterPtc(u8 pwm)
 */
 void TTaskCHM::StopHeaterPtc()
 {
-	if(this->taskChamber == TaskChamber_Left)
-	{
-		this->HalHeaters->StopHeaterPtcLeft();
-	}
-	else
-	{
-		this->HalHeaters->StopHeaterPtcRight();
-	}
+
+	this->HalHeaters->StopHeaterPtcLeft();
+	this->HalHeaters->StopHeaterPtcRight();
+
 }
 //=== end StopHeaterPtc ============================================================
 
@@ -1076,14 +885,9 @@ void TTaskCHM::StartHeaterPad(u8 pwm)
 */
 void TTaskCHM::StopHeaterPad()
 {
-	if(this->taskChamber == TaskChamber_Left)
-	{
-		this->HalHeaters->StopHeaterPadLeft();
-	}
-	else
-	{
-		this->HalHeaters->StopHeaterPadRight();
-	}
+	this->HalHeaters->StopHeaterPadLeft();
+	this->HalHeaters->StopHeaterPadRight();
+
 }
 //=== end StopHeaterPad ============================================================
 
@@ -1093,17 +897,16 @@ void TTaskCHM::StopHeaterPad()
 *
 *  @return ... .
 */
-EHeaterPwm TTaskCHM::GetPwmHeaterPtc(void)
+EHeaterPwm TTaskCHM::GetPwmHeaterPtcLeft(void)
 {
-	if(this->taskChamber == TaskChamber_Left)
-	{
-		this->HalHeaters->GetPwmHeaterPtcLeft();
-	}
-	else
-	{
-		this->HalHeaters->GetPwmHeaterPtcRight();
-	}
+	this->HalHeaters->GetPwmHeaterPtcLeft();
+
 }
+EHeaterPwm TTaskCHM::GetPwmHeaterPtcRight(void)
+{
+	this->HalHeaters->GetPwmHeaterPtcRight();
+}
+
 //=== end GetPwmHeaterPtc ==========================================================
 
 //==================================================================================
@@ -1112,17 +915,17 @@ EHeaterPwm TTaskCHM::GetPwmHeaterPtc(void)
 *
 *  @return ... .
 */
-void TTaskCHM::PulseOnHeaterPtc(void)
+void TTaskCHM::PulseOnHeaterPtcLeft(void)
 {
-	if(this->taskChamber == TaskChamber_Left)
-	{
-		this->HalHeaters->PulseOnHeaterPtcLeft();
-	}
-	else
-	{
-		this->HalHeaters->PulseOnHeaterPtcRight();
-	}
+	this->HalHeaters->PulseOnHeaterPtcLeft();
+
 }
+void TTaskCHM::PulseOnHeaterPtcRight(void)
+{
+	this->HalHeaters->PulseOnHeaterPtcRight();
+
+}
+
 //=== end PulseOnHeaterPtc =========================================================
 
 //==================================================================================
@@ -1131,16 +934,13 @@ void TTaskCHM::PulseOnHeaterPtc(void)
 *
 *  @return ... .
 */
-void TTaskCHM::PulseOffHeaterPtc(void)
+void TTaskCHM::PulseOffHeaterPtcLeft(void)
 {
-	if(this->taskChamber == TaskChamber_Left)
-	{
-		this->HalHeaters->PulseOffHeaterPtcLeft();
-	}
-	else
-	{
-		this->HalHeaters->PulseOffHeaterPtcRight();
-	}
+	this->HalHeaters->PulseOffHeaterPtcLeft();
+}
+void TTaskCHM::PulseOffHeaterPtcRight(void)
+{
+	this->HalHeaters->PulseOffHeaterPtcRight();
 }
 //=== end PulseOffHeaterPtc ========================================================
 
@@ -1150,17 +950,15 @@ void TTaskCHM::PulseOffHeaterPtc(void)
 *
 *  @return ... .
 */
-EHeaterPwm TTaskCHM::GetPwmHeaterPad(void)
+EHeaterPwm TTaskCHM::GetPwmHeaterPadLeft(void)
 {
-	if(this->taskChamber == TaskChamber_Left)
-	{
-		this->HalHeaters->GetPwmHeaterPadLeft();
-	}
-	else
-	{
-		this->HalHeaters->GetPwmHeaterPadRight();
-	}
+	this->HalHeaters->GetPwmHeaterPadLeft();
 }
+EHeaterPwm TTaskCHM::GetPwmHeaterPadRight(void)
+{
+	this->HalHeaters->GetPwmHeaterPadRight();
+}
+
 //=== end GetPwmHeaterPad ==========================================================
 
 //==================================================================================
@@ -1169,16 +967,13 @@ EHeaterPwm TTaskCHM::GetPwmHeaterPad(void)
 *
 *  @return ... .
 */
-void TTaskCHM::PulseOnHeaterPad(void)
+void TTaskCHM::PulseOnHeaterPadLeft(void)
 {
-	if(this->taskChamber == TaskChamber_Left)
-	{
-		this->HalHeaters->PulseOnHeaterPadLeft();
-	}
-	else
-	{
-		this->HalHeaters->PulseOnHeaterPadRight();
-	}
+	this->HalHeaters->PulseOnHeaterPadLeft();
+}
+void TTaskCHM::PulseOnHeaterPadRight(void)
+{
+	this->HalHeaters->PulseOnHeaterPadRight();
 }
 //=== end PulseOnHeaterPad =========================================================
 
@@ -1188,16 +983,14 @@ void TTaskCHM::PulseOnHeaterPad(void)
 *
 *  @return ... .
 */
-void TTaskCHM::PulseOffHeaterPad(void)
+void TTaskCHM::PulseOffHeaterPadLeft(void)
 {
-	if(this->taskChamber == TaskChamber_Left)
-	{
-		this->HalHeaters->PulseOffHeaterPadLeft();
-	}
-	else
-	{
-		this->HalHeaters->PulseOffHeaterPadRight();
-	}
+	this->HalHeaters->PulseOffHeaterPadLeft();
+
+}
+void TTaskCHM::PulseOffHeaterPadRight(void)
+{
+	this->HalHeaters->PulseOffHeaterPadRight();
 }
 //=== end PulseOffHeaterPad ========================================================
 
@@ -1207,6 +1000,8 @@ void TTaskCHM::PulseOffHeaterPad(void)
 *
 *  @return ... .
 */
+
+// TODO Seperate into two functions, or just use parameters
 void TTaskCHM::StartForwardMotorChamber()
 {
 	if(this->taskChamber == TaskChamber_Left)
@@ -1330,11 +1125,6 @@ EOsResult TTaskCHM::DelaySecond(u16 seconds)
 *
 *  @return ... .
 */
-//void TTaskCHM::StartCycleCompostProcess(void)
-//{
-//	this->SetStepCompostProcess(TASK_SYS_0_MINUTES);
-//}
-//=== end StartCycleCompostProcess =================================================
 
 //==================================================================================
 /**
@@ -1342,55 +1132,7 @@ EOsResult TTaskCHM::DelaySecond(u16 seconds)
 *
 *  @return ... .
 */
-//void TTaskCHM::SetStepCompostProcess(ECycleStep cycleStep)
-//{
-//	switch(cycleStep)
-//	{
-//		case CycleStep_0m:
-//			break;
-//
-//		case CycleStep_30m:
-//			break;
-//
-//		case CycleStep_60m:
-//			break;
-//
-//		case CycleStep_80m:
-//			break;
-//
-//		case CycleStep_90m:
-//			break;
-//
-//		case CycleStep_105m:
-//		break;
-//
-//		case CycleStep_120m:
-//			break;
-//
-//		case CycleStep_150m:
-//			break;
-//
-//		case CycleStep_165m:
-//			break;
-//
-//		case CycleStep_180m:
-//			break;
-//
-//		case CycleStep_210m:
-//			break;
-//
-//		case CycleStep_240m:
-//			break;
-//
-//		case CycleStep_360m:
-//			break;
-//
-//		default: // case CycleStep_0m
-//			this->counterCycleCompostProcess = TASK_SYS_0_MINUTES;
-//	}
-//
-//}
-//=== end SetStepCompostProcess ====================================================
+//==================================================================================
 
 //==================================================================================
 /**
@@ -1398,92 +1140,11 @@ EOsResult TTaskCHM::DelaySecond(u16 seconds)
 *
 *  @return ... .
 */
-void TTaskCHM::SetStepCompostProcess()
+void TTaskCHM::SetPtcTemperatureLeft(s8 temperature)
 {
-
-
+	this->ptcTemperature = temperature;
 }
-//=== end SetStepCompostProcess ====================================================
-
-//==================================================================================
-/**
-*  Todo: function description..
-*
-*  @return ... .
-*/
-/*void TTaskCHM::SetConfigCompostProcess(u8 hours)
-{
-	u8 timeStart;
-	u8 timeStop;
-
-
-
-	if(hours == this->tableCompostProcess[TimeCompostProcess_23][0])
-	{
-		this->SetTimeCompostProcess(TimeCompostProcess_23);
-		return;
-	}
-
-	if(hours == this->tableCompostProcess[TimeCompostProcess_22][0])
-	{
-		this->SetTimeCompostProcess(TimeCompostProcess_22);
-		return;
-	}
-
-
-	for(u16 i = 0; i < TimeCompostProcess_22; i++)
-	{
-		timeStart = this->tableCompostProcess[i][0];
-		timeStop = this->tableCompostProcess[i + 1][0];
-
-		if((hours >= timeStart) && (hours < timeStop))
-		{
-			this->SetTimeCompostProcess((ETimeCompostProcess)i);
-			return;
-		}
-
-	}
-
-}*/
-//=== end SetConfigCompostProcess ==================================================
-
-//==================================================================================
-/**
-*  Todo: function description..
-*
-*  @return ... .
-*/
-//void TTaskCHM::SetTimeCompostProcess(ETimeCompostProcess timeCompostProcess)
-//{
-//	u16 newTime;
-//
-//
-//	if(this->padHighLevel_T != this->tableCompostProcess[timeCompostProcess][1])
-//	{
-//		this->padLowLevel_T = this->tableCompostProcess[timeCompostProcess][1] - 2;
-//		this->padHighLevel_T = this->tableCompostProcess[timeCompostProcess][1];
-//	}
-//
-//	newTime = (u16)this->tableCompostProcess[timeCompostProcess][2] * TASK_SYS_10_MINUTES;
-//#ifdef __DEBUG_TEST_MIXING_MECHANISM
-//	newTime = TASK_SYS_10_MINUTES;
-//#endif
-//	if(this->mixingRepeatTime != newTime)
-//	{
-//		this->mixingRepeatTime = newTime;
-//		this->mixingCounterRepeatTime = 0;
-//	}
-//
-//}
-//=== end SetTimeCompostProcess ====================================================
-
-//==================================================================================
-/**
-*  Todo: function description..
-*
-*  @return ... .
-*/
-void TTaskCHM::SetPtcTemperature(s8 temperature)
+void TTaskCHM::SetPtcTemperatureRight(s8 temperature)
 {
 	this->ptcTemperature = temperature;
 }
@@ -1495,7 +1156,12 @@ void TTaskCHM::SetPtcTemperature(s8 temperature)
 *
 *  @return ... .
 */
-s8 TTaskCHM::GetPtcTemperature(void)
+s8 TTaskCHM::GetPtcTemperatureLeft(void)
+{
+	return(this->ptcTemperature);
+}
+
+s8 TTaskCHM::GetPtcTemperatureRight(void)
 {
 	return(this->ptcTemperature);
 }
@@ -1533,10 +1199,15 @@ void TTaskCHM::SetPtcTemperatureLevels(s8 lowLevel, s8 highLevel)
 *
 *  @return ... .
 */
-void TTaskCHM::SetPadTemperature(s8 temperature)
+void TTaskCHM::SetPadTemperatureLeft(s8 temperature)
 {
-	this->padTemperature = temperature;
+	this->padTemperatureLeft = temperature;
 }
+void TTaskCHM::SetPadTemperatureRight(s8 temperature)
+{
+	this->padTemperatureRight = temperature;
+}
+
 //=== end SetPadTemperature ========================================================
 
 //==================================================================================
@@ -1545,10 +1216,15 @@ void TTaskCHM::SetPadTemperature(s8 temperature)
 *
 *  @return ... .
 */
-s8 TTaskCHM::GetPadTemperature(void)
+s8 TTaskCHM::GetPadTemperatureLeft(void)
 {
-	return(this->padTemperature);
+	return(this->padTemperatureLeft);
 }
+s8 TTaskCHM::GetPadTemperatureRight(void)
+{
+	return(this->padTemperatureRight);
+}
+
 //=== end GetPadTemperature ========================================================
 
 //==================================================================================
@@ -1557,11 +1233,11 @@ s8 TTaskCHM::GetPadTemperature(void)
 *
 *  @return ... .
 */
-void TTaskCHM::SetPadTemperatureLevels(s8 lowLevel, s8 highLevel)
-{
-	this->padLowLevel_T = lowLevel;
-	this->padHighLevel_T = highLevel;
-}
+//void TTaskCHM::SetPadTemperatureLevels(s8 lowLevel, s8 highLevel)
+//{
+//	this->padLowLevel_T = lowLevel;
+//	this->padHighLevel_T = highLevel;
+//}
 //=== end SetPadTemperatureLevels ==================================================
 
 //==================================================================================
@@ -1570,11 +1246,11 @@ void TTaskCHM::SetPadTemperatureLevels(s8 lowLevel, s8 highLevel)
 *
 *  @return ... .
 */
-void TTaskCHM::SetPadTime(u16 repeatTime, u16 workTime)
-{
-	this->padRepeatTime = repeatTime;
-	this->padWorkTime = workTime;
-}
+//void TTaskCHM::SetPadTime(u16 repeatTime, u16 workTime)
+//{
+//	this->padRepeatTime = repeatTime;
+//	this->padWorkTime = workTime;
+//}
 //=== end SetPadTime ===============================================================
 
 //==================================================================================
@@ -1622,8 +1298,6 @@ void TTaskCHM::SetError()
 */
 EOsResult TTaskCHM::Init(ETaskChamber taskChamber)
 {
-
-	this->taskChamber = taskChamber;
 	this->taskChmState = TaskChmState_Idle;
 
 	static THalDcFans& halF = THalDcFans::GetInstance();
@@ -1640,21 +1314,10 @@ EOsResult TTaskCHM::Init(ETaskChamber taskChamber)
 	this->mixingPhase = MixingPhase_0;
 	this->error = false;
 
-	if(taskChamber == TaskChamber_Left)
-	{
-		this->timeCw = TASK_CHM_MIX_SHORT
-				;
-		this->timeCcw = TASK_CHM_MIX_LONG;
-	}
-	else
-	{
-		this->timeCw =  TASK_CHM_MIX_SHORT;
-		this->timeCcw = TASK_CHM_MIX_LONG;
-	}
-
 
 	return(OsResult_Ok);
 }
+
 //=== end Init =====================================================================
 
 //==================================================================================

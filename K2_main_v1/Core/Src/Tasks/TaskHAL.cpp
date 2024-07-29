@@ -12,8 +12,7 @@
 
 TTaskHAL TaskHAL;
 extern TTaskSYS TaskSYS;
-extern TTaskCHM TaskChmLeft;
-extern TTaskCHM TaskChmRight;
+extern TTaskCHM TaskChm;
 
 #ifndef __RELEASE
 	#include "TaskConsole.hpp"
@@ -1957,7 +1956,7 @@ void TTaskHAL::CalculatingTSensors()
 				if(temperature >= 40) temperature++;
 				if(temperature >= 50) temperature++;
 				if(temperature >= 60) temperature++;
-				TaskChmLeft.SetPtcTemperature(temperature);
+				TaskChm.SetPtcTemperatureLeft(temperature);
 				break;
 
 			case 1:
@@ -1966,7 +1965,7 @@ void TTaskHAL::CalculatingTSensors()
 				if(temperature >= 40) temperature++;
 				if(temperature >= 50) temperature++;
 				if(temperature >= 60) temperature++;
-				TaskChmRight.SetPtcTemperature(temperature);
+				TaskChm.SetPtcTemperatureRight(temperature);
 				break;
 
 			case 2:
@@ -1974,7 +1973,7 @@ void TTaskHAL::CalculatingTSensors()
 				if(temperature >= 40) temperature++;
 				if(temperature >= 50) temperature++;
 				if(temperature >= 60) temperature++;
-				TaskChmLeft.SetPadTemperature(temperature);
+				TaskChm.SetPadTemperatureLeft(temperature);
 				break;
 
 			case 3:
@@ -1982,7 +1981,7 @@ void TTaskHAL::CalculatingTSensors()
 				if(temperature >= 40) temperature++;
 				if(temperature >= 50) temperature++;
 				if(temperature >= 60) temperature++;
-				TaskChmRight.SetPadTemperature(temperature);
+				TaskChm.SetPadTemperatureRight(temperature);
 				break;
 
 			default:
@@ -2596,7 +2595,7 @@ s8 TTaskHAL::GetTemperatureCpu3(void)
 */
 s8 TTaskHAL::GetTemperaturePtcLeft(void)
 {
-	return(TaskChmLeft.GetPtcTemperature());
+	return(TaskChm.GetPtcTemperatureLeft());
 }
 //=== end GetTemperaturePtcLeft ====================================================
 
@@ -2609,7 +2608,7 @@ s8 TTaskHAL::GetTemperaturePtcLeft(void)
 */
 s8 TTaskHAL::GetTemperaturePtcRight(void)
 {
-	return(TaskChmRight.GetPtcTemperature());
+	return(TaskChm.GetPtcTemperatureRight());
 }
 //=== end GetTemperaturePtcRight ===================================================
 
@@ -2622,7 +2621,7 @@ s8 TTaskHAL::GetTemperaturePtcRight(void)
 */
 s8 TTaskHAL::GetTemperaturePadLeft(void)
 {
-	return(TaskChmLeft.GetPadTemperature());
+	return(TaskChm.GetPadTemperatureLeft());
 }
 //=== end GetTemperaturePadLeft =====================================================
 
@@ -2635,7 +2634,7 @@ s8 TTaskHAL::GetTemperaturePadLeft(void)
 */
 s8 TTaskHAL::GetTemperaturePadRight(void)
 {
-	return(TaskChmRight.GetPadTemperature());
+	return(TaskChm.GetPadTemperatureRight());
 }
 //=== end GetTemperaturePadRight ===================================================
 
@@ -2923,41 +2922,41 @@ void TTaskHAL::ProcessAcPhase(void)
 void TTaskHAL::ProcessHeater()
 {
 	////// Pad Heaters //////
-	if(TaskChmLeft.GetPwmHeaterPad() > this->counterPwmHeater)
+	if(TaskChm.GetPwmHeaterPadLeft() > this->counterPwmHeater)
 	{
-		TaskChmLeft.PulseOnHeaterPad();
+		TaskChm.PulseOnHeaterPadLeft();
 	}
 	else
 	{
-		TaskChmLeft.PulseOffHeaterPad();
+		TaskChm.PulseOffHeaterPadLeft();
 	}
 
-	if(TaskChmRight.GetPwmHeaterPad() > this->counterPwmHeater)
+	if(TaskChm.GetPwmHeaterPadRight() > this->counterPwmHeater)
 	{
-		TaskChmRight.PulseOnHeaterPad();
+		TaskChm.PulseOnHeaterPadRight();
 	}
 	else
 	{
-		TaskChmRight.PulseOffHeaterPad();
+		TaskChm.PulseOffHeaterPadRight();
 	}
 
 	////// PTC Heaters //////
-	if(TaskChmLeft.GetPwmHeaterPtc() > this->counterPwmHeater)
+	if(TaskChm.GetPwmHeaterPtcLeft() > this->counterPwmHeater)
 	{
-		TaskChmLeft.PulseOnHeaterPtc();
+		TaskChm.PulseOnHeaterPtcLeft();
 	}
 	else
 	{
-		TaskChmLeft.PulseOffHeaterPtc();
+		TaskChm.PulseOffHeaterPtcLeft();
 	}
 
-	if(TaskChmRight.GetPwmHeaterPtc() > this->counterPwmHeater)
+	if(TaskChm.GetPwmHeaterPtcRight() > this->counterPwmHeater)
 	{
-		TaskChmRight.PulseOnHeaterPtc();
+		TaskChm.PulseOnHeaterPtcRight();
 	}
 	else
 	{
-		TaskChmRight.PulseOffHeaterPtc();
+		TaskChm.PulseOffHeaterPtcRight();
 	}
 
 }

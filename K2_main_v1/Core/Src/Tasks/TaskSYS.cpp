@@ -16,9 +16,9 @@
 
 TTaskSYS TaskSYS;
 extern TTaskUI TaskUI;
+
 extern TTaskHAL TaskHAL;
-extern TTaskCHM TaskChmLeft;
-extern TTaskCHM TaskChmRight;
+extern TTaskCHM TaskChm;
 
 #ifndef __RELEASE
 	#include "TaskConsole.hpp"
@@ -138,8 +138,7 @@ extern "C" void CreateApplicationTasks()
 #endif
 	TaskUI.CreateTaskStatic();
 	TaskHAL.CreateTaskStatic();
-	TaskChmLeft.CreateTaskStatic();
-	TaskChmRight.CreateTaskStatic();
+	TaskChm.CreateTaskStatic();
 
 	TaskSYS.CreateTaskStatic();
 
@@ -217,7 +216,7 @@ void TTaskSYS::Run(void)
 			result = pEeprom->WriteTimestamp(&Rtc);
 			if(result == OsResult_Ok)
 			{
-//				TaskChmLeft.SetConfigCompostProcess(Rtc.hours);
+//				TaskChm.SetConfigCompostProcess(Rtc.hours);
 //				TaskChmRight.SetConfigCompostProcess(Rtc.hours);
 				this->prevHours = Rtc.hours;
 
@@ -228,9 +227,9 @@ void TTaskSYS::Run(void)
 //				TaskChmRight.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
 				TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 
-//				TaskChmLeft.SetPtcTemperatureLevels(50, 55);
-//				TaskChmLeft.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
-				TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+//				TaskChm.SetPtcTemperatureLevels(50, 55);
+//				TaskChm.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
+				TaskChm.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 			}
 			else
 			{
@@ -255,8 +254,7 @@ void TTaskSYS::Run(void)
 	TaskHAL.AcPowerOn();
 	this->Delay(400);
 #else
-	TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
-	TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+	TaskChm.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 #endif
 
 	while(true)
@@ -402,7 +400,7 @@ void TTaskSYS::SelfTest()
 	u32 resultBits;
 
 
-//	TaskChmLeft.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+//	TaskChm.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
 //	TaskChmRight.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
 //	this->ControlMainFan(0);
 
@@ -440,7 +438,7 @@ void TTaskSYS::SelfTest()
 /*			if(inputSysState == SysState_TopRemoved)
 			{
 				this->SetSysState(SysState_Idle);
-				TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+				TaskChm.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 				TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 			} */
 
@@ -641,8 +639,7 @@ void TTaskSYS::ProcessTopUnlocked()
 	u32 resultBits;
 
 
-	TaskChmLeft.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
-	TaskChmRight.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+	TaskChm.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
 //	TaskHAL.SetEvents();
 
 	this->SetSysState(SysState_TopUnlocked);
@@ -675,8 +672,7 @@ void TTaskSYS::ProcessTopUnlocked()
 
 		if((resultBits & TASK_SYS_EVENT_TOP_LOCKED) > 0)
 		{
-			TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
-			TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+			TaskChm.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 			this->SetSysState(SysState_Idle);
 			return;  // ОК
 		}
@@ -715,7 +711,7 @@ void TTaskSYS::ProcessTopRemoved()
 	u32 resultBits;
 
 
-//	TaskChmLeft.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+//	TaskChm.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
 //	TaskChmRight.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
 //	TaskHAL.SetEvents();
 
@@ -795,7 +791,7 @@ void TTaskSYS::ProcessLidOpen()
 		return;
 	}
 
-//	TaskChmLeft.StartCycleCompostProcess();
+//	TaskChm.StartCycleCompostProcess();
 //	TaskChmRight.StartCycleCompostProcess();
 
 	if(result == OsResult_LidOpen)
@@ -808,7 +804,7 @@ void TTaskSYS::ProcessLidOpen()
 		return;
 	}
 
-//	TaskChmLeft.SetEvents(TASK_CHM_EVENT_MIXING);
+//	TaskChm.SetEvents(TASK_CHM_EVENT_MIXING);
 //	TaskChmRight.SetEvents(TASK_CHM_EVENT_MIXING);
 
 	this->SetSysState(SysState_Idle);
@@ -862,10 +858,9 @@ void TTaskSYS::ProcessError()
 	} */
 
 	TaskUI.SetState(TASK_UI_EVENT_ERROR);
-//	TaskChmLeft.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
-//	TaskChmRight.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
-	TaskChmLeft.SetError();
-	TaskChmRight.SetError();
+//	TaskChm.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+//	TaskChight.SetEvents(TASK_CHM_EVENT_STOP_PROCESS);
+	TaskChm.SetError();
 
 
 	while(true)
@@ -1827,8 +1822,7 @@ void TTaskSYS::ProcessTick()
 	// DEBUG
 	DiagNotice("ProcessTick !!!");
 	// DEBUG
-	TaskChmLeft.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
-	TaskChmRight.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
+	TaskChm.SetEvents(TASK_CHM_EVENT_TICK_PROCESS);
 
 	// DEBUG
 /*	BetaTestRecord.bme688SensorFan = this->bme688SensorFan;
@@ -1891,8 +1885,7 @@ void TTaskSYS::ProcessTick()
 			return;
 		}
 
-		TaskChmLeft.SetConfigCompostProcess(Rtc.hours);
-		TaskChmRight.SetConfigCompostProcess(Rtc.hours);
+		TaskChm.SetConfigCompostProcess(Rtc.hours);
 	} */
 
 	if(this->counterBetaTestLog > 0)
@@ -2067,16 +2060,12 @@ void TTaskSYS::UpdateSensorBme688(EIfcBme688Sensor ifcBme688Sensor, u8* pBufferS
 	}
 	else
 	{
-		if(ifcBme688Sensor == IfcBme688Sensor_Left)
-		{
-			memcpy((void*)&this->bme688SensorLeft, (void*)pBufferState, sizeof(TBme688Sensor));
-			TaskChmLeft.UpdateSensorBme688(&this->bme688SensorLeft);
-		}
-		else  // IfcBme688Sensor_Right
-		{
-			memcpy((void*)&this->bme688SensorRight, (void*)pBufferState, sizeof(TBme688Sensor));
-			TaskChmRight.UpdateSensorBme688(&this->bme688SensorRight);
-		}
+
+		memcpy((void*)&this->bme688SensorLeft, (void*)pBufferState, sizeof(TBme688Sensor));
+		memcpy((void*)&this->bme688SensorRight, (void*)pBufferState, sizeof(TBme688Sensor));
+		// TODO CHECK TaskChm.UpdateSensorBme688(&this->bme688SensorLeft, &this->bme688SensorRight);
+		TaskChm.UpdateSensorBme688(&this->bme688SensorLeft, &this->bme688SensorRight);
+
 	}
 
 	taskEXIT_CRITICAL();
@@ -2632,12 +2621,11 @@ EOsResult TTaskSYS::Init(void)
    		return(result);
    	}
 
-   	TaskChmLeft.Init(TaskChamber_Left);
-   	TaskChmRight.Init(TaskChamber_Right);
+   	TaskChm.Init();
+
 
    	TaskHAL.SetEvents(TASK_HAL_CMD_START);
-   	TaskChmLeft.SetEvents(TASK_CHM_CMD_START);
-   	TaskChmRight.SetEvents(TASK_CHM_CMD_START);
+   	TaskChm.SetEvents(TASK_CHM_CMD_START);
    	this->enableTickHook = true;
 
 
@@ -2659,9 +2647,9 @@ EOsResult TTaskSYS::Init(void)
    					TaskChmRight.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
    					TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 
-   					TaskChmLeft.SetPtcTemperatureLevels(50, 55);
-   					TaskChmLeft.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
-   					TaskChmLeft.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
+   					TaskChm.SetPtcTemperatureLevels(50, 55);
+   					TaskChm.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
+   					TaskChm.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
    	while(true)
    	{
    		this->Delay(10000);

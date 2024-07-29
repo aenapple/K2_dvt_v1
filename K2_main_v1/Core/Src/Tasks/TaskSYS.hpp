@@ -110,6 +110,8 @@
 #define TASK_SYS_3_MINUTES  (u16)(3 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_4_MINUTES  (u16)(4 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_5_MINUTES  (u16)(5 * (TASK_SYS_1_MINUTE + 1) - 1)
+#define TASK_SYS_6_MINUTES  (u16)(6 * (TASK_SYS_1_MINUTE + 1) - 1)
+#define TASK_SYS_7_MINUTES  (u16)(7 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_8_MINUTES  (u16)(8 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_10_MINUTES (u16)(10 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_12_MINUTES (u16)(12 * (TASK_SYS_1_MINUTE + 1) - 1)
@@ -119,6 +121,7 @@
 #define TASK_SYS_1_HOUR     (u16)(60 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_2_HOURS    (u16)(120 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_5_HOURS    (u16)(300 * (TASK_SYS_1_MINUTE + 1) - 1)
+#define TASK_SYS_10_HOURS   (u16)(600 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_12_HOURS   (u32)(720 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_24_HOURS   (u32)(1440 * (TASK_SYS_1_MINUTE + 1) - 1)
 
