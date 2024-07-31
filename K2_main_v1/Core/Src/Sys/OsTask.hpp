@@ -25,6 +25,9 @@
 #define OS_TASK_UI_SIZE_STACK       (configMINIMAL_STACK_SIZE * 8)  // 8 * 64 * 4 = 2048 bytes
 #define OS_TASK_HAL_SIZE_STACK      (configMINIMAL_STACK_SIZE * 8)  // 8 * 64 * 4 = 2048 bytes
 #define OS_TASK_CHM_SIZE_STACK      (configMINIMAL_STACK_SIZE * 8)  // 8 * 64 * 4 = 2048 bytes
+#define OS_TASK_AI_SIZE_STACK       (configMINIMAL_STACK_SIZE * 8)  // 8 * 64 * 4 = 2048 bytes
+
+
 
 ////// configMAX_PRIORITIES = 32. //////
 /*
@@ -41,7 +44,7 @@
 #define OS_TASK_CHM_PRIORITY       (configMAX_PRIORITIES - 4)
 #define OS_TASK_CLI_PRIORITY       (configMAX_PRIORITIES - 5)
 #define OS_TASK_UI_PRIORITY	       (configMAX_PRIORITIES - 6)
-
+#define OS_TASK_AI_PRIORITY	       (configMAX_PRIORITIES - 7)
 
 #define OS_TASK_NET_QUEUE_SIZE 16
 
