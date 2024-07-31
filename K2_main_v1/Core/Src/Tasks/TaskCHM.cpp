@@ -16,7 +16,7 @@ extern TTaskHAL TaskHAL;
 extern TTaskSYS TaskSYS;
 
 extern TTaskAI TaskAILeft;
-//extern TTaskAI  TaskAIRight;
+extern TTaskAI  TaskAIRight;
 
 #ifndef __RELEASE
 	#include "TaskConsole.hpp"
@@ -58,7 +58,7 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 
 
 	this->ptcIntervalTime    = 0;
-	this->ptcCounterWorkTime = 0;
+	this->ptcCounterWorkTime = TASK_SYS_30_SECONDS;
 	this->ptcDutyCycle       = PtcDutyCycleMode_0;
 	this->ptcDutyCycleOnFlag = false;
 
@@ -71,19 +71,25 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 
 	//  Include Instances of AI Class;
 	//  TODO Add neural networks, and maybe increment size thingie
-		TaskAILeft.Init(this->incrementTime);
-	//	TaskAIRight.Init(this->incrementTime);
+	TaskAILeft.Init(this->incrementTime);
+	TaskAIRight.Init(this->incrementTime);
 
-	this->mixingPhase = MixingPhase_0;
-	this->mixIntervalTime = TASK_SYS_2_MINUTES;
-//	this->mixCounterIntervalTime = 0;DeterminePtcDutyCycle
+	this->leftMixingPhase = MixingPhase_0;
+	this->rightMixingPhase = MixingPhase_0;
+
+	this->mixCounterIntervalTime = 0;
+	this->mixIntervalTime = TASK_SYS_10_MINUTES;
+
+	this->timeCcw = TASK_SYS_30_SECONDS;
+	this->timeCw = TASK_SYS_30_SECONDS;
 
 	this->ClearEvents(TASK_CHM_EVENT_TICK_PROCESS);
 	while(true)
 	{
 		if(this->EventGroup.WaitOrBits(
 					TASK_CHM_EVENT_TICK_PROCESS |
-					TASK_CHM_EVENT_MIXING       |
+					TASK_CHM_EVENT_MIXING_LEFT  |
+					TASK_CHM_EVENT_MIXING_RIGHT  |
 					TASK_CHM_EVENT_STOP_PROCESS,
 					&resultBits,
 					1000
@@ -109,32 +115,33 @@ void TTaskCHM::Process(ETaskChmState taskChmState)
 			this->TickProcess();
 		}
 
-		if((resultBits & TASK_CHM_EVENT_MIXING) > 0)
+		if((resultBits & TASK_CHM_EVENT_MIXING_LEFT) > 0)
 		{
 			// DEBUG
-			if(this->taskChamber == TaskChamber_Left)
-			{
-				DiagNotice("TaskChmLeft start mixing!!");
-			}
-			else
-			{
-				DiagNotice("TaskChmRight start mixing!!");
-			}
+			DiagNotice("TaskChmLeft start mixing!!");
 			// DEBUG
 
-			this->Mixing();
-			this->ClearEvents(TASK_CHM_EVENT_MIXING);
+			this->MixingLeft();
+			this->ClearEvents(TASK_CHM_EVENT_MIXING_LEFT);
+			TaskAILeft.SetMixingCounter();
 
 			// DEBUG
-			if(this->taskChamber == TaskChamber_Left)
-			{
-				DiagNotice("TaskChmLeft stop mixing!!");
-			}
-			else
-			{
-				DiagNotice("TaskChmRight stop mixing!!");
-			}
+			DiagNotice("TaskChmLeft stop mixing!!");
 			// DEBUG
+		}
+
+		if((resultBits & TASK_CHM_EVENT_MIXING_RIGHT) > 0)
+		{
+			DiagNotice("TaskChmRight start mixing!!");
+
+			this->MixingRight();
+			this->ClearEvents(TASK_CHM_EVENT_MIXING_RIGHT);
+			TaskAIRight.SetMixingCounter();
+
+			// DEBUG
+			DiagNotice("TaskChmRight stop mixing!!");
+			// DEBUG
+
 		}
 
 		if((resultBits & TASK_CHM_EVENT_STOP_PROCESS) > 0)
@@ -219,6 +226,7 @@ void TTaskCHM::Run(void)
         	}
         	// DEBUG
 
+        	// TODO Need to move parameters from here into init function..
         	this->Process(TaskChmState_Composting);
 
         	// DEBUG
@@ -270,82 +278,68 @@ void TTaskCHM::TickProcess()
 		this->incrementCounter = this->incrementTime;
 	}
 
-	// DEBUG
-//	if(this->taskChamber == TaskChamber_Left)
-//	{
-//	    DiagNotice("TaskChmLeft TickProcess!!");
-//	}
-//	else
-//	{
-//	    DiagNotice("TaskChmRight TickProcess!!");
-//	}
-	// DEBUG
 
-	// Collect Values from Temperature Sensor
+	// Collect Values from Temperature Sensors
 	this->padTemperatureLeft = TaskHAL.GetTemperaturePadLeft();
 	this->padTemperatureRight = TaskHAL.GetTemperaturePadRight();
 
 	this->ptcTemperatureLeft = TaskHAL.GetTemperaturePtcLeft();
 	this->ptcTemperatureRight = TaskHAL.GetTemperaturePtcRight();
-	// End Collect Values From Temperature Sensor
+	// End Collect Values From Temperature Sensors
 
 
 	// Get Moisture Predictions
-	//	this->rightMoisturePredictions = TaskAIRight.GetPredictions();
-	//	this->leftMoisturePredictions  = TaskAILeft.GetPredictions();
-
+	this->leftMoisturePredictions  = TaskAILeft.GetPredictions();
+	this->rightMoisturePredictions = TaskAIRight.GetPredictions();
 	// End Get Moisture Predictions
 
 	////// PTC Fan & Heater counter Using Generated Moistures //////
-	// TODO check if statement; or we could do without the array (array might be good for getting an average)
 	this->ptcCounterWorkTime -= this->incrementTime;
 	if (this->ptcCounterWorkTime <= 0) {
-		if (rightMoisturePredictions[0] != 0 && rightMoisturePredictions[1] != 0 && rightMoisturePredictions[2] != 0 &&
-				leftMoisturePredictions[0] != 0 && leftMoisturePredictions[1] != 0 && leftMoisturePredictions[2] != 0) {
+		if (this->rightMoisturePredictions != -1 && this->leftMoisturePredictions != -1){
 			// Get Average of the predictions
-			// this->DeterminePtcDutyCycle()
+			 this->DeterminePtcDutyCycle(this->leftMoisturePredictions, this->rightMoisturePredictions);
 		}
-	}
+		this->SetPtcDutyCycles();
 
+	}
 	////// End PTC Fan & Heater counter Using Generated Moistures //////
 
 
 	//////// Mixing Chambers. Make sure they're not mixing at the same time     //////
-//	u16 mixingCounter = TaskAILeft.GetMixingCounter();
-//	if ( mixingCounter <= 0) {
-//		// if right.mixpahse == 0
-//			 // begin mixing cycle for left chamber
-//	} else {
-//		// decrement left mixing counter
-//	}
-//
-//	mixingCounter = TaskAIRight.GetMixingCounter();
-//	if (mixingCounter <= 0) {
-//		// if left.mixpahse == 0
-//		 // begin mixing cycle for right chamber
-//	} else {
-//		// decrement right mixing counter
-//	}
+	if (this->rightMixingPhase == MixingPhase_0) {
+		if ( TaskAIRight.GetMixingCounter() <= 0) {
+			 if (this->leftMixingPhase == MixingPhase_0) {
+				 this->SetEvents(TASK_CHM_EVENT_MIXING_RIGHT);
+			 }
+		} else {
+			TaskAIRight.DecrementMixingCounter();
+		}
+	}
 
-//	////// Mixing counter. //////
-//	if(this->mixCounterIntervalTime < this->mixIntervalTime)
-//	{
-//		this->mixCounterIntervalTime++;
-//	}
-//	else
-//	{
-//		this->mixCounterIntervalTime = 0;
-//		this->SetEvents(TASK_CHM_EVENT_MIXING);
-//	}
-//	////// Mixing counter. //////
+	if (this->leftMixingPhase == MixingPhase_0) {
+		if ( TaskAILeft.GetMixingCounter() <= 0) {
+			 if (this->rightMixingPhase == MixingPhase_0) {
+				 this->SetEvents(TASK_CHM_EVENT_MIXING_LEFT);
+			 }
+		} else {
+			TaskAILeft.DecrementMixingCounter();
+		}
+	}
+
 	//////// End Mixing Chambers   //////
 
 
 	////// Run AI Chambers  //////
+	TaskAILeft.RunChamber(this->leftBmeSensorChamber, this->ptcHeaterPwm, this->ptcFanPwm,   this->rightMixingPhase);
+	TaskAIRight.RunChamber(this->rightBmeSensorChamber, this->ptcHeaterPwm, this->ptcFanPwm, this->leftMixingPhase);
 
 	/////// End Run AI Chambers   //////
 
+
+	//this->ModulateChamberTemperatures(this->leftBmeSensorChamber, this->rightBmeSensorChamber);
 	this->ActuatorPWMCheck();
+//	TaskHAL.StopMainFan();
 
 	if (this->ptcHeaterPwm > 0) {
 		this->StartHeaterPtc(this->ptcHeaterPwm);
@@ -391,7 +385,7 @@ void TTaskCHM::TickProcess()
 
 
 //==================================================================================
-void TTaskCHM::DeterminePtcDutyCycle(u16 moistureChamberA, u16 moistureChamberB){
+void TTaskCHM::DeterminePtcDutyCycle(float moistureChamberA, float moistureChamberB){
 	if (moistureChamberA >= TASK_CHM_HIGH_MOISTURE && moistureChamberB >= TASK_CHM_HIGH_MOISTURE)
 	{
 
@@ -475,11 +469,12 @@ void TTaskCHM::SetPtcDutyCycles()
         else {
 
             this->ptcFanPwm    = 50;
-            this->ptcHeaterPwm = 100;
+            this->ptcHeaterPwm = 80;
 
             this->ptcCounterWorkTime = TASK_SYS_30_SECONDS;
             this->ptcDutyCycleOnFlag = true;
         }
+        break;
     case PtcDutyCycleMode_1:  // High High
         if (this->ptcDutyCycleOnFlag) {
             ptcDutyCycleOnFlag = false;
@@ -493,12 +488,13 @@ void TTaskCHM::SetPtcDutyCycles()
 		else {
 
             this->ptcFanPwm    = 80;
-            this->ptcHeaterPwm = 100;
+            this->ptcHeaterPwm = 70;
 
             this->ptcCounterWorkTime = TASK_SYS_1_MINUTE + TASK_SYS_30_SECONDS;
             this->ptcDutyCycleOnFlag = true;
 
 		}
+        break;
     case PtcDutyCycleMode_2: // High Medium
         if (this->ptcDutyCycleOnFlag) {
 
@@ -512,13 +508,13 @@ void TTaskCHM::SetPtcDutyCycles()
         else {
 
             this->ptcFanPwm    = 70;
-            this->ptcHeaterPwm = 100;
+            this->ptcHeaterPwm = 60;
 
             this->ptcCounterWorkTime = TASK_SYS_2_MINUTES + TASK_SYS_30_SECONDS;
             this->ptcDutyCycleOnFlag = true;
 
         }
-
+        break;
     case PtcDutyCycleMode_3: // High Low
         if (this->ptcDutyCycleOnFlag) {
 
@@ -539,6 +535,7 @@ void TTaskCHM::SetPtcDutyCycles()
             this->ptcDutyCycleOnFlag = true;
 
         }
+        break;
     case PtcDutyCycleMode_4: // Medium Medium
         if (this->ptcDutyCycleOnFlag) {
 
@@ -558,7 +555,7 @@ void TTaskCHM::SetPtcDutyCycles()
             this->ptcDutyCycleOnFlag = true;
 
         }
-
+        break;
     case PtcDutyCycleMode_5: // Medium Low
         if (this->ptcDutyCycleOnFlag) {
 
@@ -577,7 +574,7 @@ void TTaskCHM::SetPtcDutyCycles()
             this->ptcCounterWorkTime = TASK_SYS_5_MINUTES + TASK_SYS_30_SECONDS;
             this->ptcDutyCycleOnFlag = true;
 		}
-
+        break;
     case PtcDutyCycleMode_6: // Low Low
         if (this->ptcDutyCycleOnFlag) {
 
@@ -595,7 +592,7 @@ void TTaskCHM::SetPtcDutyCycles()
             this->ptcCounterWorkTime = TASK_SYS_6_MINUTES + TASK_SYS_30_SECONDS;
             this->ptcDutyCycleOnFlag = true;
         }
-
+        break;
     case PtcDutyCycleMode_7:
         if (this->ptcDutyCycleOnFlag) {
 
@@ -611,7 +608,7 @@ void TTaskCHM::SetPtcDutyCycles()
         	this->ptcDutyCycleOnFlag = true;
 
         }
-
+        break;
     case PtcDutyCycleMode_99:
         if (this->ptcDutyCycleOnFlag) {
 
@@ -708,49 +705,91 @@ void TTaskCHM::UpdateSensorBme688(TBme688Sensor* leftBme688Sensor, TBme688Sensor
 */
 
 // TODO make MixingRight, MixingLeft
-void TTaskCHM::Mixing()
+void TTaskCHM::MixingLeft()
 {
 	EOsResult result;
 
 
-	this->mixingPhase = MixingPhase_1;
-	this->StartForwardMotorChamber();
+	this->leftMixingPhase = MixingPhase_1;
+	this->StartForwardMotorChamberLeft();
 	result = this->DelaySecond(this->timeCw);
-	this->StopMotorChamber();
+	this->StopMotorChamberLeft();
 	if(result == OsResult_StopProcess)
 	{
 		return;
 	}
 
-	this->mixingPhase = MixingPhase_2;
-	this->StartBackwardMotorChamber();
+	this->leftMixingPhase = MixingPhase_2;
+	this->StartBackwardMotorChamberLeft();
 	result = this->DelaySecond(this->timeCcw);
-	this->StopMotorChamber();
+	this->StopMotorChamberLeft();
 	if(result == OsResult_StopProcess)
 	{
 		return;
 	}
 
-	this->mixingPhase = MixingPhase_3;
-	this->StartForwardMotorChamber();
+	this->leftMixingPhase = MixingPhase_3;
+	this->StartForwardMotorChamberLeft();
 	result = this->DelaySecond(this->timeCw);
-	this->StopMotorChamber();
+	this->StopMotorChamberLeft();
 	if(result == OsResult_StopProcess)
 	{
 		return;
 	}
 
-	this->mixingPhase = MixingPhase_4;
-	this->StartBackwardMotorChamber();
+	this->leftMixingPhase = MixingPhase_4;
+	this->StartBackwardMotorChamberLeft();
 	result = this->DelaySecond(this->timeCcw);
-	this->StopMotorChamber();
+	this->StopMotorChamberLeft();
 	if(result == OsResult_StopProcess)
 	{
 		return;
 	}
 
-	this->mixingPhase = MixingPhase_0;
+	this->leftMixingPhase = MixingPhase_0;
+}
+void TTaskCHM::MixingRight()
+{
+	EOsResult result;
 
+
+	this->rightMixingPhase = MixingPhase_1;
+	this->StartForwardMotorChamberRight();
+	result = this->DelaySecond(this->timeCw);
+	this->StopMotorChamberRight();
+	if(result == OsResult_StopProcess)
+	{
+		return;
+	}
+
+	this->rightMixingPhase = MixingPhase_2;
+	this->StartBackwardMotorChamberRight();
+	result = this->DelaySecond(this->timeCcw);
+	this->StopMotorChamberRight();
+	if(result == OsResult_StopProcess)
+	{
+		return;
+	}
+
+	this->rightMixingPhase = MixingPhase_3;
+	this->StartForwardMotorChamberRight();
+	result = this->DelaySecond(this->timeCw);
+	this->StopMotorChamberRight();
+	if(result == OsResult_StopProcess)
+	{
+		return;
+	}
+
+	this->rightMixingPhase = MixingPhase_4;
+	this->StartBackwardMotorChamberRight();
+	result = this->DelaySecond(this->timeCcw);
+	this->StopMotorChamberRight();
+	if(result == OsResult_StopProcess)
+	{
+		return;
+	}
+
+	this->rightMixingPhase = MixingPhase_0;
 }
 //=== end Mixing ===================================================================
 
@@ -1002,16 +1041,13 @@ void TTaskCHM::PulseOffHeaterPadRight(void)
 */
 
 // TODO Seperate into two functions, or just use parameters
-void TTaskCHM::StartForwardMotorChamber()
+void TTaskCHM::StartForwardMotorChamberLeft()
 {
-	if(this->taskChamber == TaskChamber_Left)
-	{
-		this->HalMotChambers->StartForwardMotorLeft();
-	}
-	else
-	{
-		this->HalMotChambers->StartForwardMotorRight();
-	}
+	this->HalMotChambers->StartForwardMotorLeft();
+}
+void TTaskCHM::StartForwardMotorChamberRight()
+{
+	this->HalMotChambers->StartForwardMotorRight();
 }
 //=== end StartForwardMotorChamber =================================================
 
@@ -1021,17 +1057,16 @@ void TTaskCHM::StartForwardMotorChamber()
 *
 *  @return ... .
 */
-void TTaskCHM::StartBackwardMotorChamber()
+void TTaskCHM::StartBackwardMotorChamberLeft()
 {
-	if(this->taskChamber == TaskChamber_Left)
-	{
-		this->HalMotChambers->StartBackwardMotorLeft();
-	}
-	else
-	{
-		this->HalMotChambers->StartBackwardMotorRight();
-	}
+	this->HalMotChambers->StartBackwardMotorLeft();
 }
+void TTaskCHM::StartBackwardMotorChamberRight()
+{
+	this->HalMotChambers->StartBackwardMotorRight();
+}
+
+
 //=== end StartBackwardMotorChamber ================================================
 
 //==================================================================================
@@ -1040,16 +1075,13 @@ void TTaskCHM::StartBackwardMotorChamber()
 *
 *  @return ... .
 */
-void TTaskCHM::StopMotorChamber()
+void TTaskCHM::StopMotorChamberLeft()
 {
-	if(this->taskChamber == TaskChamber_Left)
-	{
-		this->HalMotChambers->StopMotorLeft();
-	}
-	else
-	{
-		this->HalMotChambers->StopMotorRight();
-	}
+	this->HalMotChambers->StopMotorLeft();
+}
+void TTaskCHM::StopMotorChamberRight()
+{
+	this->HalMotChambers->StopMotorRight();
 }
 //=== end StopMotorChamber =========================================================
 
@@ -1061,9 +1093,12 @@ void TTaskCHM::StopMotorChamber()
 */
 void TTaskCHM::StopProcess()
 {
-	this->StopMotorChamber();
+	this->StopMotorChamberLeft();
+	this->StopMotorChamberRight();
+
 	this->StopHeaterPtc();
 	this->StopHeaterPad();
+
 	this->StopFanPtc();
 	this->StopFanAir();
 }
@@ -1309,9 +1344,6 @@ EOsResult TTaskCHM::Init(ETaskChamber taskChamber)
 	static THalMotChambers& halMC = THalMotChambers::GetInstance();
 	this->HalMotChambers= &halMC;
 
-	this->mixCounterIntervalTime = 0;
-	this->mixIntervalTime = TASK_SYS_15_MINUTES;
-	this->mixingPhase = MixingPhase_0;
 	this->error = false;
 
 
