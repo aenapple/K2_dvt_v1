@@ -28,8 +28,9 @@
 #define TASK_CHM_EVENT_START_COLLECTING  (1<<3)
 #define TASK_CHM_EVENT_STOP_PROCESS      (1<<4)
 
-#define TASK_CHM_EVENT_TICK_PROCESS  (1<<5)
-#define TASK_CHM_EVENT_MIXING        (1<<6)
+#define TASK_CHM_EVENT_TICK_PROCESS      (1<<5)
+#define TASK_CHM_EVENT_MIXING_LEFT       (1<<6)
+#define TASK_CHM_EVENT_MIXING_RIGHT      (1<<7)
 
 // #define TASK_CHM_FLAG_NOT_PRESENT    (1<<7)
 // #define TASK_CHM_FLAG_PTC_HEATER_ON  (1<<8)
@@ -351,8 +352,11 @@ private:
 	u16 timeCw;
 	u16 timeCcw;
 
-	u16 rightMoisturePredictions[TASK_CHM_NUM_PREDICTIONS] = {0,0,0}; //short time intervals
-	u16 leftMoisturePredictions[TASK_CHM_NUM_PREDICTIONS]  = {0,0,0};
+//	float rightMoisturePredictions[TASK_CHM_NUM_PREDICTIONS] = {0,0,0}; //short time intervals
+//	float leftMoisturePredictions[TASK_CHM_NUM_PREDICTIONS]  = {0,0,0};
+
+	float leftMoisturePredictions;
+	float rightMoisturePredictions;
 
     TBme688Sensor leftBmeSensorChamber;
     TBme688Sensor rightBmeSensorChamber;
@@ -365,7 +369,8 @@ private:
 	u16 mixCounterIntervalTime;
 	u16 mixIntervalTime;
 
-	EMixingPhase mixingPhase;
+	EMixingPhase rightMixingPhase;
+	EMixingPhase leftMixingPhase;
 
 
 	////// end Dynamic Algorithm variables //////
@@ -387,9 +392,16 @@ private:
 	void StopHeaterPtc(void);
 	void StartHeaterPad(u8 pwm);
 	void StopHeaterPad(void);
-	void StartForwardMotorChamber(void);
-	void StartBackwardMotorChamber(void);
-	void StopMotorChamber(void);
+
+	void StartForwardMotorChamberLeft(void);
+	void StartBackwardMotorChamberLeft(void);
+	void StopMotorChamberLeft(void);
+
+
+	void StartForwardMotorChamberRight(void);
+	void StartBackwardMotorChamberRight(void);
+	void StopMotorChamberRight(void);
+
 	EOsResult DelaySecond(u16 seconds);///	void SetStepCompostProcess(ECycleStep cycleStep);///	void SetStepCompostProcess(u16 timeStep);
 
 	////// Dynamic Algorithm Logic //////
@@ -398,15 +410,17 @@ private:
 	void BmeControlParams(u16 temperature, u16 rHumidity);
 
 	void ActuatorPWMCheck(void);
-	void Mixing(void);
-	void AverageHumidity();
+
+	void MixingLeft(void);
+	void MixingRight(void);
+
 
 	/// Modulate Duty Cycles
 	void SetPtcDutyCycles(void);
 
 	////// CHeck Chamber Conditions (change naming convention after)
 
-	void DeterminePtcDutyCycle(u16 moistureChamberA, u16 moistureChamberB);
+	void DeterminePtcDutyCycle(float moistureChamberA, float moistureChamberB);
 	void ModulatModulateChamberTemperatures(u16 leftChamberHumidity, u16 rightChamberHumidity);
 	////// end Dynamic Algorithm Logic //////
 

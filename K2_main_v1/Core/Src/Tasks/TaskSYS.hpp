@@ -120,6 +120,7 @@
 
 #define TASK_SYS_1_HOUR     (u16)(60 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_2_HOURS    (u16)(120 * (TASK_SYS_1_MINUTE + 1) - 1)
+#define TASK_SYS_3_HOURS    (u16)(120 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_5_HOURS    (u16)(300 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_10_HOURS   (u16)(600 * (TASK_SYS_1_MINUTE + 1) - 1)
 #define TASK_SYS_12_HOURS   (u32)(720 * (TASK_SYS_1_MINUTE + 1) - 1)

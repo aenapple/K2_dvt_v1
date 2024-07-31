@@ -105,11 +105,19 @@ public:
 //	////// functions //////
 	EOsResult Init(u8 incrementTime);
 	EOsResult Init(void) { return(OsResult_Ok); }
+
+
+	// Need to make this consistent with the other classes ---- I can just call it update, and then use the Run function instead :)
+	void RunChamber(TBme688Sensor bme688Sensor, u8 ptcHeaterPwm, s8 ptcFanPwm, EMixingPhase otherChamberMixPhase);
 //	void SetError(void);
 //
-	u16 GetMixingCounter(void);
+
+	float GetPredictions(void);
+	s32 GetMixingCounter(void);
 	ETaskCompostingState GetCompostingState(void);
-	u32 GetMoisturePredictions(void);
+
+	void DecrementMixingCounter(void);
+	void SetMixingCounter(void);
 
 //	void SetEventTickProcessFromISR(void);
 //
@@ -128,6 +136,7 @@ protected:
 
 
 
+
 private:
 	////// variables //////
 	StackType_t xStackBuffer[OS_TASK_AI_SIZE_STACK];
@@ -137,13 +146,13 @@ private:
 	////// Composting Parameters /////
 	ETaskCompostingState compostingState;
 
-	u16 mixIntervalTime;
-	u16 mixingCounter;
-	EMixingPhase mixPhase;
+	u32 mixIntervalTime;
+	s32 mixingCounter;
+//	EMixingPhase mixPhase;
+//	EMixingPhase otherChamberMixPhase;
 
 	u16 padHeaterIntervalTime;
 	u16 padHeaterWorkTime;
-
 	u16 padHeaterPwm;
 
 
@@ -153,12 +162,14 @@ private:
 
 	////// Moisture Predictions //////
 
-	u32 moisturePredictionShort;
-	u32 previousMoistureShort;
+	float moisturePredictionShort;
+	float previousMoistureShort;
 
 	////// End Moisture Predictions //////
 
 	////// Feature Collection //////
+
+	TBme688Sensor bme688Sensor;
 
 	u32 mlWindowShort;
 	u32 mlWindowCounterShort;
@@ -202,18 +213,19 @@ private:
 	u8 incrementCounter;
 
 	////// functions //////
-	void Run(void) {} // Virtual Function Implementation
-	void Run(TBme688Sensor bme688Sensor, EMixingPhase otherChamberMixPhase, u16 lowTemp, u16 highTemp);
+
 
 	//// Chamber Actuation
 	void PadDutyCycle(void);
-	void BmeController(TBme688Sensor bme688Sensor, u32 predictedMoisture);
+	void BmeController(TBme688Sensor bme688Sensor, float predictedMoisture);
+
+	void ActuatorErrorCheck(void);
 
 	//// End Chamber Actuation
 
 	//// Collect Data
 	//					Consider moving the data structure for the ptc values to TASKCHM because it might be not useful here. I can get the necessary values from the functions.
-	void InsertPtcValues(u8 ptcHeaterPwm, s8 ptcFanPwm, EMixingPhase otherChamberMixPhase);
+
 //	void InsertBmeValues(TBme688Sensor bme688Sensor, u32 insertIndex, u8 size);
 //	void InsertPadHeaterValues(u32 index);
 	//// End Collect Data
@@ -240,7 +252,7 @@ private:
 
     //// Feature Vector Generator
 
-	float MinMaxScaler(u32 rawValue, u32 min_, u32 scale_) {return (rawValue - min_) * scale_;}
+	float MinMaxScaler(float rawValue, float min_, float scale_) {return (rawValue - min_) * scale_;}
 
 	void ScaleAllParameters(void);
 	void UpdateFeatureVectorAndPredictMoisture(bool nn);
@@ -260,6 +272,7 @@ private:
 
 	EOsResult CreateOsResources(void);
 
+	void Run(void) {}
 
 };
 //=== end class TTaskCHM ===========================================================

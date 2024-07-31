@@ -783,7 +783,7 @@ void TTaskHAL::ProcessSelfTest(void)
 
 	} // end while()
 
-	this->StartMainFan(20);
+	this->StartMainFan(10);
 
 	this->Delay(100);
 

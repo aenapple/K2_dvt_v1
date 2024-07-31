@@ -15,7 +15,7 @@ extern TTaskHAL TaskHAL;
 extern TTaskSYS TaskSYS;
 
 TTaskAI  TaskAILeft;
-//TTaskAI  TaskAIRight;
+TTaskAI  TaskAIRight;
 
 #ifndef __RELEASE
 	#include "TaskConsole.hpp"
@@ -35,29 +35,52 @@ TTaskAI  TaskAILeft;
 
 
 /**********************************************************************************/
+
 /**
 *  Todo: function description..
 *
 *  @return ... .
 */
-u16 TTaskAI::GetMixingCounter(void) {
-
-	u16 counter;
-	return counter;
+float TTaskAI::GetPredictions(void){
+	return this->moisturePredictionShort;
 }
-////=== end GetMixingCounter =========================================================
+//=== end GetPredictions =========================================================
+
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+s32 TTaskAI::GetMixingCounter(void) {
+	return this->mixingCounter;
+}
+//=== end GetMixingCounter =========================================================
+
+void TTaskAI::SetMixingCounter(void) {
+	this->mixingCounter = this->mixIntervalTime;
+}
+
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskAI::DecrementMixingCounter(void) {
+	this->mixingCounter -= this->incrementTime;
+}
+//=== end DecrementMixingCounter =========================================================
 
 ETaskCompostingState TTaskAI::GetCompostingState(void) {
 	return this->compostingState;
 }
 
-u32 GetMoisturePredictions(void) {
-	u32 pMoisture;
-
-	return pMoisture;
-}
-
+//=== end GetCompostingState =========================================================
 /**********************************************************************************/
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
 void TTaskAI::PadDutyCycle(void) {
 	switch (this->padDutyCycle) {
 		case padDutyCycleMode_0:
@@ -66,17 +89,17 @@ void TTaskAI::PadDutyCycle(void) {
 				this->padHeaterWorkTime  = this->padHeaterIntervalTime;
 				this->padDutyCycleOnFlag = false;
 
-				padHeaterPwm = 20;
+				this->padHeaterPwm = 20;
 
-				mixIntervalTime    = TASK_SYS_5_MINUTES;
+				this->mixIntervalTime    = TASK_SYS_5_MINUTES;
 			}
 			else
 			{
 
-				padHeaterWorkTime  = TASK_SYS_1_MINUTE;
-				padDutyCycleOnFlag = true;
+				this->padHeaterWorkTime  = TASK_SYS_1_MINUTE;
+				this->padDutyCycleOnFlag = true;
 
-				padHeaterPwm = 100;
+				this->padHeaterPwm = 100;
 			}
 		case padDutyCycleMode_1:
 			if (this->padDutyCycleOnFlag)
@@ -84,17 +107,17 @@ void TTaskAI::PadDutyCycle(void) {
 				this->padHeaterWorkTime  = this->padHeaterIntervalTime;
 				this->padDutyCycleOnFlag = false;
 
-				padHeaterPwm = 60;
+				this->padHeaterPwm = 60;
 
-				mixIntervalTime    = TASK_SYS_5_MINUTES;
+				this->mixIntervalTime    = TASK_SYS_5_MINUTES;
 			}
 			else
 			{
 
-				padHeaterWorkTime  = TASK_SYS_1_MINUTE;
-				padDutyCycleOnFlag = true;
+				this->padHeaterWorkTime  = TASK_SYS_1_MINUTE;
+				this->padDutyCycleOnFlag = true;
 
-				padHeaterPwm = 100;
+				this->padHeaterPwm = 100;
 
 
 			}
@@ -104,17 +127,17 @@ void TTaskAI::PadDutyCycle(void) {
 				this->padHeaterWorkTime  = this->padHeaterIntervalTime;
 				this->padDutyCycleOnFlag = false;
 
-				padHeaterPwm = 40;
+				this->padHeaterPwm = 40;
 
-				mixIntervalTime    = TASK_SYS_15_MINUTES;
+				this->mixIntervalTime    = TASK_SYS_15_MINUTES;
 			}
 			else
 			{
 
-				padHeaterWorkTime  = TASK_SYS_1_MINUTE;
-				padDutyCycleOnFlag = true;
+				this->padHeaterWorkTime  = TASK_SYS_1_MINUTE;
+				this->padDutyCycleOnFlag = true;
 
-				padHeaterPwm = 80;
+				this->padHeaterPwm = 80;
 			}
 		case padDutyCycleMode_3:
 			if (this->padDutyCycleOnFlag)
@@ -122,34 +145,37 @@ void TTaskAI::PadDutyCycle(void) {
 				this->padHeaterWorkTime  = this->padHeaterIntervalTime;
 				this->padDutyCycleOnFlag = false;
 
-				padHeaterPwm 		= 20;
-				mixIntervalTime    	= TASK_SYS_40_MINUTES;
+				this->padHeaterPwm 		= 20;
+				this->mixIntervalTime    	= TASK_SYS_40_MINUTES;
 			}
 			else
 			{
 
-				padHeaterWorkTime  = TASK_SYS_1_MINUTE;
-				padDutyCycleOnFlag = true;
+				this->padHeaterWorkTime  = TASK_SYS_1_MINUTE;
+				this->padDutyCycleOnFlag = true;
 
-				padHeaterPwm = 60;
+				this->padHeaterPwm = 60;
 			}
 	}
 
 }
 ////=== end PadDutyCycle =========================================================
-
-
 /**
 *  Todo: function description..
 *
 *  @return ... .
 */
 //
-void TTaskAI::Run(TBme688Sensor bme688Sensor, EMixingPhase otherChamberMixPhase, u16 lowTemp, u16 highTemp) {
-
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
+void TTaskAI::RunChamber(TBme688Sensor bme688Sensor, u8 ptcHeaterPwm, s8 ptcFanPwm, EMixingPhase otherChamberMixPhase) {
 	if (this->padHeaterWorkTime <= 0)
 	{
 		this->PadDutyCycle();
+		this->BmeController(bme688Sensor, this->moisturePredictionShort);
 	}
 	else
 	{
@@ -159,41 +185,113 @@ void TTaskAI::Run(TBme688Sensor bme688Sensor, EMixingPhase otherChamberMixPhase,
 	this->UpdateFeatureVectorAndPredictMoisture(false);
 
 
-	u32 insertIndex = (this->mlWindowShort - this->mlWindowCounterShort) / this->incrementTime;
 	if (otherChamberMixPhase == MixingPhase_0) {
-		this->collectedTempShort[insertIndex] = bme688Sensor.temperature;
-		this->collectedHumidityShort[insertIndex] = bme688Sensor.humidity;
-		this->collectedGasShort[insertIndex] = bme688Sensor.gasResistance;
-		this->collectedPressShort[insertIndex] = bme688Sensor.pressure;
+		u32 insertIndex = (this->mlWindowShort - this->mlWindowCounterShort) / this->incrementTime;
+		this->collectedTempShort[insertIndex] =  		bme688Sensor.temperature;
+		this->collectedHumidityShort[insertIndex] = 	bme688Sensor.humidity;
+		this->collectedGasShort[insertIndex] = 			bme688Sensor.gasResistance;
+		this->collectedPressShort[insertIndex] = 		bme688Sensor.pressure;
+
 		this->collectedPadHeaterPwmShort[insertIndex] = this->padHeaterPwm;
+
+		this->collectedPtcHeaterPwmShort[insertIndex] = ptcHeaterPwm;
+		this->collectedPtcFanPwmShort[insertIndex]   = ptcFanPwm;
 
 		this->mlWindowCounterShort -= this->incrementTime;
 	}
 
-
-	this->BmeController(bme688Sensor, this->moisturePredictionShort);
+	this->ActuatorErrorCheck();
 }
-
-
-////=== end Run ======================================================================
-
+//=== end RunChamber ========================================================================================
 /**
 *  Todo: function description..
 *
 *  @return ... .
 */
-//
-void TTaskAI::InsertPtcValues(u8 ptcHeaterPwm, s8 ptcFanPwm, EMixingPhase otherChamberMixPhase) {
+void TTaskAI::BmeController(TBme688Sensor bme688Sensor, float predictedMoisture) {
+    if (predictedMoisture == -1) {
+        // Use this for testing P50 and collecting data
+        this->padDutyCycle          = padDutyCycleMode_0;
+		this->padHeaterPwm          = 90;
 
-	u32 index = (this->mlWindowShort - this->mlWindowCounterShort) / this->incrementTime;
-	if (otherChamberMixPhase == MixingPhase_0) {
-		this->collectedPtcHeaterPwmShort[index] = ptcHeaterPwm;
-		this->collectedPtcFanPwmShort[index]   = ptcFanPwm;
-	}
+        this->mixIntervalTime       = TASK_SYS_2_MINUTES;
+
+        return;
+    }
+
+    this->padDutyCycleOnFlag = true;
+
+    if (predictedMoisture >= TASK_CHM_HIGH_MOISTURE or bme688Sensor.humidity >= TASK_CHM_HIGH_HUMIDITY)
+    {
+        this->padHeaterPwm          += 20;
+
+        this->padHeaterWorkTime      += TASK_SYS_2_MINUTES;
+        this->mixIntervalTime        -= TASK_SYS_2_MINUTES;
+
+        this->padDutyCycle = padDutyCycleMode_1;
+    }
+    else if (predictedMoisture >= TASK_CHM_MEDIUM_MOISTURE)
+    {
+        this->padHeaterPwm           += 5;
+
+        // this->padHeaterWorkTime      = TASK_SYS_3_MINUTES;
+        this->mixIntervalTime         -= TASK_SYS_1_MINUTE;
+
+        this->padDutyCycle = padDutyCycleMode_2;
+    }
+    else if (predictedMoisture >= TASK_CHM_LOW_MOISTURE)
+    {
+        this->padHeaterPwm            = 10;
+
+        this->padHeaterWorkTime       -= TASK_SYS_2_MINUTES;
+        this->mixIntervalTime         += TASK_SYS_6_MINUTES;
+
+        this->padDutyCycle = padDutyCycleMode_2;
+    }
+    else
+    {
+        this->padHeaterPwm            -=  20;
+
+        this->padHeaterWorkTime       -= TASK_SYS_2_MINUTES;
+        this->mixIntervalTime         += TASK_SYS_8_MINUTES;
+
+        this->padDutyCycle = padDutyCycleMode_3;
+    }
 
 }
+//=== end BmeController ========================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
 
-////=== end InsertPtcValues ======================================================================
+void TTaskAI::ActuatorErrorCheck(void) {
+    if (this->padHeaterWorkTime      >= TASK_SYS_1_HOUR)
+    {
+        this->padHeaterWorkTime       = TASK_SYS_1_HOUR;
+    }
+	else if (this->padHeaterWorkTime <= TASK_SYS_2_MINUTES)
+	{
+		this->padHeaterWorkTime       = TASK_SYS_2_MINUTES;
+	}
+
+    if (this->mixIntervalTime        >= TASK_SYS_3_HOURS)
+    {
+        this->mixIntervalTime         = TASK_SYS_3_HOURS;
+    }
+    else if (this->mixIntervalTime   <= TASK_SYS_5_MINUTES)
+    {
+        this->mixIntervalTime         = TASK_SYS_5_MINUTES;
+    }
+}
+
+//=== end ActuatorErrorCheck ========================================================================================
+/**
+*  Todo: function description..
+*
+*  @return ... .
+*/
 /**
 *  Todo: function description..
 *
@@ -212,9 +310,6 @@ void TTaskAI::InsertPtcValues(u8 ptcHeaterPwm, s8 ptcFanPwm, EMixingPhase otherC
 */
 //
 ////=== end InsertPadHeaterValues ======================================================================
-
-
-
 /**
 *  Todo: function description..
 *
@@ -298,10 +393,10 @@ void TTaskAI::CalculateAllFeatures(void) {
 	this->CalcMeanValues(this->collectedTempShort, TASK_AI_SAMPLES_SHORT);
 //
 //
-	this->CalcMeanAbsChangeValues(this->collectedTempShort, TASK_AI_SAMPLES_SHORT);
+//	this->CalcMeanAbsChangeValues(this->collectedTempShort, TASK_AI_SAMPLES_SHORT);
 //
 
-	this->CalcSumValues(this->collectedTempShort, TASK_AI_SAMPLES_SHORT);
+//	this->CalcSumValues(this->collectedTempShort, TASK_AI_SAMPLES_SHORT);
 
 }
 //=== end CalculateFeatures ======================================================================
@@ -544,13 +639,13 @@ void TTaskAI::PredictMoistureUsingRegression(void) {
     u8 n = sizeof(regressionFeatures) / sizeof(regressionFeatures[0]);
 
     u8 totalCombinations = 0;
-    float* regressionFeaturesCombination = this->CombinationsWithReplacement(regressionFeatures, n, degree, totalCombinations);
-    float prediction = 0;
-
-    for (u8 i = 0; i < TASK_AI_DEGREE_FOUR_COEFFICIENTS; i++) {
-    	prediction += regressionFeaturesCombination[i] * regressionCoefficients[i];
-    }
-    prediction += regressionu8ercept;
+//    float* regressionFeaturesCombination = this->CombinationsWithReplacement(regressionFeatures, n, degree, totalCombinations);
+//    float prediction = 0;
+//
+//    for (u8 i = 0; i < TASK_AI_DEGREE_FOUR_COEFFICIENTS; i++) {
+//    	prediction += regressionFeaturesCombination[i] * regressionCoefficients[i];
+//    }
+//    prediction += regressionu8ercept;
 
 
 }
@@ -582,7 +677,7 @@ EOsResult TTaskAI::Init(u8 incrementTime)
 
     this->mixIntervalTime 		= -1;
     this->mixingCounter   		= this->mixIntervalTime;
-    this->mixPhase        		= MixingPhase_0;
+//    this->mixPhase        		= MixingPhase_0;
 
     this->padDutyCycle          = padDutyCycleMode_0;
     this->padDutyCycleOnFlag 	= true;

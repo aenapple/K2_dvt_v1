@@ -217,15 +217,10 @@ void TTaskSYS::Run(void)
 			if(result == OsResult_Ok)
 			{
 //				TaskChm.SetConfigCompostProcess(Rtc.hours);
-//				TaskChmRight.SetConfigCompostProcess(Rtc.hours);
 				this->prevHours = Rtc.hours;
 
 				this->SetSysState(SysState_Idle);
 
-
-//				TaskChmRight.SetPtcTemperatureLevels(50, 55);
-//				TaskChmRight.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
-				TaskChmRight.SetEvents(TASK_CHM_EVENT_START_COMPOSTING);
 
 //				TaskChm.SetPtcTemperatureLevels(50, 55);
 //				TaskChm.SetPtcTime(6 * 60 * 60, 1 * 60 * 60);
