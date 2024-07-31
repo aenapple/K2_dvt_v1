@@ -307,25 +307,23 @@ void TTaskCHM::TickProcess()
 
 
 	//////// Mixing Chambers. Make sure they're not mixing at the same time     //////
-	if (this->rightMixingPhase == MixingPhase_0) {
-		if ( TaskAIRight.GetMixingCounter() <= 0) {
-			 if (this->leftMixingPhase == MixingPhase_0) {
-				 this->SetEvents(TASK_CHM_EVENT_MIXING_RIGHT);
-			 }
-		} else {
-			TaskAIRight.DecrementMixingCounter();
-		}
+	if ( TaskAIRight.GetMixingCounter() <= 0) {
+		 if (this->leftMixingPhase == MixingPhase_0) {
+			 this->SetEvents(TASK_CHM_EVENT_MIXING_RIGHT);
+		 }
+	} else {
+		TaskAIRight.DecrementMixingCounter();
 	}
 
-	if (this->leftMixingPhase == MixingPhase_0) {
-		if ( TaskAILeft.GetMixingCounter() <= 0) {
-			 if (this->rightMixingPhase == MixingPhase_0) {
-				 this->SetEvents(TASK_CHM_EVENT_MIXING_LEFT);
-			 }
-		} else {
-			TaskAILeft.DecrementMixingCounter();
-		}
+
+	if ( TaskAILeft.GetMixingCounter() <= 0) {
+		 if (this->rightMixingPhase == MixingPhase_0) {
+			 this->SetEvents(TASK_CHM_EVENT_MIXING_LEFT);
+		 }
+	} else {
+		TaskAILeft.DecrementMixingCounter();
 	}
+
 
 	//////// End Mixing Chambers   //////
 
